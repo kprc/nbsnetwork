@@ -4,15 +4,9 @@ import (
 	"bytes"
 	"io"
 	"sync/atomic"
-	"sync"
 	"time"
 )
 
-
-
-var G_BlockDatasLock sync.RWMutex
-
-var G_BlockDatas map[uint64]BlockDataer
 
 type BlockData struct {
 	r io.Reader

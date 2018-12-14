@@ -2,6 +2,8 @@ package nbsnetwork
 
 import (
 	"sync/atomic"
+	"github.com/kprc/nbsnetwork/pb"
+	"github.com/gogo/protobuf/proto"
 )
 
 
@@ -18,6 +20,8 @@ type UdpPacketDataer interface {
 	SetData(data []byte)
 	GetData() []byte
 	GetSerialNo() uint64
+	Serialize() ([]byte,error)
+	DeSerialize(data []byte) error
 }
 
 
@@ -37,6 +41,59 @@ func NewUdpPacketData(sn uint64, dataType uint16) UdpPacketDataer {
 	return upd
 }
 
+
+//in the future i will Serialize and DeSerialize by myself
+//func (uh *UDPPacketData)Serialize() []byte  {
+//	buf := new(bytes.Buffer)
+//	binary.Write(buf,binary.BigEndian,uh.serialNo)
+//	binary.Write(buf,binary.BigEndian,uh.totalCnt)
+//	binary.Write(buf,binary.BigEndian,uh.posNum)
+//	binary.Write(buf,binary.BigEndian,uh.dataTyp)
+//	binary.Write(buf,binary.BigEndian,uh.tryCnt)
+//	buf.Write(uh.data)
+//
+//	return buf.Bytes()
+//}
+//
+//func (uh *UDPPacketData)DeSerialize(data []byte) {
+//	buf := new(bytes.Buffer)
+//	buf.Write(data)
+//	binary.Read(buf,binary.BigEndian,&uh.serialNo)
+//	binary.Read(buf,binary.BigEndian,&uh.totalCnt)
+//	binary.Read(buf,binary.BigEndian,&uh.posNum)
+//	binary.Read(buf,binary.BigEndian,&uh.dataTyp)
+//	binary.Read(buf,binary.BigEndian,&uh.tryCnt)
+//
+//	uh.data = buf.Bytes()
+//}
+
+
+func (uh *UDPPacketData)Serialize() ([]byte,error)  {
+	p := packet.UDPPacketData{}
+	p.SerialNo = uh.serialNo
+	p.TotalCnt = uh.totalCnt
+	p.PosNum = uh.posNum
+	p.DataType = uint32(uh.dataTyp)
+	p.TryCnt = uint32(uh.tryCnt)
+	p.Data = uh.data
+
+	return proto.Marshal(&p)
+}
+
+func (uh *UDPPacketData)DeSerialize(data []byte) error {
+	p := packet.UDPPacketData{}
+	err := proto.Unmarshal(data,&p)
+	if  err == nil{
+		uh.serialNo = p.SerialNo
+		uh.totalCnt = p.TotalCnt
+		uh.posNum = p.PosNum
+		uh.dataTyp = uint16(p.DataType)
+		uh.tryCnt = uint8(p.TryCnt)
+		uh.data = p.Data
+	}
+
+	return err
+}
 
 
 func (uh *UDPPacketData)SetTotalCnt(cnt uint32)  {
