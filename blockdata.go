@@ -18,7 +18,7 @@ type BlockData struct {
 	serialNo uint64
 	unixSec int64
 	mtu   uint32
-	sndLen uint32
+	notArrivedLen uint32
 	maxcache uint32
 	curNum uint32
 	totalRetryCnt uint32
@@ -59,10 +59,12 @@ func (bd *BlockData)Send() error {
 
 
 	for {
-		buf := make([]byte,bd.mtu)
-		n,err := bd.r.Read(buf)
-		if n > 0 {
+		if bd.notArrivedLen < bd.maxcache {
+			buf := make([]byte,bd.mtu)
+			n,err := bd.r.Read(buf)
+			if n > 0 {
 
+			}
 		}
 
 		//select {
