@@ -49,7 +49,7 @@ func (bs *bstore)AddBlockDataer(sn uint64,bdr StoreDataer)  {
 		return
 	}
 
-	sd := storeData{lock:&sync.RWMutex{},bdr:bdr}
+	sd := &storeData{bdr:bdr}
 
 	bs.sd[sn] = sd
 

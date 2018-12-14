@@ -1,12 +1,10 @@
 package nbsnetwork
 
 import (
-	"sync"
 	"sync/atomic"
 )
 
 type storeData struct {
-	lock *sync.RWMutex
 	bdr BlockDataer
 	cnt uint32
 }
@@ -18,7 +16,7 @@ type StoreDataer interface {
 	GetReferCnt() uint32
 }
 
-func NewStoreData(bdr BlockDataer)StoreDataer  {
+func NewStoreData(bdr BlockDataer)StoreDataer {
 	return &storeData{bdr:bdr}
 }
 
@@ -33,3 +31,4 @@ func (sd *storeData)ReferCntDec()  {
 func (sd *storeData)GetReferCnt() uint32  {
 	return sd.cnt
 }
+
