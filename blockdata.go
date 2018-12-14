@@ -22,6 +22,7 @@ type BlockData struct {
 	maxcache uint32
 	curNum uint32
 	totalRetryCnt uint32
+	chResult chan interface{}
 	rwlock sync.RWMutex
 	sndData map[uint32]uint32
 }
@@ -29,7 +30,7 @@ type BlockData struct {
 
 
 type BlockDataer interface {
-
+	Send() error
 }
 
 var gSerialNo uint64 = UDP_SERIAL_MAGIC_NUM
@@ -57,12 +58,14 @@ func (bd *BlockData)Send() error {
 	}
 
 
-
 	for {
 		if bd.notArrivedLen < bd.maxcache {
 			buf := make([]byte,bd.mtu)
 			n,err := bd.r.Read(buf)
 			if n > 0 {
+				bd.w.Write(buf[:n])
+			}
+			if err==nil || err == io.EOF {
 
 			}
 		}
