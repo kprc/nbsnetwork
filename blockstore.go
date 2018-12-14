@@ -2,25 +2,18 @@ package nbsnetwork
 
 import (
 	"sync"
-	"sync/atomic"
 )
 
-
-type storeData struct {
-	lock *sync.RWMutex
-	bdr BlockDataer
-	cnt uint32
-}
 
 
 type bstore struct {
 	glock *sync.RWMutex
-	sd map[uint64]storeData
+	sd map[uint64]StoreDataer
 }
 
 type BStorer interface {
-	AddBlockDataer(sn uint64,bdr BlockDataer)
-	GetBlockDataer(sn uint64) BlockDataer
+	AddBlockDataer(sn uint64,sdr StoreDataer)
+	GetBlockDataer(sn uint64) StoreDataer
 	PutBlockDataer(sn uint64)
 }
 
@@ -36,18 +29,19 @@ func GetInstance() BStorer {
 		return instance
 	}else {
 		initlock.Lock()
+		defer initlock.Unlock()
 		if instance != nil{
 			return instance
 		}
-		instance = &bstore{sd:make(map[uint64]storeData),
+		instance = &bstore{sd:make(map[uint64]StoreDataer),
 							glock:&sync.RWMutex{}}
-		initlock.Unlock()
+
 	}
 
 	return instance
 }
 
-func (bs *bstore)AddBlockDataer(sn uint64,bdr BlockDataer)  {
+func (bs *bstore)AddBlockDataer(sn uint64,bdr StoreDataer)  {
 	bs.glock.Lock()
 	defer bs.glock.Unlock()
 
@@ -61,11 +55,11 @@ func (bs *bstore)AddBlockDataer(sn uint64,bdr BlockDataer)  {
 
 }
 
-func (bs *bstore)GetBlockDataer(sn uint64) BlockDataer{
+func (bs *bstore)GetBlockDataer(sn uint64) StoreDataer{
 	bs.glock.RLock()
 	defer bs.glock.RUnlock()
 	if v,ok:=bs.sd[sn];ok {
-		atomic.AddUint32(&v.cnt,1)
+		v.ReferCntInc()
 		return v
 	}
 
@@ -75,8 +69,8 @@ func (bs *bstore)PutBlockDataer(sn uint64){
 	bs.glock.Lock()
 	defer bs.glock.Unlock()
 	if v,ok :=bs.sd[sn];ok {
-		atomic.AddUint32(&v.cnt,-1)
-		if v.cnt<=0 {
+		v.ReferCntDec()
+		if v.GetReferCnt()<=0 {
 			delete(bs.sd,sn)
 		}
 	}
