@@ -60,11 +60,11 @@ func (bd *BlockData)Send() error {
 
 	for {
 		buf := make([]byte,bd.mtu)
+
 		n,err := bd.r.Read(buf)
-		if n > 0 {
+		if n > 0 && err==nil {
 
 		}
-
 		//select {
 		//case
 		//}

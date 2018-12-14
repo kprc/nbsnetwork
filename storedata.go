@@ -6,14 +6,14 @@ import (
 
 type storeData struct {
 	bdr BlockDataer
-	cnt uint32
+	cnt int32
 }
 
 
 type StoreDataer interface {
 	ReferCntInc()
 	ReferCntDec()
-	GetReferCnt() uint32
+	GetReferCnt() int32
 }
 
 func NewStoreData(bdr BlockDataer)StoreDataer {
@@ -21,14 +21,14 @@ func NewStoreData(bdr BlockDataer)StoreDataer {
 }
 
 func (sd *storeData)ReferCntInc()  {
-	atomic.AddUint32(&sd.cnt,1)
+	atomic.AddInt32(&sd.cnt,1)
 }
 
 func (sd *storeData)ReferCntDec()  {
-	atomic.AddUint32(&sd.cnt,-1)
+	atomic.AddInt32(&sd.cnt,-1)
 }
 
-func (sd *storeData)GetReferCnt() uint32  {
+func (sd *storeData)GetReferCnt() int32  {
 	return sd.cnt
 }
 

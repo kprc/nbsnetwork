@@ -2,8 +2,8 @@ package nbsnetwork
 
 import (
 	"github.com/kprc/nbsdht/nbserr"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 var udpparseerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_PARSE,Errmsg:"Parse ip4 address fault"}
@@ -84,6 +84,7 @@ func (uaddr *udpAddress)Next() (addr []byte,port uint16){
 	if len(uaddr.addrs) > uaddr.pos{
 		addr = uaddr.addrs[uaddr.pos].addr
 		port = uaddr.addrs[uaddr.pos].port
+		uaddr.pos ++
 
 		return
 	}
@@ -110,6 +111,8 @@ func (uaddr *udpAddress)NextS() (saddr string,port uint16){
 	if len(uaddr.addrs) > uaddr.pos{
 		addr := uaddr.addrs[uaddr.pos].addr
 		port = uaddr.addrs[uaddr.pos].port
+
+		uaddr.pos ++
 
 		var err error
 
@@ -170,7 +173,8 @@ func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
 		if err != nil || n > 255 || n < 0 {
 			return udpparseerr
 		}
-		baddr.addr = append(baddr.addr,)
+
+		baddr.addr = append(baddr.addr,byte(n))
 	}
 
 	baddr.port = port
@@ -180,6 +184,9 @@ func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
 	return nil
 
 }
+
+
+
 //not support in this version
 //func (uaddr *udpAddress)Add6(ipstr string, port uint16)  {
 //

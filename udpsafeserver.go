@@ -30,6 +30,6 @@ func (us *udpServer)Run()  {
 
 
 
-	c ,err := net.ListenUDP("udp4",&net.UDPAddr{
-	})
+	//c ,err := net.ListenUDP("udp4",&net.UDPAddr{
+	//})
 }
