@@ -6,6 +6,7 @@ import (
 	"time"
 	"sync"
 	"github.com/kprc/nbsdht/nbserr"
+	"fmt"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_READER_ERR,Errmsg:"Reader is nil or Writer is nil"}
@@ -70,6 +71,9 @@ func (bd *BlockData)Send() error {
 			upr.SetTotalCnt(0)
 			upr.SetPos(i)
 			i++
+		}
+		if err==nil {
+			fmt.Println("test")
 		}
 		//select {
 		//case
