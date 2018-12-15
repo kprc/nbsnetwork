@@ -11,11 +11,13 @@ var ipreadableerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_TOSTRING_ERR,Errmsg:"byt
 
 type UdpAddresser interface {
 	AddIP4(ipstr string, port uint16) error
+	DelIP4(ipstr string,port uint16)
 	Iterator()
 	Next() (addr []byte,port uint16)
 	First()(addr []byte,port uint16)
 	NextS() (saddr string,port uint16)
 	FirstS()(saddr string,port uint16)
+	Clone() UdpAddresser
 }
 
 
@@ -46,6 +48,10 @@ func NewUdpAddressP(addr []byte, port uint16) UdpAddresser  {
 	addrs.append(address{ip6type:IP_TYPE_IP4,addr:addr,port:port})
 
 	return &addrs
+}
+
+func (ua *udpAddress)DelIP4(ipstr string,port uint16)  {
+
 }
 
 func NewUdpAddressS(ipstr string, port uint16) (error,UdpAddresser)  {
@@ -183,6 +189,14 @@ func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
 
 	return nil
 
+}
+
+func (uaddr *udpAddress)Clone() UdpAddresser{
+	ua := &udpAddress{addrs:make([]address,0)}
+
+	for i:=0;i<len(uaddr.addrs); i++{
+		
+	}
 }
 
 
