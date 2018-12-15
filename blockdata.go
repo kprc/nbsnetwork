@@ -60,6 +60,7 @@ func (bd *BlockData)Send() error {
 
 	for {
 		buf := make([]byte,bd.mtu)
+
 		n,err := bd.r.Read(buf)
 		if n > 0 {
 			upr := NewUdpPacketData(bd.serialNo,DATA_TRANSER)
@@ -69,9 +70,7 @@ func (bd *BlockData)Send() error {
 			upr.SetTotalCnt(0)
 			upr.SetPos(i)
 			i++
-
 		}
-
 		//select {
 		//case
 		//}
