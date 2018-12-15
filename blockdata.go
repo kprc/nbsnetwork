@@ -13,7 +13,7 @@ var blocksndmtuerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_MTU_ERR,Errmsg:"mtu is 0
 
 type BlockData struct {
 	timeout uint32   //second
-	r io.ReadSeeker
+	r io.Reader
 	w io.Writer
 	serialNo uint64
 	unixSec int64
@@ -23,7 +23,7 @@ type BlockData struct {
 	curNum uint32
 	totalRetryCnt uint32
 	rwlock sync.RWMutex
-	sndData map[uint32]uint32
+	sndData map[uint32]UdpPacketDataer
 }
 
 
@@ -38,7 +38,7 @@ func (uh *BlockData)nextSerialNo() {
 	uh.serialNo = atomic.AddUint64(&gSerialNo,1)
 }
 
-func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
+func NewBlockData(r io.Reader,mtu uint32) BlockDataer {
 	uh := &BlockData{r:r,mtu:mtu}
 	uh.nextSerialNo()
 	uh.unixSec = time.Now().Unix()
@@ -56,12 +56,19 @@ func (bd *BlockData)Send() error {
 		return blocksndmtuerr
 	}
 
-
+	var i uint32 = 0;
 
 	for {
 		buf := make([]byte,bd.mtu)
 		n,err := bd.r.Read(buf)
 		if n > 0 {
+			upr := NewUdpPacketData(bd.serialNo,DATA_TRANSER)
+			upr.SetData(buf[:n])
+			upr.SetDataTranser()
+			upr.SetTryCnt(0)
+			upr.SetTotalCnt(0)
+			upr.SetPos(i)
+			i++
 
 		}
 
