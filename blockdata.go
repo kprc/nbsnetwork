@@ -30,7 +30,7 @@ type BlockData struct {
 
 
 type BlockDataer interface {
-
+	Send() error
 }
 
 var gSerialNo uint64 = UDP_SERIAL_MAGIC_NUM
@@ -71,9 +71,24 @@ func (bd *BlockData)Send() error {
 			upr.SetTotalCnt(0)
 			upr.SetPos(i)
 			i++
+			bd.rwlock.Lock()
+			bd.sndData[i]=upr
+			bd.rwlock.Unlock()
+
+			if bupr,err := upr.Serialize();err==nil {
+				bd.w.Write(bupr)
+			}else {
+				//fatal error
+			}
+
 		}
 		if err==nil {
 			fmt.Println("test")
+		}
+		if err == io.EOF {
+			fmt.Println("eof")
+		}else if err!=nil {
+			fmt.Println("read error")
 		}
 		//select {
 		//case
