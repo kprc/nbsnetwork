@@ -6,6 +6,7 @@ import (
 	"time"
 	"sync"
 	"github.com/kprc/nbsdht/nbserr"
+	"fmt"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_READER_ERR,Errmsg:"Reader is nil or Writer is nil"}
@@ -13,7 +14,7 @@ var blocksndmtuerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_MTU_ERR,Errmsg:"mtu is 0
 
 type BlockData struct {
 	timeout uint32   //second
-	r io.ReadSeeker
+	r io.Reader
 	w io.Writer
 	serialNo uint64
 	unixSec int64
@@ -24,7 +25,7 @@ type BlockData struct {
 	totalRetryCnt uint32
 	chResult chan interface{}
 	rwlock sync.RWMutex
-	sndData map[uint32]uint32
+	sndData map[uint32]UdpPacketDataer
 }
 
 
@@ -39,7 +40,7 @@ func (uh *BlockData)nextSerialNo() {
 	uh.serialNo = atomic.AddUint64(&gSerialNo,1)
 }
 
-func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
+func NewBlockData(r io.Reader,mtu uint32) BlockDataer {
 	uh := &BlockData{r:r,mtu:mtu}
 	uh.nextSerialNo()
 	uh.unixSec = time.Now().Unix()
@@ -57,19 +58,39 @@ func (bd *BlockData)Send() error {
 		return blocksndmtuerr
 	}
 
+	var i uint32 = 0;
 
 	for {
-		if bd.notArrivedLen < bd.maxcache {
-			buf := make([]byte,bd.mtu)
-			n,err := bd.r.Read(buf)
-			if n > 0 {
-				bd.w.Write(buf[:n])
-			}
-			if err==nil || err == io.EOF {
+		buf := make([]byte,bd.mtu)
 
+		n,err := bd.r.Read(buf)
+		if n > 0 {
+			upr := NewUdpPacketData(bd.serialNo,DATA_TRANSER)
+			upr.SetData(buf[:n])
+			upr.SetDataTranser()
+			upr.SetTryCnt(0)
+			upr.SetTotalCnt(0)
+			upr.SetPos(i)
+			i++
+			bd.rwlock.Lock()
+			bd.sndData[i]=upr
+			bd.rwlock.Unlock()
+
+			if bupr,err := upr.Serialize();err==nil {
+				bd.w.Write(bupr)
+			}else {
+				//fatal error
 			}
+
 		}
-
+		if err==nil {
+			fmt.Println("test")
+		}
+		if err == io.EOF {
+			fmt.Println("eof")
+		}else if err!=nil {
+			fmt.Println("read error")
+		}
 		//select {
 		//case
 		//}
