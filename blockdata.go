@@ -6,7 +6,6 @@ import (
 	"time"
 	"sync"
 	"github.com/kprc/nbsdht/nbserr"
-	"fmt"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send error"}
@@ -16,16 +15,18 @@ var blocksndwriterioerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_WRITER_IO_ERR,Errms
 
 
 type BlockData struct {
-	timeout uint32   //second
-	r io.Reader
+	r io.ReadSeeker
 	w io.Writer
 	serialNo uint64
 	unixSec int64
 	mtu   uint32
-	notArrivedLen uint32
+	noacklen uint32       //
+	totalreadlen uint32   //for seek
 	maxcache uint32
 	curNum uint32
+	totalCnt uint32
 	totalRetryCnt uint32
+	dataType uint16
 	chResult chan interface{}
 	rwlock sync.RWMutex
 	sndData map[uint32]UdpPacketDataer
@@ -43,7 +44,7 @@ func (uh *BlockData)nextSerialNo() {
 	uh.serialNo = atomic.AddUint64(&gSerialNo,1)
 }
 
-func NewBlockData(r io.Reader,mtu uint32) BlockDataer {
+func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh := &BlockData{r:r,mtu:mtu}
 	uh.nextSerialNo()
 	uh.unixSec = time.Now().Unix()
@@ -52,7 +53,52 @@ func NewBlockData(r io.Reader,mtu uint32) BlockDataer {
 	return uh
 }
 
+func (bd *BlockData)read(round uint32) (int,error){
+	buf := make([]byte,bd.mtu)
+
+	n,err := bd.r.Read(buf)
+	if n > 0 {
+		upr := NewUdpPacketData(bd.serialNo,bd.dataType)
+		upr.SetData(buf[:n])
+
+		upr.SetTotalCnt(0)
+		upr.SetPos(round)
+		upr.SetLength(uint32(n))
+		atomic.AddUint32(&bd.totalreadlen,uint32(n))
+
+		if err==io.EOF {
+			upr.SetTotalCnt(round+1)
+		}
+		bupr,_ := upr.Serialize()
+		nw,err := bd.w.Write(bupr)
+
+		atomic.AddUint32(&bd.totalCnt,1)
+
+		if n!=nw ||  err!=nil{
+			//need resend
+			bd.enqueue(round,upr)
+			return 0,blocksndwriterioerr
+		}
+		atomic.AddUint32(&bd.noacklen,uint32(n))
+
+		upr.SetTryCnt(1)
+		atomic.AddUint32(&bd.totalRetryCnt,1)
+		bd.enqueue(round,upr)
+	}
+
+	if err == io.EOF {
+		return 1,nil
+	}else if err!=nil {
+		return 0,blocksndreaderioerr
+	}
+
+	return 0,nil
+}
+
 func (bd *BlockData)Send() error {
+
+	ret := 0
+
 	if bd.r == nil || bd.w == nil{
 		return blocksnderr
 	}
@@ -61,38 +107,22 @@ func (bd *BlockData)Send() error {
 		return blocksndmtuerr
 	}
 
-	var i uint32 = 0
+	if bd.totalreadlen > 0 {
+		if _, err := bd.r.Seek(int64(bd.totalreadlen), io.SeekStart); err != nil {
+			return blocksndreaderioerr
+		}
+	}
+
+	var round uint32 = 0
 
 	for {
-		buf := make([]byte,bd.mtu)
-
-		n,err := bd.r.Read(buf)
-		if n > 0 {
-			upr := NewUdpPacketData(bd.serialNo,DATA_TRANSER)
-			upr.SetData(buf[:n])
-			upr.SetDataTranser()
-			upr.SetTryCnt(0)
-			upr.SetTotalCnt(0)
-			upr.SetPos(i)
-			i++
-			bd.rwlock.Lock()
-			bd.sndData[i]=upr
-			bd.rwlock.Unlock()
-
-			if bupr,_ := upr.Serialize();err==nil {
-				bd.w.Write(bupr)
-			}else {
-				//fatal error
+		if ret == 0  || atomic.LoadUint32(&bd.noacklen) < bd.maxcache{
+			if r,err := bd.read(round); err==nil{
+				round++
+				ret = r
+			}else if err!=nil{
+				return err
 			}
-
-		}
-		if err==nil {
-			fmt.Println("test")
-		}
-		if err == io.EOF {
-			fmt.Println("eof")
-		}else if err!=nil {
-			fmt.Println("read error")
 		}
 		//select {
 		//case
@@ -101,4 +131,10 @@ func (bd *BlockData)Send() error {
 
 	return nil
 
+}
+
+func (bd *BlockData)enqueue(pos uint32, data UdpPacketDataer)  {
+	bd.rwlock.Lock()
+	defer bd.rwlock.Unlock()
+	bd.sndData[pos] = data
 }

@@ -22,6 +22,9 @@ type UdpPacketDataer interface {
 	GetSerialNo() uint64
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
+	SetTyp(typ uint16)
+	GetLength() uint32
+	SetLength(len uint32)
 }
 
 
@@ -32,7 +35,7 @@ type UDPPacketData struct {
 	dataTyp uint16     //data type, for transfer priority
 	tryCnt  uint8      //try transfer times
 	pad8    uint8
-	pad32   uint32
+	len   uint32
 	data  []byte
 }
 
@@ -76,6 +79,7 @@ func (uh *UDPPacketData)Serialize() ([]byte,error)  {
 	p.DataType = uint32(uh.dataTyp)
 	p.TryCnt = uint32(uh.tryCnt)
 	p.Data = uh.data
+	p.Len = uh.len
 
 	return proto.Marshal(&p)
 }
@@ -90,6 +94,7 @@ func (uh *UDPPacketData)DeSerialize(data []byte) error {
 		uh.dataTyp = uint16(p.DataType)
 		uh.tryCnt = uint8(p.TryCnt)
 		uh.data = p.Data
+		uh.len = p.Len
 	}
 
 	return err
@@ -120,7 +125,7 @@ func (uh *UDPPacketData)SetTryCnt(cnt uint8)  {
 	uh.tryCnt = cnt
 }
 
-func (uh *UDPPacketData)setTyp(typ uint16)  {
+func (uh *UDPPacketData)SetTyp(typ uint16)  {
 	uh.dataTyp = typ
 }
 
@@ -129,15 +134,15 @@ func (uh *UDPPacketData)GetTyp() uint16  {
 }
 
 func (uh *UDPPacketData)SetPing()  {
-	uh.setTyp(PING)
+	uh.SetTyp(PING)
 }
 
 func (uh *UDPPacketData)SetACK()  {
-	uh.setTyp(ACK)
+	uh.SetTyp(ACK)
 }
 
 func (uh *UDPPacketData)SetDataTranser()  {
-	uh.setTyp(DATA_TRANSER)
+	uh.SetTyp(DATA_TRANSER)
 }
 
 func (uh *UDPPacketData)SetData(data []byte)  {
@@ -150,4 +155,12 @@ func (uh *UDPPacketData)GetData() []byte  {
 
 func (uh *UDPPacketData)GetSerialNo() uint64  {
 	return uh.serialNo
+}
+
+func (uh *UDPPacketData)GetLength() uint32  {
+	return  uh.len
+}
+
+func (uh *UDPPacketData)SetLength(len uint32){
+	uh.len = len
 }

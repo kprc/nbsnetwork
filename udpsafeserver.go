@@ -28,7 +28,12 @@ type UdpServerer interface {
 
 func (us *udpServer)Run()  {
 
+	//var x *net.TCPConn
+	//
+	//x.Write()
 
+	var xx *net.UDPConn
+	xx.Write()
 
 	//c ,err := net.ListenUDP("udp4",&net.UDPAddr{
 	//})
