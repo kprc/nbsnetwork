@@ -30,7 +30,7 @@ type UDPPacketData struct {
 	totalCnt uint32    //last packet will be set,other packet will be set to 0
 	posNum uint32      //current packet serial number
 	dataTyp uint16     //data type, for transfer priority
-	tryCnt  uint8      //retry transfer times
+	tryCnt  uint8      //try transfer times
 	pad8    uint8
 	pad32   uint32
 	data  []byte

@@ -9,8 +9,11 @@ import (
 	"fmt"
 )
 
-var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_READER_ERR,Errmsg:"Reader is nil or Writer is nil"}
+var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send error"}
 var blocksndmtuerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_MTU_ERR,Errmsg:"mtu is 0"}
+var blocksndreaderioerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_READER_IO_ERR,Errmsg:"Reader io error"}
+var blocksndwriterioerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_WRITER_IO_ERR,Errmsg:"Writer io error"}
+
 
 type BlockData struct {
 	timeout uint32   //second
@@ -58,7 +61,7 @@ func (bd *BlockData)Send() error {
 		return blocksndmtuerr
 	}
 
-	var i uint32 = 0;
+	var i uint32 = 0
 
 	for {
 		buf := make([]byte,bd.mtu)
@@ -76,7 +79,7 @@ func (bd *BlockData)Send() error {
 			bd.sndData[i]=upr
 			bd.rwlock.Unlock()
 
-			if bupr,err := upr.Serialize();err==nil {
+			if bupr,_ := upr.Serialize();err==nil {
 				bd.w.Write(bupr)
 			}else {
 				//fatal error
