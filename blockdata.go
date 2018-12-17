@@ -165,16 +165,34 @@ func (bd *BlockData)Send() error {
 
 }
 
-func (bd *BlockData)doresult(result interface{})  {
+func (bd *BlockData)doresult(result interface{}) error {
 	switch v:=result.(type) {
 	case udpresult:
+		bd.rwlock.RLock()
 		for _,id:=range v.resend{
-			//to resend
+			if upr,ok:=bd.sndData[id];ok {
+				bupr,_ := upr.Serialize()
+				nw,err := bd.w.Write(bupr)
+
+				if len(bupr)!=nw ||  err!=nil{
+					//need resend
+
+					return blocksndwriterioerr
+				}
+				atomic.AddUint32(&bd.noacklen,uint32(upr.GetLength()))
+
+				upr.SetTryCnt(1)
+				atomic.AddUint32(&bd.totalRetryCnt,1)
+			}
 		}
+		bd.rwlock.Unlock()
+		bd.rwlock.Lock()
 		for _,id:=range v.rcved{
-			//delete
+			delete(bd.sndData,id)
 		}
+		bd.rwlock.Unlock()
 	}
+	return nil
 }
 
 func (bd *BlockData)enqueue(pos uint32, data UdpPacketDataer)  {
