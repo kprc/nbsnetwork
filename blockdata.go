@@ -53,7 +53,7 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	return uh
 }
 
-func (bd *BlockData)read(round uint32) (int,error){
+func (bd *BlockData)send(round uint32) (int,error){
 	buf := make([]byte,bd.mtu)
 
 	n,err := bd.r.Read(buf)
@@ -95,6 +95,34 @@ func (bd *BlockData)read(round uint32) (int,error){
 	return 0,nil
 }
 
+func (bd *BlockData)nonesend() (uint32,error) {
+
+	var round uint32
+	bd.rwlock.RLock()
+	defer bd.rwlock.Unlock()
+
+	for _,upr := range bd.sndData{
+		bupr,_ := upr.Serialize()
+		nw,err := bd.w.Write(bupr)
+		if round < upr.GetPos() {
+			round = upr.GetPos()
+		}
+		atomic.AddUint32(&bd.totalCnt,1)
+
+		if len(bupr)!=nw ||  err!=nil{
+			//need resend
+
+			return 0,blocksndwriterioerr
+		}
+		atomic.AddUint32(&bd.noacklen,uint32(upr.GetLength()))
+
+		upr.SetTryCnt(1)
+		atomic.AddUint32(&bd.totalRetryCnt,1)
+	}
+
+	return round,nil
+}
+
 func (bd *BlockData)Send() error {
 
 	ret := 0
@@ -107,30 +135,46 @@ func (bd *BlockData)Send() error {
 		return blocksndmtuerr
 	}
 
+	round,err := bd.nonesend()
+	if err != nil{
+		return err
+	}
+
 	if bd.totalreadlen > 0 {
 		if _, err := bd.r.Seek(int64(bd.totalreadlen), io.SeekStart); err != nil {
 			return blocksndreaderioerr
 		}
 	}
 
-	var round uint32 = 0
-
 	for {
 		if ret == 0  || atomic.LoadUint32(&bd.noacklen) < bd.maxcache{
-			if r,err := bd.read(round); err==nil{
+			if r,err := bd.send(round); err==nil{
 				round++
 				ret = r
 			}else if err!=nil{
 				return err
 			}
 		}
-		//select {
-		//case
-		//}
+		select {
+		case result := <- bd.chResult:
+			bd.doresult(result)
+		}
 	}
 
 	return nil
 
+}
+
+func (bd *BlockData)doresult(result interface{})  {
+	switch v:=result.(type) {
+	case udpresult:
+		for _,id:=range v.resend{
+			//to resend
+		}
+		for _,id:=range v.rcved{
+			//delete
+		}
+	}
 }
 
 func (bd *BlockData)enqueue(pos uint32, data UdpPacketDataer)  {
