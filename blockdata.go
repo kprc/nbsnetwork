@@ -20,7 +20,7 @@ type BlockData struct {
 	serialNo uint64
 	unixSec int64
 	mtu   uint32
-	noacklen uint32       //
+	noacklen int32       //
 	totalreadlen uint32   //for seek
 	maxcache uint32
 	curNum uint32
@@ -31,8 +31,6 @@ type BlockData struct {
 	rwlock sync.RWMutex
 	sndData map[uint32]UdpPacketDataer
 }
-
-
 
 type BlockDataer interface {
 	Send() error
@@ -63,7 +61,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 
 		upr.SetTotalCnt(0)
 		upr.SetPos(round)
-		upr.SetLength(uint32(n))
+		upr.SetLength(int32(n))
 		atomic.AddUint32(&bd.totalreadlen,uint32(n))
 
 		if err==io.EOF {
@@ -79,7 +77,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 			bd.enqueue(round,upr)
 			return 0,blocksndwriterioerr
 		}
-		atomic.AddUint32(&bd.noacklen,uint32(n))
+		atomic.AddInt32(&bd.noacklen,int32(n))
 
 		upr.SetTryCnt(1)
 		atomic.AddUint32(&bd.totalRetryCnt,1)
@@ -114,8 +112,9 @@ func (bd *BlockData)nonesend() (uint32,error) {
 
 			return 0,blocksndwriterioerr
 		}
-		atomic.AddUint32(&bd.noacklen,uint32(upr.GetLength()))
+		//atomic.AddUint32(&bd.noacklen,uint32(upr.GetLength()))
 
+		atomic.AddInt32(&bd.noacklen,upr.GetLength())
 		upr.SetTryCnt(1)
 		atomic.AddUint32(&bd.totalRetryCnt,1)
 	}
@@ -147,7 +146,7 @@ func (bd *BlockData)Send() error {
 	}
 
 	for {
-		if ret == 0  || atomic.LoadUint32(&bd.noacklen) < bd.maxcache{
+		if ret == 0  || atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
 			if r,err := bd.send(round); err==nil{
 				round++
 				ret = r
@@ -159,13 +158,23 @@ func (bd *BlockData)Send() error {
 		case result := <- bd.chResult:
 			bd.doresult(result)
 		}
+		if ret == 1 {
+			bd.rwlock.RLock()
+			if len(bd.sndData)==0 {
+				bd.rwlock.Unlock()
+				return nil
+			}
+			bd.rwlock.Unlock()
+		}
 	}
 
 	return nil
 
 }
 
+
 func (bd *BlockData)doresult(result interface{}) error {
+
 	switch v:=result.(type) {
 	case udpresult:
 		bd.rwlock.RLock()
@@ -176,22 +185,26 @@ func (bd *BlockData)doresult(result interface{}) error {
 
 				if len(bupr)!=nw ||  err!=nil{
 					//need resend
-
+					bd.rwlock.Unlock()
 					return blocksndwriterioerr
 				}
-				atomic.AddUint32(&bd.noacklen,uint32(upr.GetLength()))
+				atomic.AddInt32(&bd.noacklen,int32(upr.GetLength()))
 
-				upr.SetTryCnt(1)
+				upr.SetTryCnt(upr.GetTryCnt()+1)
 				atomic.AddUint32(&bd.totalRetryCnt,1)
 			}
 		}
 		bd.rwlock.Unlock()
 		bd.rwlock.Lock()
-		for _,id:=range v.rcved{
-			delete(bd.sndData,id)
+		if v.rcved >0 {}
+		    if upr,ok:=bd.sndData[v.rcved];ok{
+		    	atomic.AddInt32(&bd.noacklen,upr.GetLength()*(-1))
+			}
+			delete(bd.sndData,v.rcved)
 		}
+
 		bd.rwlock.Unlock()
-	}
+
 	return nil
 }
 

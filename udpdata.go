@@ -23,8 +23,8 @@ type UdpPacketDataer interface {
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
 	SetTyp(typ uint16)
-	GetLength() uint32
-	SetLength(len uint32)
+	GetLength() int32
+	SetLength(len int32)
 }
 
 
@@ -35,7 +35,7 @@ type UDPPacketData struct {
 	dataTyp uint16     //data type, for transfer priority
 	tryCnt  uint8      //try transfer times
 	pad8    uint8
-	len   uint32
+	len   int32
 	data  []byte
 }
 
@@ -125,6 +125,7 @@ func (uh *UDPPacketData)SetTryCnt(cnt uint8)  {
 	uh.tryCnt = cnt
 }
 
+
 func (uh *UDPPacketData)SetTyp(typ uint16)  {
 	uh.dataTyp = typ
 }
@@ -157,10 +158,10 @@ func (uh *UDPPacketData)GetSerialNo() uint64  {
 	return uh.serialNo
 }
 
-func (uh *UDPPacketData)GetLength() uint32  {
+func (uh *UDPPacketData)GetLength() int32  {
 	return  uh.len
 }
 
-func (uh *UDPPacketData)SetLength(len uint32){
+func (uh *UDPPacketData)SetLength(len int32){
 	uh.len = len
 }

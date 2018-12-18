@@ -9,7 +9,7 @@ message UDPPacketData{
     uint32 posNum = 2;
     uint32 dataType = 3;
     uint32 tryCnt = 17;
-    uint32 len = 4;
+    int32 len = 4;
     bytes data = 5;
 }
 
