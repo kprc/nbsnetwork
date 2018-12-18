@@ -1,5 +1,10 @@
 package packet
 
+import (
+	"github.com/kprc/nbsnetwork/pb"
+	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/gogo/protobuf/proto"
+)
 
 type udpack struct {
 	resend []uint32
@@ -12,8 +17,8 @@ type udpresult struct {
 }
 
 type UdpAcker interface {
-	AppendResend(id...uint32)
-	SetRcved(ids uint32)
+	AppendResend(ids...uint32)
+	SetRcved(id uint32)
 	GetReSend() []uint32
 	GetRcved() uint32
 }
@@ -21,8 +26,8 @@ type UdpAcker interface {
 type UdpResulter interface {
 	SetSerialNo(sn uint64)
 	GetSerialNo() uint64
-	Serialize() []byte
-	DeSerialize([]byte)
+	Serialize() ([]byte,error)
+	DeSerialize(buf []byte) error
 	UdpAcker
 }
 
@@ -41,12 +46,28 @@ func (ur *udpresult) GetSerialNo() uint64 {
 	return ur.serialNo
 }
 
-func (ur *udpresult)Serialize() []byte  {
+func (ur *udpresult)Serialize() ([]byte,error)  {
+	ua:=&packet.UdpAck{}
+	ua.SerialNo = ur.serialNo
+	ua.DataType = constant.DATA_TRANSER   //need to implement
+	ua.Ack = ur.rcved
+	ua.Resend = ur.resend
 
+	return proto.Marshal(ua)
 }
 
-func (ur *udpresult)DeSerialize([]byte) {
+func (ur *udpresult)DeSerialize(buf []byte) error{
+	ua:=&packet.UdpAck{}
 
+	err:=proto.Unmarshal(buf,ua)
+
+	if err==nil {
+		ur.resend = ua.Resend
+		ur.rcved = ua.Ack
+		ur.serialNo = ua.SerialNo
+	}
+
+	return err
 }
 
 func (ua *udpack) AppendResend(ids...uint32) {
