@@ -14,9 +14,10 @@ var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send er
 var blocksndmtuerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_MTU_ERR,Errmsg:"mtu is 0"}
 var blocksndreaderioerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_READER_IO_ERR,Errmsg:"Reader io error"}
 var blocksndwriterioerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_WRITER_IO_ERR,Errmsg:"Writer io error"}
-
+var blocksndtimeout = nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"send timeout"}
 
 type BlockData struct {
+	timeout int32
 	r io.ReadSeeker
 	w io.Writer
 	serialNo uint64
@@ -48,8 +49,9 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh := &BlockData{r:r,mtu:mtu}
 	uh.nextSerialNo()
 	uh.unixSec = time.Now().Unix()
-	uh.mtu = constant.UDP_MTU
+	//uh.mtu = constant.UDP_MTU
 	uh.maxcache = constant.UDP_MAX_CACHE
+	uh.timeout = constant.UDP_SEND_TIMEOUT
 	return uh
 }
 
@@ -127,6 +129,7 @@ func (bd *BlockData)nonesend() (uint32,error) {
 func (bd *BlockData)Send() error {
 
 	ret := 0
+	curtime := time.Now().Unix()
 
 	if bd.r == nil || bd.w == nil{
 		return blocksnderr
@@ -148,6 +151,9 @@ func (bd *BlockData)Send() error {
 	}
 
 	for {
+		if time.Now().Unix() - curtime > int64(bd.timeout) {
+			return blocksndtimeout
+		}
 		if ret == 0  || atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
 			if r,err := bd.send(round); err==nil{
 				round++
@@ -168,6 +174,8 @@ func (bd *BlockData)Send() error {
 			}
 			bd.rwlock.Unlock()
 		}
+
+
 	}
 
 	return nil
