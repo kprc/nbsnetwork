@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package packet;
+
+
+message UdpAck{
+    uint64 serialNo = 1;
+    uint32 dataType = 2;
+    uint32 ack=3;
+    repeated uint32 resend=4;
+}

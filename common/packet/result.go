@@ -21,6 +21,8 @@ type UdpAcker interface {
 type UdpResulter interface {
 	SetSerialNo(sn uint64)
 	GetSerialNo() uint64
+	Serialize() []byte
+	DeSerialize([]byte)
 	UdpAcker
 }
 
@@ -37,6 +39,14 @@ func (ur *udpresult) SetSerialNo(sn uint64) {
 
 func (ur *udpresult) GetSerialNo() uint64 {
 	return ur.serialNo
+}
+
+func (ur *udpresult)Serialize() []byte  {
+
+}
+
+func (ur *udpresult)DeSerialize([]byte) {
+
 }
 
 func (ua *udpack) AppendResend(ids...uint32) {
@@ -60,4 +70,6 @@ func (ua *udpack) GetReSend() []uint32 {
 func (ua *udpack) GetRcved() uint32 {
 	return ua.rcved
 }
+
+
 
