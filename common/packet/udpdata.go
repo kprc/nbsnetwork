@@ -1,9 +1,10 @@
-package nbsnetwork
+package packet
 
 import (
 	"sync/atomic"
 	"github.com/kprc/nbsnetwork/pb"
 	"github.com/gogo/protobuf/proto"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 
@@ -135,15 +136,15 @@ func (uh *UDPPacketData)GetTyp() uint16  {
 }
 
 func (uh *UDPPacketData)SetPing()  {
-	uh.SetTyp(PING)
+	uh.SetTyp(constant.PING)
 }
 
 func (uh *UDPPacketData)SetACK()  {
-	uh.SetTyp(ACK)
+	uh.SetTyp(constant.ACK)
 }
 
 func (uh *UDPPacketData)SetDataTranser()  {
-	uh.SetTyp(DATA_TRANSER)
+	uh.SetTyp(constant.DATA_TRANSER)
 }
 
 func (uh *UDPPacketData)SetData(data []byte)  {

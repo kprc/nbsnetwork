@@ -1,4 +1,4 @@
-package nbsnetwork
+package constant
 
 const (
 	IP_TYPE_IP4 int = 0

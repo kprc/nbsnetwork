@@ -1,9 +1,10 @@
-package nbsnetwork
+package address
 
 import (
 	"github.com/kprc/nbsdht/nbserr"
 	"strconv"
 	"strings"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 var udpparseerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_PARSE,Errmsg:"Parse ip4 address fault"}
@@ -45,7 +46,7 @@ func NewUdpAddressP(addr []byte, port uint16) UdpAddresser  {
 
 	addrs.addrs = make([]address,1)
 
-	addrs.append(address{ip6type:IP_TYPE_IP4,addr:addr,port:port})
+	addrs.append(address{ip6type:constant.IP_TYPE_IP4,addr:addr,port:port})
 
 	return &addrs
 }
@@ -63,7 +64,7 @@ func NewUdpAddressS(ipstr string, port uint16) (error,UdpAddresser)  {
 		return udpparseerr,nil
 	}
 
-	baddr := address{ip6type:IP_TYPE_IP4}
+	baddr := address{ip6type:constant.IP_TYPE_IP4}
 
 	baddr.addr = make([]byte,0)
 
@@ -170,7 +171,7 @@ func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
 		return udpparseerr
 	}
 
-	baddr := address{ip6type:IP_TYPE_IP4}
+	baddr := address{ip6type:constant.IP_TYPE_IP4}
 
 	baddr.addr = make([]byte,0)
 
@@ -192,11 +193,13 @@ func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
 }
 
 func (uaddr *udpAddress)Clone() UdpAddresser{
-	ua := &udpAddress{addrs:make([]address,0)}
+	//ua := &udpAddress{addrs:make([]address,0)}
+	//
+	//for i:=0;i<len(uaddr.addrs); i++{
+	//
+	//}
 
-	for i:=0;i<len(uaddr.addrs); i++{
-		
-	}
+	return nil
 }
 
 

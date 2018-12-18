@@ -1,4 +1,4 @@
-package nbsnetwork
+package send
 
 import (
 	"io"
@@ -6,6 +6,8 @@ import (
 	"time"
 	"sync"
 	"github.com/kprc/nbsdht/nbserr"
+	"github.com/kprc/nbsnetwork/common/packet"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send error"}
@@ -29,14 +31,14 @@ type BlockData struct {
 	dataType uint16
 	chResult chan interface{}
 	rwlock sync.RWMutex
-	sndData map[uint32]UdpPacketDataer
+	sndData map[uint32]packet.UdpPacketDataer
 }
 
 type BlockDataer interface {
 	Send() error
 }
 
-var gSerialNo uint64 = UDP_SERIAL_MAGIC_NUM
+var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
 
 func (uh *BlockData)nextSerialNo() {
 	uh.serialNo = atomic.AddUint64(&gSerialNo,1)
@@ -46,8 +48,8 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh := &BlockData{r:r,mtu:mtu}
 	uh.nextSerialNo()
 	uh.unixSec = time.Now().Unix()
-	uh.mtu = UDP_MTU
-	uh.maxcache = UDP_MAX_CACHE
+	uh.mtu = constant.UDP_MTU
+	uh.maxcache = constant.UDP_MAX_CACHE
 	return uh
 }
 
@@ -56,7 +58,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 
 	n,err := bd.r.Read(buf)
 	if n > 0 {
-		upr := NewUdpPacketData(bd.serialNo,bd.dataType)
+		upr := packet.NewUdpPacketData(bd.serialNo,bd.dataType)
 		upr.SetData(buf[:n])
 
 		upr.SetTotalCnt(0)
@@ -176,9 +178,10 @@ func (bd *BlockData)Send() error {
 func (bd *BlockData)doresult(result interface{}) error {
 
 	switch v:=result.(type) {
-	case udpresult:
+	case packet.UdpResulter:
 		bd.rwlock.RLock()
-		for _,id:=range v.resend{
+	    resend := v.GetReSend()
+		for _,id:=range resend{
 			if upr,ok:=bd.sndData[id];ok {
 				bupr,_ := upr.Serialize()
 				nw,err := bd.w.Write(bupr)
@@ -196,11 +199,11 @@ func (bd *BlockData)doresult(result interface{}) error {
 		}
 		bd.rwlock.Unlock()
 		bd.rwlock.Lock()
-		if v.rcved >0 {}
-		    if upr,ok:=bd.sndData[v.rcved];ok{
+		if v.GetRcved() >0 {}
+		    if upr,ok:=bd.sndData[v.GetRcved()];ok{
 		    	atomic.AddInt32(&bd.noacklen,upr.GetLength()*(-1))
 			}
-			delete(bd.sndData,v.rcved)
+			delete(bd.sndData,v.GetRcved())
 		}
 
 		bd.rwlock.Unlock()
@@ -208,7 +211,7 @@ func (bd *BlockData)doresult(result interface{}) error {
 	return nil
 }
 
-func (bd *BlockData)enqueue(pos uint32, data UdpPacketDataer)  {
+func (bd *BlockData)enqueue(pos uint32, data packet.UdpPacketDataer)  {
 	bd.rwlock.Lock()
 	defer bd.rwlock.Unlock()
 	bd.sndData[pos] = data

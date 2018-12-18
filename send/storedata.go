@@ -1,4 +1,4 @@
-package nbsnetwork
+package send
 
 import (
 	"sync/atomic"

@@ -1,4 +1,4 @@
-package nbsnetwork
+package packet
 
 
 type udpack struct {
@@ -52,7 +52,7 @@ func (ua *udpack) SetRcved(id uint32) {
 }
 
 
-func (ua *udpack) GetResend() []uint32 {
+func (ua *udpack) GetReSend() []uint32 {
 	return  ua.resend
 }
 
