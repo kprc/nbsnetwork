@@ -103,7 +103,7 @@ func (bd *BlockData)nonesend() (uint32,error) {
 
 	var round uint32
 	bd.rwlock.RLock()
-	defer bd.rwlock.Unlock()
+	defer bd.rwlock.RUnlock()
 
 	for _,upr := range bd.sndData{
 		bupr,_ := upr.Serialize()
@@ -171,10 +171,10 @@ func (bd *BlockData)Send() error {
 		if ret == 1 {
 			bd.rwlock.RLock()
 			if len(bd.sndData)==0 {
-				bd.rwlock.Unlock()
+				bd.rwlock.RUnlock()
 				return nil
 			}
-			bd.rwlock.Unlock()
+			bd.rwlock.RUnlock()
 		}
 
 
@@ -198,7 +198,7 @@ func (bd *BlockData)doresult(result interface{}) error {
 
 				if len(bupr)!=nw ||  err!=nil{
 					//need resend
-					bd.rwlock.Unlock()
+					bd.rwlock.RUnlock()
 					return blocksndwriterioerr
 				}
 				atomic.AddInt32(&bd.noacklen,int32(upr.GetLength()))
