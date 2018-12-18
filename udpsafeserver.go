@@ -5,19 +5,20 @@ import (
 
 	"net"
 
+	"github.com/kprc/nbsnetwork/common/address"
 )
 
 
 
 
 type udpServer struct {
-	listenAddr UdpAddresser
+	listenAddr address.UdpAddresser
 
-	mconn map[UdpAddresser]*net.UDPConn
+	mconn map[address.UdpAddresser]*net.UDPConn
 
-	remoteAddr map[UdpAddresser]*net.UDPAddr
+	remoteAddr map[address.UdpAddresser]*net.UDPAddr
 
-	rcvBuf map[UdpAddresser][]bytes.Buffer
+	rcvBuf map[address.UdpAddresser][]bytes.Buffer
 }
 
 type UdpServerer interface {

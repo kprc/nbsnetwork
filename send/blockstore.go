@@ -15,6 +15,7 @@ type BStorer interface {
 	AddBlockDataer(sn uint64,sdr StoreDataer)
 	GetBlockDataer(sn uint64) StoreDataer
 	PutBlockDataer(sn uint64)
+	DelBlockDataer(sn uint64)
 }
 
 var (
@@ -49,9 +50,9 @@ func (bs *bstore)AddBlockDataer(sn uint64,bdr StoreDataer)  {
 		return
 	}
 
-	sd := &storeData{bdr:bdr}
-
-	bs.sd[sn] = sd
+	//sd := &storeData{bdr:bdr}
+	bdr.ReferCntInc()
+	bs.sd[sn] = bdr
 
 }
 
@@ -65,7 +66,8 @@ func (bs *bstore)GetBlockDataer(sn uint64) StoreDataer{
 
 	return nil
 }
-func (bs *bstore)PutBlockDataer(sn uint64){
+
+func (bs *bstore)decRefer(sn uint64){
 	bs.glock.Lock()
 	defer bs.glock.Unlock()
 	if v,ok :=bs.sd[sn];ok {
@@ -74,4 +76,13 @@ func (bs *bstore)PutBlockDataer(sn uint64){
 			delete(bs.sd,sn)
 		}
 	}
+}
+
+
+func (bs *bstore)PutBlockDataer(sn uint64) {
+	bs.decRefer(sn)
+}
+
+func (bs *bstore)DelBlockDataer(sn uint64)  {
+	bs.decRefer(sn)
 }

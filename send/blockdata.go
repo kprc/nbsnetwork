@@ -8,6 +8,7 @@ import (
 	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/common/constant"
+	"fmt"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send error"}
@@ -72,6 +73,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 			upr.SetTotalCnt(round+1)
 		}
 		bupr,_ := upr.Serialize()
+		fmt.Println(len(bupr))
 		nw,err := bd.w.Write(bupr)
 
 		atomic.AddUint32(&bd.totalCnt,1)
