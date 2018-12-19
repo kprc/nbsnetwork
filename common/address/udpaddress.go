@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"strings"
 	"github.com/kprc/nbsnetwork/common/constant"
+	"net"
+	"fmt"
+	"os"
 )
 
 var udpparseerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_PARSE,Errmsg:"Parse ip4 address fault"}
@@ -18,6 +21,7 @@ type UdpAddresser interface {
 	First()(addr []byte,port uint16)
 	NextS() (saddr string,port uint16)
 	FirstS()(saddr string,port uint16)
+	PrintAll()
 	Clone() UdpAddresser
 }
 
@@ -165,24 +169,12 @@ func (uaddr *udpAddress)append(addr address) {
 
 
 func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
-	sarr := strings.Split(ipstr,".")
-
-	if len(sarr) != 4 {
-		return udpparseerr
-	}
 
 	baddr := address{ip6type:constant.IP_TYPE_IP4}
 
-	baddr.addr = make([]byte,0)
+	addr:= ipString2Byte(ipstr)
 
-	for i:=0; i<4;  i++{
-		n,err :=strconv.Atoi(sarr[i])
-		if err != nil || n > 255 || n < 0 {
-			return udpparseerr
-		}
-
-		baddr.addr = append(baddr.addr,byte(n))
-	}
+	baddr.addr = addr
 
 	baddr.port = port
 
@@ -192,16 +184,79 @@ func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
 
 }
 
-func (uaddr *udpAddress)Clone() UdpAddresser{
-	//ua := &udpAddress{addrs:make([]address,0)}
-	//
-	//for i:=0;i<len(uaddr.addrs); i++{
-	//
-	//}
 
-	return nil
+func ipString2Byte(ipstr string)[]byte{
+	sarr := strings.Split(ipstr,".")
+
+	addr :=make([]byte,0)
+	if len(sarr) != 4 {
+		return addr
+	}
+
+	for i:=0; i<4;  i++{
+		n,err :=strconv.Atoi(sarr[i])
+		if err != nil || n > 255 || n < 0 {
+			return addr
+		}
+
+		addr = append(addr,byte(n))
+	}
+
+	return addr
 }
 
+func (uaddr *udpAddress)Clone() UdpAddresser{
+	ua := &udpAddress{addrs:make([]address,0)}
+
+	for _,addr:=range uaddr.addrs{
+		r := address{}
+		r.ip6type = addr.ip6type
+		r.port = addr.port
+		r.addr = make([]byte,len(addr.addr))
+		copy(r.addr,addr.addr)
+		ua.addrs = append(ua.addrs,r)
+	}
+
+	return ua
+}
+
+
+func GetAllLocalIPAddr(port uint16) UdpAddresser  {
+
+	ua := &udpAddress{addrs:make([]address,0)}
+
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	for _, addr:= range addrs {
+
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				//fmt.Println(ipnet.IP.String())
+				r := address{}
+				r.ip6type = constant.IP_TYPE_IP4
+				r.port = port
+				r.addr = ipString2Byte(ipnet.IP.String())
+				ua.addrs = append(ua.addrs,r)
+			}
+		}
+	}
+
+	return ua
+}
+
+func (uaddr *udpAddress)PrintAll(){
+	uaddr.Iterator()
+	for{
+		addr,port := uaddr.NextS()
+		if addr == "" {
+			break
+		}
+		fmt.Println(addr,port)
+	}
+}
 
 
 //not support in this version

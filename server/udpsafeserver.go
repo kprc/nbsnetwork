@@ -27,15 +27,15 @@ type UdpServerer interface {
 	//Rcv() ([]byte,error)
 }
 
-func (us *udpServer)Run()  {
+func (us *udpServer)Run(ipstr string,port uint16)  {
 
-	//var x *net.TCPConn
-	//
-	//x.Write()
+	if ipstr == ""{
 
-	//var xx *net.UDPConn
-	//xx.Write()
+	}
 
-	//c ,err := net.ListenUDP("udp4",&net.UDPAddr{
-	//})
+	if port == 0 {
+
+	}
+
 }
+
