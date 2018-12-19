@@ -42,7 +42,7 @@ func NewRcvDataer(sn uint64,w io.WriteSeeker) RcvDataer{
 	return rd
 }
 
-func (rd *rcvData)write(dataer packet.UdpPacketDataer) error  {
+func (rd *rcvData)write() error  {
 
 	rd.rwlock.Lock()
 	defer rd.rwlock.Unlock()
@@ -63,24 +63,21 @@ func (rd *rcvData)write(dataer packet.UdpPacketDataer) error  {
 		if rd.lastWriteId >= id {
 			delete(rd.rcvData,id)
 		}else if id == rd.lastWriteId + 1 {
-			upr := rd.rcvData[id]
-
-			if nw,err := rd.w.Write(upr.GetData());err!=nil{
-				if nw>0 {
-					needwrite := upr.GetData()
-					upr.SetData(needwrite[nw:])
-					upr.SetLength(int32(len(upr.GetData())))
+			if upr,ok := rd.rcvData[id];ok{
+				if nw,err := rd.w.Write(upr.GetData());err!=nil{
+					if nw>0 {
+						needwrite := upr.GetData()
+						upr.SetData(needwrite[nw:])
+						upr.SetLength(int32(len(upr.GetData())))
+					}
+					return rcvwriteioerr
 				}
-				return rcvwriteioerr
+				delete(rd.rcvData,id)
+				rd.lastWriteId = id
 			}
-			delete(rd.rcvData,id)
-			rd.lastWriteId = id
 
 		}
 	}
-
-
-
 
 	return nil
 }
@@ -94,9 +91,9 @@ func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error
 	rd.lastAccess = time.Now().Unix()
 	rd.enqueen(dataer)
 
-    ack:=rd.fillNeedResend(dataer)
+	ack:=rd.fillNeedResend(dataer)
 
-	reterr := rd.write(dataer)
+	reterr := rd.write()
 
 	return ack,reterr
 }
