@@ -87,15 +87,17 @@ func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error
 		return nil,rcvdataerr
 	}
 
+	var ack packet.UdpResulter
 
 	rd.lastAccess = time.Now().Unix()
-	rd.enqueen(dataer)
+	if dataer != nil {
+		rd.enqueen(dataer)
+		ack=rd.fillNeedResend(dataer)
+	}
 
-	ack:=rd.fillNeedResend(dataer)
+	err := rd.write()
 
-	reterr := rd.write()
-
-	return ack,reterr
+	return ack,err
 }
 
 

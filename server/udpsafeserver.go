@@ -1,4 +1,4 @@
-package nbsnetwork
+package server
 
 import (
 	"bytes"
@@ -33,8 +33,8 @@ func (us *udpServer)Run()  {
 	//
 	//x.Write()
 
-	var xx *net.UDPConn
-	xx.Write()
+	//var xx *net.UDPConn
+	//xx.Write()
 
 	//c ,err := net.ListenUDP("udp4",&net.UDPAddr{
 	//})

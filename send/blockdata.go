@@ -101,7 +101,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 
 func (bd *BlockData)nonesend() (uint32,error) {
 
-	var round uint32
+	var round uint32 = 1
 	bd.rwlock.RLock()
 	defer bd.rwlock.RUnlock()
 
@@ -118,7 +118,6 @@ func (bd *BlockData)nonesend() (uint32,error) {
 
 			return 0,blocksndwriterioerr
 		}
-		//atomic.AddUint32(&bd.noacklen,uint32(upr.GetLength()))
 
 		atomic.AddInt32(&bd.noacklen,upr.GetLength())
 		upr.SetTryCnt(1)
