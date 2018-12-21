@@ -21,7 +21,8 @@ const (
 
 
 const (
-	MSG_KA = iota
+	MSG_NONE = iota
+	MSG_KA
 	MSG_STORE
 	MSG_FIND_NODE
 	MSG_FIND_VALUE
