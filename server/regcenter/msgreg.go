@@ -19,6 +19,7 @@ type MsgCenter interface {
 	AddHandler(msgid int32,handler MsgHandler)
 	DelHandler(msgid int32)
 	GetHandler(msgid int32) MsgHandler
+	GetMsgId([] byte) int32
 }
 
 
@@ -81,6 +82,10 @@ func (mc *msgCenter)PutHandler(msgid int32) {
 	if v,ok:=mc.coor[msgid]; ok {
 		v.DecRef()
 	}
+}
+
+func (mc *msgCenter) GetMsgId(data [] byte) int32 {
+	return mc.fGetMsgId(data)
 }
 
 func getMsgId(headData []byte) int32  {
