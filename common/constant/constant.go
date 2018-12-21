@@ -19,3 +19,11 @@ const (
 	DATA_TRANSER
 )
 
+
+const (
+	MSG_KA = iota
+	MSG_STORE
+	MSG_FIND_NODE
+	MSG_FIND_VALUE
+	MSG_PING
+)

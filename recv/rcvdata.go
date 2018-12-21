@@ -16,13 +16,14 @@ var rcvwriteioerr = nbserr.NbsErr{ErrId:nbserr.UDP_RCV_WRITER_IO_ERR,Errmsg:"wri
 
 type rcvData struct {
 	serialNo uint64
-	lastAccess int64
+	lastAccessTime int64
 	timeout uint32
 	rwlock sync.RWMutex
 	rcvData map[uint32]packet.UdpPacketDataer
 	w io.WriteSeeker
 	lastRcvId uint32
 	lastWriteId uint32
+	totalCnt uint32
 	rwlockResend sync.RWMutex
 	needResend map[uint32]struct{}
 	finish bool
@@ -31,6 +32,7 @@ type rcvData struct {
 
 type RcvDataer interface {
 	Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error)
+	Finish() bool
 }
 
 func NewRcvDataer(sn uint64,w io.WriteSeeker) RcvDataer{
@@ -79,6 +81,10 @@ func (rd *rcvData)write() error  {
 		}
 	}
 
+	if rd.totalCnt>0 && rd.lastWriteId == rd.totalCnt {
+		rd.finish = true
+	}
+
 	return nil
 }
 
@@ -89,8 +95,11 @@ func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error
 
 	var ack packet.UdpResulter
 
-	rd.lastAccess = time.Now().Unix()
+	rd.lastAccessTime = time.Now().Unix()
 	if dataer != nil {
+		if dataer.GetTotalCnt() > 0 {
+			rd.totalCnt = dataer.GetTotalCnt()
+		}
 		rd.enqueen(dataer)
 		ack=rd.fillNeedResend(dataer)
 	}
@@ -163,4 +172,8 @@ func (rd *rcvData)enqueen(upd packet.UdpPacketDataer){
 	if _,ok:=rd.rcvData[id];!ok{
 		rd.rcvData[id] = upd
 	}
+}
+
+func (rd *rcvData)Finish() bool {
+	return rd.finish
 }
