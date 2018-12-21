@@ -35,9 +35,11 @@ type UDPPacketData struct {
 	posNum uint32      //current packet serial number
 	dataTyp uint16     //data type, for transfer priority
 	tryCnt  uint8      //try transfer times
+	transInfo []byte    //transfer layer infomation
 	pad8    uint8
 	len   int32
 	data  []byte
+
 }
 
 func NewUdpPacketData(sn uint64, dataType uint16) UdpPacketDataer {
@@ -81,6 +83,7 @@ func (uh *UDPPacketData)Serialize() ([]byte,error)  {
 	p.TryCnt = uint32(uh.tryCnt)
 	p.Data = uh.data
 	p.Len = uh.len
+	p.TransInfo = uh.transInfo
 
 	return proto.Marshal(&p)
 }
@@ -96,6 +99,7 @@ func (uh *UDPPacketData)DeSerialize(data []byte) error {
 		uh.tryCnt = uint8(p.TryCnt)
 		uh.data = p.Data
 		uh.len = p.Len
+		uh.transInfo = p.TransInfo
 	}
 
 	return err
