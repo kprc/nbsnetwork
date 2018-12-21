@@ -6,3 +6,4 @@ package message;
 message MsgHead{
     int32 messageId = 1;
 }
+

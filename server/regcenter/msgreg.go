@@ -1,19 +1,46 @@
 package regcenter
 
-import "sync"
+import (
+	"sync"
+	"github.com/kprc/nbsnetwork/server/pb"
+	"github.com/gogo/protobuf/proto"
+	"github.com/kprc/nbsnetwork/common/constant"
+)
 
 type msgCenter struct {
+	fGetMsgId func([]byte) int32
 	rwlock sync.RWMutex
 	coor map[int32]MsgHandler
 }
+
 
 
 type MsgCenter interface {
 	AddHandler(msgid int32,handler MsgHandler)
 	DelHandler(msgid int32)
 	GetHandler(msgid int32) MsgHandler
-
 }
+
+
+var (
+	glock sync.Mutex
+	instance MsgCenter
+)
+
+
+func GetMsgCenter() MsgCenter{
+	if instance == nil{
+		glock.Lock()
+		if instance == nil {
+			mc := &msgCenter{fGetMsgId:getMsgId}
+			mc.coor = make(map[int32]MsgHandler)
+			instance = mc
+		}
+		glock.Unlock()
+	}
+	return instance
+}
+
 
 func (mc *msgCenter)AddHandler(msgid int32,handler MsgHandler)  {
 	mc.rwlock.Lock()
@@ -56,4 +83,15 @@ func (mc *msgCenter)PutHandler(msgid int32) {
 	}
 }
 
+func getMsgId(headData []byte) int32  {
+	mh := message.MsgHead{}
+
+	err := proto.Unmarshal(headData,&mh)
+
+	if err == nil{
+		return mh.MessageId
+	}else {
+		return constant.MSG_NONE
+	}
+}
 
