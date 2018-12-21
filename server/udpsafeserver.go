@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"net"
 	"github.com/kprc/nbsnetwork/common/address"
 	"sync"
@@ -21,7 +20,7 @@ type udpServer struct {
 
 	remoteAddr map[address.UdpAddresser]*net.UDPAddr
 
-	rcvBuf map[address.UdpAddresser][]bytes.Buffer
+	//rcvBuf map[address.UdpAddresser][]bytes.Buffer
 }
 
 type UdpServerer interface {
@@ -30,7 +29,7 @@ type UdpServerer interface {
 	//Rcv() ([]byte,error)
 }
 
-func NewUdpServer() UdpServerer {
+func GetUdpServer() UdpServerer {
 	if instance == nil{
 		instlock.Lock()
 		if instance ==nil {
@@ -46,7 +45,7 @@ func newUdpServer() UdpServerer {
 	us := &udpServer{}
 	us.mconn = make(map[address.UdpAddresser]*net.UDPConn)
 	us.remoteAddr = make(map[address.UdpAddresser]*net.UDPAddr)
-	us.rcvBuf = make(map[address.UdpAddresser][]bytes.Buffer)
+	//us.rcvBuf = make(map[address.UdpAddresser][]bytes.Buffer)
 
 	return us
 }
@@ -60,8 +59,10 @@ func (us *udpServer)Run(ipstr string,port uint16)  {
 	}else {
 		ua.AddIP4(ipstr,port)
 	}
-	fmt.Println("Server start at:")
+	fmt.Println("Server will start at:")
 	ua.PrintAll()
+
+
 	//listen
 
 }
