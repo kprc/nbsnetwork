@@ -2,11 +2,13 @@ package regcenter
 
 import (
 	"io"
+	"sync/atomic"
 )
 
 type msgHandle struct {
 	ws io.WriteSeeker
 	f func(data interface{}, writer io.Writer) error
+	refcnt int32
 }
 
 
@@ -15,6 +17,9 @@ type MsgHandler interface {
 	GetWriteSeeker() io.WriteSeeker
 	SetHandler(f func(data interface{},writer io.Writer) error)
 	GetHandler() func(data interface{},writer io.Writer) error
+	IncRef()
+	DecRef()
+	GetRef() int32
 }
 
 func NewMsgHandler() MsgHandler {
@@ -37,4 +42,17 @@ func (mh *msgHandle)SetHandler(f func(data interface{},writer io.Writer) error) 
 
 func (mh *msgHandle)GetHandler() func(data interface{},writer io.Writer) error  {
 	return mh.f
+}
+
+func (mh *msgHandle)IncRef()  {
+	atomic.AddInt32(&mh.refcnt,1)
+}
+
+func (mh *msgHandle)DecRef(){
+	atomic.AddInt32(&mh.refcnt,-1)
+}
+
+func (mh *msgHandle)GetRef() int32 {
+
+	return atomic.LoadInt32(&mh.refcnt)
 }
