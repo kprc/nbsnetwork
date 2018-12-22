@@ -232,7 +232,8 @@ func GetAllLocalIPAddr(port uint16) UdpAddresser  {
 	}
 	for _, addr:= range addrs {
 
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+		//if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+		if ipnet, ok := addr.(*net.IPNet); ok  {
 			if ipnet.IP.To4() != nil && !strings.Contains(ipnet.IP.String(),"169.254") {
 				r := address{}
 				r.ip6type = constant.IP_TYPE_IP4
