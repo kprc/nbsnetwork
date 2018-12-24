@@ -7,7 +7,6 @@ import (
 	"github.com/kprc/nbsnetwork/common/constant"
 	"net"
 	"fmt"
-	"os"
 )
 
 var udpparseerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_PARSE,Errmsg:"Parse ip4 address fault"}
@@ -15,6 +14,7 @@ var ipreadableerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_TOSTRING_ERR,Errmsg:"byt
 
 type UdpAddresser interface {
 	AddIP4(ipstr string, port uint16) error
+	AddIP4Str(ipstr string) error
 	DelIP4(ipstr string,port uint16)
 	Iterator()
 	Next() (addr []byte,port uint16)
@@ -23,6 +23,7 @@ type UdpAddresser interface {
 	FirstS()(saddr string,port uint16)
 	PrintAll()
 	Clone() UdpAddresser
+	Len() int
 }
 
 
@@ -57,6 +58,10 @@ func NewUdpAddressP(addr []byte, port uint16) UdpAddresser  {
 
 func (ua *udpAddress)DelIP4(ipstr string,port uint16)  {
 
+}
+
+func (ua *udpAddress)Len() int{
+	return len(ua.addrs)
 }
 
 func NewUdpAddressS(ipstr string, port uint16) (error,UdpAddresser)  {
@@ -228,7 +233,7 @@ func GetAllLocalIPAddr(port uint16) UdpAddresser  {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		return nil
 	}
 	for _, addr:= range addrs {
 
@@ -258,6 +263,19 @@ func (uaddr *udpAddress)PrintAll(){
 	}
 }
 
+func (uaddr *udpAddress)AddIP4Str(ipstr string) error  {
+
+	ipstrport := strings.Split(ipstr,":")
+
+	port,err :=strconv.Atoi(ipstrport[1])
+	if err!=nil {
+		return err
+	}
+
+
+	return uaddr.AddIP4(ipstrport[0],uint16(port))
+
+}
 
 //not support in this version
 //func (uaddr *udpAddress)Add6(ipstr string, port uint16)  {

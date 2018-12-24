@@ -16,7 +16,7 @@ var (
 type udpServer struct {
 	listenAddr address.UdpAddresser
 
-	mconn map[address.UdpAddresser]*net.UDPConn
+	mListenSocket map[address.UdpAddresser]*net.UDPConn
 
 	remoteAddr map[address.UdpAddresser]*net.UDPAddr
 
@@ -43,57 +43,83 @@ func GetUdpServer() UdpServerer {
 
 func newUdpServer() UdpServerer {
 	us := &udpServer{}
-	us.mconn = make(map[address.UdpAddresser]*net.UDPConn)
+	us.mListenSocket = make(map[address.UdpAddresser]*net.UDPConn)
 	us.remoteAddr = make(map[address.UdpAddresser]*net.UDPAddr)
 	//us.rcvBuf = make(map[address.UdpAddresser][]bytes.Buffer)
 
 	return us
 }
 
-func (us *udpServer)Run(ipstr string,port uint16)  {
+
+
+
+
+
+func (us *udpServer)Run(ipstr string,port uint16) {
 
 	var ua address.UdpAddresser
 
-	if ipstr == "localaddress"{
+	if ipstr == "localaddress" {
 		ua = address.GetAllLocalIPAddr(port)
-	}else if ipstr == ""{
-		ipstr = "0.0.0.0"
-	}else {
-		ua.AddIP4(ipstr,port)
+	} else {
+		ua = address.NewUdpAddress()
+		if ipstr == "" {
+			ipstr = "0.0.0.0"
+			ua.AddIP4(ipstr, port)
+		} else {
+			ua.AddIP4(ipstr, port)
+		}
 	}
-	fmt.Println("Server will start at:")
-	ua.PrintAll()
+	//fmt.Println("Server will start at:")
+	//ua.PrintAll()
 
-	strip,p:= ua.FirstS()
+	usua:=address.NewUdpAddress()
 
-	uaddr := &net.UDPAddr{IP:net.ParseIP(strip),Port:int(p)}
-
-	socket,err := net.ListenUDP("udp4", uaddr)
-	if err != nil {
-		fmt.Println("监听失败!", err)
-		return
-	}
-	defer socket.Close()
+	ua.Iterator()
 
 	for {
-		// 读取数据
-		data := make([]byte, 4096)
-		read, remoteAddr, err := socket.ReadFromUDP(data)
-		if err != nil {
-			fmt.Println("读取数据失败!", err)
-			continue
-		}
-		fmt.Println(read, remoteAddr)
-		fmt.Printf("%s\n\n", data)
+		strip, p := ua.NextS()
 
-		// 发送数据
-		senddata := []byte("hello client!")
-		_, err = socket.WriteToUDP(senddata, remoteAddr)
-		if err != nil {
-			return
-			fmt.Println("发送数据失败!", err)
+		if strip == "" {
+			break
 		}
+
+		netaddr := &net.UDPAddr{IP: net.ParseIP(strip), Port: int(p)}
+
+		sock, err := net.ListenUDP("udp4", netaddr)
+		if err != nil {
+			fmt.Println("Listen Failure", err)
+			return
+		}
+
+		//fmt.Println(netaddr.Port,netaddr.IP.String())
+		//fmt.Println(s.LocalAddr().String())
+		usua.AddIP4Str(sock.LocalAddr().String())
+
+
+		//for {
+		//
+		//	data := make([]byte, 1024)
+		//	read, remoteAddr, err := socket.ReadFromUDP(data)
+		//	if err != nil {
+		//		fmt.Println("读取数据失败!", err)
+		//		continue
+		//	}
+		//	fmt.Println(read, remoteAddr)
+		//	fmt.Printf("%s\n\n", data)
+		//
+		//	senddata := []byte("hello client!")
+		//	_, err = socket.WriteToUDP(senddata, remoteAddr)
+		//	if err != nil {
+		//		fmt.Println("发送数据失败!", err)
+		//		return
+		//	}
+		//}
 	}
+
+	us.listenAddr = usua
+
+	usua.PrintAll()
 
 	//listen
 

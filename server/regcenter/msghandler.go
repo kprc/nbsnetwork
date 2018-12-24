@@ -6,8 +6,9 @@ import (
 )
 
 type msgHandle struct {
-	ws io.WriteSeeker
+	fGetWriteSeeker func() io.WriteSeeker
 	f func(data interface{}, writer io.Writer) error
+	ws io.WriteSeeker
 	refcnt int32
 }
 
@@ -20,6 +21,8 @@ type MsgHandler interface {
 	IncRef()
 	DecRef()
 	GetRef() int32
+	SetWSNew(fGetWriteSeeker func() io.WriteSeeker)
+	GetWSNew() func() io.WriteSeeker
 }
 
 func NewMsgHandler() MsgHandler {
@@ -55,4 +58,12 @@ func (mh *msgHandle)DecRef(){
 func (mh *msgHandle)GetRef() int32 {
 
 	return atomic.LoadInt32(&mh.refcnt)
+}
+
+func (mh *msgHandle)SetWSNew(fGetWriteSeeker func() io.WriteSeeker) {
+	mh.fGetWriteSeeker = fGetWriteSeeker
+}
+
+func (mh *msgHandle)GetWSNew() func() io.WriteSeeker  {
+	return mh.fGetWriteSeeker
 }
