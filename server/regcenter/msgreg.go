@@ -8,7 +8,7 @@ import (
 )
 
 type msgCenter struct {
-	fGetMsgId func([]byte) int32
+	fGetMsgId func([]byte) (msgid int32,stationId string)
 	rwlock sync.RWMutex
 	coor map[int32]MsgHandler
 }
@@ -19,7 +19,7 @@ type MsgCenter interface {
 	AddHandler(msgid int32,handler MsgHandler)
 	DelHandler(msgid int32)
 	GetHandler(msgid int32) MsgHandler
-	GetMsgId([] byte) int32
+	GetMsgId([] byte) (msgid int32,stationId string)
 }
 
 
@@ -84,19 +84,19 @@ func (mc *msgCenter)PutHandler(msgid int32) {
 	}
 }
 
-func (mc *msgCenter) GetMsgId(data [] byte) int32 {
+func (mc *msgCenter) GetMsgId(data [] byte) (msgid int32,stationId string) {
 	return mc.fGetMsgId(data)
 }
 
-func getMsgId(headData []byte) int32  {
+func getMsgId(headData []byte) (msgid int32,stationId string)  {
 	mh := message.MsgHead{}
 
 	err := proto.Unmarshal(headData,&mh)
 
 	if err == nil{
-		return mh.MessageId
+		return mh.MessageId,string(mh.StationId)
 	}else {
-		return constant.MSG_NONE
+		return constant.MSG_NONE,""
 	}
 }
 

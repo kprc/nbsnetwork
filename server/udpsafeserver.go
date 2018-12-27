@@ -52,9 +52,6 @@ func newUdpServer() UdpServerer {
 
 
 
-
-
-
 func (us *udpServer)Run(ipstr string,port uint16) {
 
 	var ua address.UdpAddresser
