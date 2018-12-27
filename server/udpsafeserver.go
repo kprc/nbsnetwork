@@ -5,6 +5,10 @@ import (
 	"github.com/kprc/nbsnetwork/common/address"
 	"sync"
 	"fmt"
+	"github.com/kprc/nbsnetwork/common/packet"
+	"github.com/kprc/nbsnetwork/server/regcenter"
+	"github.com/kprc/nbsnetwork/common/constant"
+	"gx/ipfs/QmZooytqEoUwQjv7KzH4d3xyJnyvD3AWJaCDMYt5pbCtua/chunker"
 )
 
 var (
@@ -112,14 +116,33 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 
 
 func recv(sock *net.UDPConn){
+	gdata := make([]byte, 1024)
+
 	for {
 
-		data := make([]byte, 1024)
-		read, remoteAddr, err := sock.ReadFromUDP(data)
+		data := gdata[0:]
+		n, remoteAddr, err := sock.ReadFromUDP(data)
 		if err != nil {
-			fmt.Println("读取数据失败!", err)
+			fmt.Println("Read data error", err)
 			continue
 		}
+
+		pkt:=packet.NewUdpPacketData()
+		if err = pkt.DeSerialize(data[:n]);err!=nil{
+			fmt.Println("Packet DeSerialize failed!",err)
+			continue
+		}
+
+		mc := regcenter.GetMsgCenter()
+
+		msgid,stationId := mc.GetMsgId(pkt.GetTransInfo())
+		if msgid == constant.MSG_NONE || stationId == "" {
+			fmt.Printf("Receive msgid %d, stationId %s",msgid,stationId)
+			continue
+		}
+
+
+
 
 
 		//fmt.Println(read, remoteAddr)

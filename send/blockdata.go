@@ -61,7 +61,9 @@ func (bd *BlockData)send(round uint32) (int,error){
 
 	n,err := bd.r.Read(buf)
 	if n > 0 {
-		upr := packet.NewUdpPacketData(bd.serialNo,bd.dataType)
+		upr := packet.NewUdpPacketData()
+		upr.SetTyp(bd.dataType)
+		upr.SetSerialNo(bd.serialNo)
 		upr.SetData(buf[:n])
 
 		upr.SetTotalCnt(0)

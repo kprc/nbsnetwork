@@ -4,6 +4,7 @@ import (
 	"io"
 	"sync/atomic"
 	"time"
+	"net"
 )
 
 type MsgKey struct {
@@ -16,6 +17,8 @@ type rcvmsg struct {
 	w io.WriteSeeker
 	refcnt int32
 	timeout int64
+	sock *net.UDPConn
+	addr *net.UDPAddr
 }
 
 
@@ -28,6 +31,10 @@ type RcvMsg interface {
 	DecRefCnt() int32
 	SetKey(key *MsgKey)
 	GetKey() *MsgKey
+	SetSock(sock *net.UDPConn)
+	GetSock() *net.UDPConn
+	SetAddr(addr *net.UDPAddr)
+	GetAddr() *net.UDPAddr
 }
 
 func NewRcvMsg() RcvMsg  {
@@ -82,4 +89,20 @@ func (rm *rcvmsg)SetKey(key *MsgKey)  {
 
 func (rm *rcvmsg)GetKey() *MsgKey {
 	return rm.key
+}
+
+func (rm *rcvmsg)SetSock(sock *net.UDPConn) {
+	rm.sock = sock
+}
+
+func (rm *rcvmsg)GetSock() *net.UDPConn  {
+	return rm.sock
+}
+
+func (rm *rcvmsg)SetAddr(addr *net.UDPAddr)  {
+	rm.addr = addr
+}
+
+func (rm *rcvmsg)GetAddr() *net.UDPAddr  {
+	return rm.addr
 }

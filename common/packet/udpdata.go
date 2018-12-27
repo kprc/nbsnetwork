@@ -20,12 +20,15 @@ type UdpPacketDataer interface {
 	GetTotalCnt() uint32
 	SetData(data []byte)
 	GetData() []byte
+	SetSerialNo(sn uint64)
 	GetSerialNo() uint64
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
 	SetTyp(typ uint16)
 	GetLength() int32
 	SetLength(len int32)
+	SetTransInfo(ti []byte)
+	GetTransInfo() []byte
 }
 
 
@@ -42,9 +45,10 @@ type UDPPacketData struct {
 
 }
 
-func NewUdpPacketData(sn uint64, dataType uint16) UdpPacketDataer {
-	upd := &UDPPacketData{serialNo:sn,dataTyp:dataType}
-	return upd
+
+
+func NewUdpPacketData() UdpPacketDataer {
+	return &UDPPacketData{}
 }
 
 
@@ -169,4 +173,16 @@ func (uh *UDPPacketData)GetLength() int32  {
 
 func (uh *UDPPacketData)SetLength(len int32){
 	uh.len = len
+}
+
+func (uh *UDPPacketData)SetSerialNo(sn uint64)  {
+	uh.serialNo = sn
+}
+
+func (uh *UDPPacketData)SetTransInfo(ti []byte)  {
+	uh.transInfo = ti
+}
+
+func (uh *UDPPacketData)GetTransInfo() []byte {
+	return uh.transInfo
 }
