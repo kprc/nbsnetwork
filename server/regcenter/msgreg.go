@@ -77,10 +77,23 @@ func (mc *msgCenter)GetHandler(msgid int32)  MsgHandler{
 }
 func (mc *msgCenter)PutHandler(msgid int32) {
 	mc.rwlock.RLock()
-	defer mc.rwlock.Unlock()
 
 	if v,ok:=mc.coor[msgid]; ok {
-		v.DecRef()
+		cnt:=v.DecRef()
+		if cnt <= 0 {
+			mc.rwlock.RUnlock()
+			mc.rwlock.Lock()
+			cnt = v.GetRef()
+			if cnt <= 0{
+				delete(mc.coor,msgid)
+			}
+			mc.rwlock.Unlock()
+
+		}else {
+			mc.rwlock.RUnlock()
+		}
+	}else {
+		mc.rwlock.RUnlock()
 	}
 }
 

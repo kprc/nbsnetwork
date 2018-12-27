@@ -29,6 +29,6 @@ func (sd *storeData)ReferCntDec()  {
 }
 
 func (sd *storeData)GetReferCnt() int32  {
-	return sd.cnt
+	return atomic.LoadInt32(&sd.cnt)
 }
 

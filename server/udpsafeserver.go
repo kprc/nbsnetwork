@@ -20,6 +20,8 @@ type udpServer struct {
 
 	remoteAddr map[address.UdpAddresser]*net.UDPAddr
 
+	processWait chan int
+
 	//rcvBuf map[address.UdpAddresser][]bytes.Buffer
 }
 
@@ -46,6 +48,7 @@ func newUdpServer() UdpServerer {
 	us.mListenSocket = make(map[address.UdpAddresser]*net.UDPConn)
 	us.remoteAddr = make(map[address.UdpAddresser]*net.UDPAddr)
 	//us.rcvBuf = make(map[address.UdpAddresser][]bytes.Buffer)
+	us.processWait = make(chan int,0)
 
 	return us
 }
@@ -53,7 +56,6 @@ func newUdpServer() UdpServerer {
 
 
 func (us *udpServer)Run(ipstr string,port uint16) {
-
 	var ua address.UdpAddresser
 
 	if ipstr == "localaddress" {
@@ -94,32 +96,42 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 		usua.AddIP4Str(sock.LocalAddr().String())
 
 
-		//for {
-		//
-		//	data := make([]byte, 1024)
-		//	read, remoteAddr, err := socket.ReadFromUDP(data)
-		//	if err != nil {
-		//		fmt.Println("读取数据失败!", err)
-		//		continue
-		//	}
-		//	fmt.Println(read, remoteAddr)
-		//	fmt.Printf("%s\n\n", data)
-		//
-		//	senddata := []byte("hello client!")
-		//	_, err = socket.WriteToUDP(senddata, remoteAddr)
-		//	if err != nil {
-		//		fmt.Println("发送数据失败!", err)
-		//		return
-		//	}
-		//}
+		go recv(sock)
 	}
 
 	us.listenAddr = usua
 
 	usua.PrintAll()
 
-	//listen
+	fmt.Println("Server will start at:")
 
+	wait:=<-us.processWait
+	fmt.Println("receive a quit command",wait)
+
+}
+
+
+func recv(sock *net.UDPConn){
+	for {
+
+		data := make([]byte, 1024)
+		read, remoteAddr, err := sock.ReadFromUDP(data)
+		if err != nil {
+			fmt.Println("读取数据失败!", err)
+			continue
+		}
+
+
+		//fmt.Println(read, remoteAddr)
+		//fmt.Printf("%s\n\n", data)
+		//
+		//senddata := []byte("hello client!")
+		//_, err = sock.WriteToUDP(senddata, remoteAddr)
+		//if err != nil {
+		//	fmt.Println("发送数据失败!", err)
+		//	return
+		//}
+	}
 }
 
 func (us *udpServer)Send([]byte) error {
