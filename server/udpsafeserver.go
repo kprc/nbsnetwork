@@ -8,7 +8,8 @@ import (
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/server/regcenter"
 	"github.com/kprc/nbsnetwork/common/constant"
-	"gx/ipfs/QmZooytqEoUwQjv7KzH4d3xyJnyvD3AWJaCDMYt5pbCtua/chunker"
+	"github.com/kprc/nbsnetwork/server/message"
+	"github.com/kprc/nbsnetwork/recv"
 )
 
 var (
@@ -100,7 +101,7 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 		usua.AddIP4Str(sock.LocalAddr().String())
 
 
-		go recv(sock)
+		go sockRecv(sock)
 	}
 
 	us.listenAddr = usua
@@ -115,7 +116,7 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 }
 
 
-func recv(sock *net.UDPConn){
+func sockRecv(sock *net.UDPConn){
 	gdata := make([]byte, 1024)
 
 	for {
@@ -141,19 +142,36 @@ func recv(sock *net.UDPConn){
 			continue
 		}
 
+		rmr := message.GetInstance()
+		k := message.NewMsgKey(pkt.GetSerialNo(),stationId)
+		m := rmr.GetMsg(k)
+		var rcv recv.RcvDataer
+		if m==nil {
+			m = message.NewRcvMsg()
+			handler := mc.GetHandler(msgid)
+			m.SetWS(handler.GetWSNew()())
+			m.SetAddr(remoteAddr)
+			m.SetKey(k)
+			m.SetSock(sock)
+			rcv = recv.NewRcvDataer(pkt.GetSerialNo(),m.GetWS())
+			m.SetRecv(rcv)
 
+			rmr.AddMSG(k,m)
 
+			m = rmr.GetMsg(k)   //just to increate the ref count
+		}else {
+			rcv = m.GetRecv()
+		}
 
+		ack,err := rcv.Write(pkt)
+		if ack != nil{
+			back,_ := ack.Serialize()
+			m.GetSock().WriteToUDP(back,m.GetAddr())
+		}
+		if rcv.Finish() {
+			mc.GetHandler(msgid).GetHandler()(m.GetWS(),m.GetSock())
+		}
 
-		//fmt.Println(read, remoteAddr)
-		//fmt.Printf("%s\n\n", data)
-		//
-		//senddata := []byte("hello client!")
-		//_, err = sock.WriteToUDP(senddata, remoteAddr)
-		//if err != nil {
-		//	fmt.Println("发送数据失败!", err)
-		//	return
-		//}
 	}
 }
 

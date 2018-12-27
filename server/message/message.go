@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 	"net"
+	"github.com/kprc/nbsnetwork/recv"
 )
 
 type MsgKey struct {
@@ -19,6 +20,7 @@ type rcvmsg struct {
 	timeout int64
 	sock *net.UDPConn
 	addr *net.UDPAddr
+	rcv recv.RcvDataer
 }
 
 
@@ -35,6 +37,8 @@ type RcvMsg interface {
 	GetSock() *net.UDPConn
 	SetAddr(addr *net.UDPAddr)
 	GetAddr() *net.UDPAddr
+	GetRecv() recv.RcvDataer
+	SetRecv(rcv recv.RcvDataer)
 }
 
 func NewRcvMsg() RcvMsg  {
@@ -105,4 +109,12 @@ func (rm *rcvmsg)SetAddr(addr *net.UDPAddr)  {
 
 func (rm *rcvmsg)GetAddr() *net.UDPAddr  {
 	return rm.addr
+}
+
+func (rm *rcvmsg)GetRecv() recv.RcvDataer  {
+	return rm.rcv
+}
+
+func (rm *rcvmsg)SetRecv(dataer recv.RcvDataer)  {
+	rm.rcv = dataer
 }

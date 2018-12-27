@@ -7,6 +7,11 @@ type rcvmsgroot struct {
 	msgroot map[MsgKey]RcvMsg
 }
 
+var (
+	instance RcvMsgRoot
+	glock sync.Mutex
+)
+
 
 type RcvMsgRoot interface {
 	AddMSG(mk *MsgKey,rm RcvMsg)
@@ -15,7 +20,23 @@ type RcvMsgRoot interface {
 	PutMsg(mk *MsgKey)
 }
 
+func GetInstance() RcvMsgRoot {
+	if instance == nil{
+		 glock.Lock()
+		if instance == nil{
+			instance = newRcvMsgRoot()
+		}
+		 glock.Unlock()
+	}
+	return instance
+}
 
+func newRcvMsgRoot() RcvMsgRoot {
+	rmr:=&rcvmsgroot{}
+	rmr.msgroot = make(map[MsgKey]RcvMsg)
+
+	return rmr
+}
 
 func (rmr *rcvmsgroot)AddMSG(mk *MsgKey,rm RcvMsg) {
 	rmr.rwlock.Lock()
