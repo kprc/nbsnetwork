@@ -173,8 +173,9 @@ func sockRecv(sock *net.UDPConn){
 			m.GetSock().WriteToUDP(back,m.GetAddr())
 		}
 		if rcv.Finish() {
-			mc.GetHandler(msgid).GetHandler()(m.GetWS(),m.GetSock())
+			mc.GetHandler(msgid).GetHandler()(nil,m.GetWS(),m.GetSock())
 		}
+
 
 	}
 }
