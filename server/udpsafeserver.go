@@ -10,6 +10,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/server/message"
 	"github.com/kprc/nbsnetwork/recv"
+	"github.com/kprc/nbsnetwork/send"
 )
 
 var (
@@ -140,7 +141,7 @@ func sockRecv(sock *net.UDPConn){
 
 		mc := regcenter.GetMsgCenter()
 
-		msgid,stationId := mc.GetMsgId(pkt.GetTransInfo())
+		msgid,stationId,headinfo := mc.GetMsgId(pkt.GetTransInfo())
 		if msgid == constant.MSG_NONE || stationId == "" {
 			fmt.Printf("Receive msgid %d, stationId %s",msgid,stationId)
 			continue
@@ -173,7 +174,7 @@ func sockRecv(sock *net.UDPConn){
 			m.GetSock().WriteToUDP(back,m.GetAddr())
 		}
 		if rcv.Finish() {
-			mc.GetHandler(msgid).GetHandler()(nil,m.GetWS(),m.GetSock())
+			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),send.NewWriter(m.GetAddr(),m.GetSock()))
 		}
 
 
