@@ -77,7 +77,7 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 		}
 	}
 	//fmt.Println("Server will start at:")
-	//ua.PrintAll()
+	ua.PrintAll()
 
 	usua:=address.NewUdpAddress()
 
@@ -89,6 +89,7 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 		if strip == "" {
 			break
 		}
+
 
 		netaddr := &net.UDPAddr{IP: net.ParseIP(strip), Port: int(p)}
 
@@ -108,9 +109,10 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 
 	us.listenAddr = usua
 
+	fmt.Println("Server will start at:")
 	usua.PrintAll()
 
-	fmt.Println("Server will start at:")
+
 
 	wait:=<-us.processWait
 	fmt.Println("receive a quit command",wait)
@@ -125,7 +127,6 @@ func sockRecv(sock *net.UDPConn){
 	gdata := make([]byte, 1024)
 
 	for {
-
 		data := gdata[0:]
 		n, remoteAddr, err := sock.ReadFromUDP(data)
 		if err != nil {
@@ -163,7 +164,7 @@ func sockRecv(sock *net.UDPConn){
 
 			rmr.AddMSG(k,m)
 
-			m = rmr.GetMsg(k)   //just to increate the ref count
+			m = rmr.GetMsg(k)   //just to increase the ref count
 		}else {
 			rcv = m.GetRecv()
 		}
@@ -176,7 +177,6 @@ func sockRecv(sock *net.UDPConn){
 		if rcv.Finish() {
 			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),send.NewWriter(m.GetAddr(),m.GetSock()))
 		}
-
 
 	}
 }
