@@ -33,6 +33,7 @@ type udpServer struct {
 type UdpServerer interface {
 	Run(ipstr string,port uint16)
 	Send([] byte) error
+	GetListenAddr() address.UdpAddresser
 	//Rcv() ([]byte,error)
 }
 
@@ -115,6 +116,9 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 
 }
 
+func (us *udpServer)GetListenAddr() address.UdpAddresser  {
+	return us.listenAddr
+}
 
 func sockRecv(sock *net.UDPConn){
 	gdata := make([]byte, 1024)
