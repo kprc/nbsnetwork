@@ -38,6 +38,8 @@ type BlockData struct {
 
 type BlockDataer interface {
 	Send() error
+	SetWriter(w io.Writer)
+	GetSerialNo() uint64
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -54,6 +56,14 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh.maxcache = constant.UDP_MAX_CACHE
 	uh.timeout = constant.UDP_SEND_TIMEOUT
 	return uh
+}
+
+func (bd *BlockData)GetSerialNo() uint64  {
+	return bd.serialNo
+}
+
+func (bd *BlockData)SetWriter(w io.Writer)  {
+	bd.w = w
 }
 
 func (bd *BlockData)send(round uint32) (int,error){

@@ -14,6 +14,7 @@ type StoreDataer interface {
 	ReferCntInc()
 	ReferCntDec()
 	GetReferCnt() int32
+	GetBlockData() BlockDataer
 }
 
 func NewStoreData(bdr BlockDataer)StoreDataer {
@@ -32,3 +33,6 @@ func (sd *storeData)GetReferCnt() int32  {
 	return atomic.LoadInt32(&sd.cnt)
 }
 
+func (sd *storeData)GetBlockData() BlockDataer {
+	return sd.bdr
+}

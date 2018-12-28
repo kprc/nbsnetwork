@@ -7,14 +7,14 @@ import (
 
 type msgHandle struct {
 	fGetWriteSeeker func() io.WriteSeeker
-	f func(head interface{},data interface{}, stationId string) error
+	f func(head interface{},data interface{}, snd io.Writer) error
 	refcnt int32
 }
 
 
 type MsgHandler interface {
-	SetHandler(f func(head interface{},data interface{},stationId string) error)
-	GetHandler() func(head interface{},data interface{},stationId string) error
+	SetHandler(f func(head interface{},data interface{},snd io.Writer) error)
+	GetHandler() func(head interface{},data interface{},snd io.Writer) error
 	IncRef()
 	DecRef() int32
 	GetRef() int32
@@ -29,11 +29,11 @@ func NewMsgHandler() MsgHandler {
 }
 
 
-func (mh *msgHandle)SetHandler(f func(head interface{},data interface{},stationId string) error)  {
+func (mh *msgHandle)SetHandler(f func(head interface{},data interface{},snd io.Writer) error)  {
 	mh.f = f
 }
 
-func (mh *msgHandle)GetHandler() func(head interface{},data interface{},stationId string) error  {
+func (mh *msgHandle)GetHandler() func(head interface{},data interface{},snd io.Writer) error  {
 	return mh.f
 }
 
