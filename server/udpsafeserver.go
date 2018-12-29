@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"net"
 	"github.com/kprc/nbsnetwork/common/address"
 	"sync"
@@ -156,9 +157,9 @@ func sockRecv(sock *net.UDPConn){
 			m = message.NewRcvMsg()
 			handler := mc.GetHandler(msgid)
 			m.SetWS(handler.GetWSNew()())
-			m.SetAddr(remoteAddr)
+			uw:=send.NewWriter(remoteAddr,sock)
+			m.SetUW(uw)
 			m.SetKey(k)
-			m.SetSock(sock)
 			rcv = recv.NewRcvDataer(pkt.GetSerialNo(),m.GetWS())
 			m.SetRecv(rcv)
 
@@ -172,7 +173,7 @@ func sockRecv(sock *net.UDPConn){
 		ack,err := rcv.Write(pkt)
 		if ack != nil{
 			back,_ := ack.Serialize()
-			m.GetSock().WriteToUDP(back,m.GetAddr())
+			m.GetUW().Send(bytes.NewBuffer(back))
 		}
 		if rcv.Finish() {
 			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),send.NewWriter(m.GetAddr(),m.GetSock()))
