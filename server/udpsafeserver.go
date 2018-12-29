@@ -173,7 +173,7 @@ func sockRecv(sock *net.UDPConn){
 		ack,err := rcv.Write(pkt)
 		if ack != nil{
 			back,_ := ack.Serialize()
-			m.GetUW().Send(bytes.NewBuffer(back))
+			m.GetUW().Send(back)
 		}
 		if rcv.Finish() {
 			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),send.NewWriter(m.GetAddr(),m.GetSock()))
