@@ -1,11 +1,11 @@
 package message
 
 import (
+	"github.com/kprc/nbsnetwork/recv"
+	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"sync/atomic"
 	"time"
-	"net"
-	"github.com/kprc/nbsnetwork/recv"
 )
 
 type MsgKey struct {
@@ -15,12 +15,11 @@ type MsgKey struct {
 
 type rcvmsg struct {
 	key *MsgKey
-	w io.WriteSeeker
+	w io.WriteSeeker     //used in rcv
 	refcnt int32
-	timeout int64
-	sock *net.UDPConn
-	addr *net.UDPAddr
-	rcv recv.RcvDataer
+	timeout int64		//if no packet use the rcvmsg, we will delete it
+	uw send.UdpWriterer   //for reply
+	rcv recv.RcvDataer    //for receive
 }
 
 
@@ -33,10 +32,8 @@ type RcvMsg interface {
 	DecRefCnt() int32
 	SetKey(key *MsgKey)
 	GetKey() *MsgKey
-	SetSock(sock *net.UDPConn)
-	GetSock() *net.UDPConn
-	SetAddr(addr *net.UDPAddr)
-	GetAddr() *net.UDPAddr
+	SetUW(uw send.UdpWriterer)
+	GetUW() send.UdpWriterer
 	GetRecv() recv.RcvDataer
 	SetRecv(rcv recv.RcvDataer)
 }
@@ -95,20 +92,12 @@ func (rm *rcvmsg)GetKey() *MsgKey {
 	return rm.key
 }
 
-func (rm *rcvmsg)SetSock(sock *net.UDPConn) {
-	rm.sock = sock
+func (rm *rcvmsg)SetUW(uw send.UdpWriterer) {
+	rm.uw = uw
 }
 
-func (rm *rcvmsg)GetSock() *net.UDPConn  {
-	return rm.sock
-}
-
-func (rm *rcvmsg)SetAddr(addr *net.UDPAddr)  {
-	rm.addr = addr
-}
-
-func (rm *rcvmsg)GetAddr() *net.UDPAddr  {
-	return rm.addr
+func (rm *rcvmsg)GetUW() send.UdpWriterer  {
+	return rm.uw
 }
 
 func (rm *rcvmsg)GetRecv() recv.RcvDataer  {
