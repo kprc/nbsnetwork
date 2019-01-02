@@ -1,17 +1,16 @@
 package server
 
 import (
-	"bytes"
-	"net"
-	"github.com/kprc/nbsnetwork/common/address"
-	"sync"
 	"fmt"
-	"github.com/kprc/nbsnetwork/common/packet"
-	"github.com/kprc/nbsnetwork/server/regcenter"
+	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
-	"github.com/kprc/nbsnetwork/server/message"
+	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
+	"github.com/kprc/nbsnetwork/server/message"
+	"github.com/kprc/nbsnetwork/server/regcenter"
+	"net"
+	"sync"
 )
 
 var (
@@ -173,10 +172,10 @@ func sockRecv(sock *net.UDPConn){
 		ack,err := rcv.Write(pkt)
 		if ack != nil{
 			back,_ := ack.Serialize()
-			m.GetUW().Send(back)
+			m.GetUW().SendBytes(back)
 		}
 		if rcv.Finish() {
-			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),send.NewWriter(m.GetAddr(),m.GetSock()))
+			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),m.GetUW())
 		}
 
 	}
