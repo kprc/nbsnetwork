@@ -25,20 +25,15 @@ var (
 )
 
 func GetInstance() BStorer {
-
-	if instance != nil{
-		return instance
-	}else {
+	if instance == nil{
 		initlock.Lock()
-		defer initlock.Unlock()
-		if instance != nil{
-			return instance
+
+		if instance == nil{
+			instance = &bstore{sd:make(map[uint64]StoreDataer),
+				glock:&sync.RWMutex{}}
 		}
-		instance = &bstore{sd:make(map[uint64]StoreDataer),
-							glock:&sync.RWMutex{}}
-
+		initlock.Unlock()
 	}
-
 	return instance
 }
 

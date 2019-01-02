@@ -7,8 +7,9 @@ import (
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
-	"github.com/kprc/nbsnetwork/server/message"
-	"github.com/kprc/nbsnetwork/server/regcenter"
+	"github.com/kprc/nbsnetwork/common/message"
+	"github.com/kprc/nbsnetwork/common/regcenter"
+	"io"
 	"net"
 	"sync"
 )
@@ -22,9 +23,9 @@ var (
 type udpServer struct {
 	listenAddr address.UdpAddresser
 
-	mListenSocket map[address.UdpAddresser]*net.UDPConn
+	//mListenSocket map[address.UdpAddresser]*net.UDPConn
 
-	remoteAddr map[address.UdpAddresser]*net.UDPAddr
+	//remoteAddr map[address.UdpAddresser]*net.UDPAddr
 
 	processWait chan int
 
@@ -33,7 +34,7 @@ type udpServer struct {
 
 type UdpServerer interface {
 	Run(ipstr string,port uint16)
-	Send([] byte) error
+	//Send([] byte) error
 	GetListenAddr() address.UdpAddresser
 	//Rcv() ([]byte,error)
 }
@@ -52,8 +53,8 @@ func GetUdpServer() UdpServerer {
 
 func newUdpServer() UdpServerer {
 	us := &udpServer{}
-	us.mListenSocket = make(map[address.UdpAddresser]*net.UDPConn)
-	us.remoteAddr = make(map[address.UdpAddresser]*net.UDPAddr)
+	//us.mListenSocket = make(map[address.UdpAddresser]*net.UDPConn)
+	//us.remoteAddr = make(map[address.UdpAddresser]*net.UDPAddr)
 	//us.rcvBuf = make(map[address.UdpAddresser][]bytes.Buffer)
 	us.processWait = make(chan int,0)
 
@@ -123,6 +124,20 @@ func (us *udpServer)GetListenAddr() address.UdpAddresser  {
 	return us.listenAddr
 }
 
+func doAck(pkt packet.UdpPacketDataer)  {
+	bs:= send.GetInstance()
+
+	sd := bs.GetBlockDataer(pkt.GetSerialNo())
+	if sd == nil {
+		return
+	}
+
+	bdr := sd.GetBlockData()
+	bdr.PushResult(pkt.GetData())
+	bs.PutBlockDataer(pkt.GetSerialNo())
+
+}
+
 func sockRecv(sock *net.UDPConn){
 	gdata := make([]byte, 1024)
 
@@ -140,7 +155,14 @@ func sockRecv(sock *net.UDPConn){
 			continue
 		}
 
-		mc := regcenter.GetMsgCenter()
+		//if type is ack, send to result channel and continue
+		if pkt.GetTyp() == constant.ACK {
+			//send to send block
+			doAck(pkt)
+			continue
+		}
+
+		mc := regcenter.GetMsgCenterInstance()
 
 		msgid,stationId,headinfo := mc.GetMsgId(pkt.GetTransInfo())
 		if msgid == constant.MSG_NONE || stationId == "" {
@@ -171,17 +193,28 @@ func sockRecv(sock *net.UDPConn){
 
 		ack,err := rcv.Write(pkt)
 		if ack != nil{
-			back,_ := ack.Serialize()
-			m.GetUW().SendBytes(back)
+			sendAck(m.GetUW(),ack,pkt)
 		}
 		if rcv.Finish() {
 			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),m.GetUW())
+			rmr.PutMsg(k)
+			rmr.DelMsg(k)
+		}else {
+			rmr.PutMsg(k)
 		}
 
 	}
 }
 
-func (us *udpServer)Send([]byte) error {
-	return nil
+func sendAck(w io.Writer, ack packet.UdpResulter, pkt packet.UdpPacketDataer){
+	upd := packet.NewUdpPacketData()
+	upd.SetSerialNo(pkt.GetSerialNo())
+	upd.SetACK()
+	back,_ := ack.Serialize()
+	upd.SetLength(int32(len(back)))
+	upd.SetData(back)
+
+	w.Write(back)
+
 }
 

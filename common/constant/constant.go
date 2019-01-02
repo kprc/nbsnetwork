@@ -14,7 +14,7 @@ const (
 )
 
 const (
-	PING= iota
+	PING= iota + 1
 	ACK
 	DATA_TRANSER
 )

@@ -1,14 +1,14 @@
 package send
 
 import (
+	"fmt"
+	"github.com/kprc/nbsdht/nbserr"
+	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/kprc/nbsnetwork/common/packet"
 	"io"
+	"sync"
 	"sync/atomic"
 	"time"
-	"sync"
-	"github.com/kprc/nbsdht/nbserr"
-	"github.com/kprc/nbsnetwork/common/packet"
-	"github.com/kprc/nbsnetwork/common/constant"
-	"fmt"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send error"}
@@ -40,6 +40,7 @@ type BlockDataer interface {
 	Send() error
 	SetWriter(w io.Writer)
 	GetSerialNo() uint64
+	PushResult(result interface{})
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -231,6 +232,11 @@ func (bd *BlockData)doresult(result interface{}) error {
 
 	return nil
 }
+
+func (bd *BlockData)PushResult(result interface{})  {
+	bd.chResult <- result
+}
+
 
 func (bd *BlockData)enqueue(pos uint32, data packet.UdpPacketDataer)  {
 	bd.rwlock.Lock()

@@ -2,7 +2,7 @@ package regcenter
 
 import (
 	"sync"
-	"github.com/kprc/nbsnetwork/server/pb"
+	"github.com/kprc/nbsnetwork/common/message/pb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/kprc/nbsnetwork/common/constant"
 )
@@ -29,7 +29,7 @@ var (
 )
 
 
-func GetMsgCenter() MsgCenter{
+func GetMsgCenterInstance() MsgCenter{
 	if instance == nil{
 		glock.Lock()
 		if instance == nil {

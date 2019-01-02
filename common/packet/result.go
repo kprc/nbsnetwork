@@ -49,7 +49,7 @@ func (ur *udpresult) GetSerialNo() uint64 {
 func (ur *udpresult)Serialize() ([]byte,error)  {
 	ua:=&packet.UdpAck{}
 	ua.SerialNo = ur.serialNo
-	ua.DataType = constant.DATA_TRANSER   //need to implement
+	ua.DataType = constant.ACK   //need to implement
 	ua.Ack = ur.rcved
 	ua.Resend = ur.resend
 

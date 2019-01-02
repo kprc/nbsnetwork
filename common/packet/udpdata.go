@@ -25,6 +25,7 @@ type UdpPacketDataer interface {
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
 	SetTyp(typ uint16)
+	GetTyp() uint16
 	GetLength() int32
 	SetLength(len int32)
 	SetTransInfo(ti []byte)
@@ -50,32 +51,6 @@ type UDPPacketData struct {
 func NewUdpPacketData() UdpPacketDataer {
 	return &UDPPacketData{}
 }
-
-
-//in the future i will Serialize and DeSerialize by myself
-//func (uh *UDPPacketData)Serialize() []byte  {
-//	buf := new(bytes.Buffer)
-//	binary.Write(buf,binary.BigEndian,uh.serialNo)
-//	binary.Write(buf,binary.BigEndian,uh.totalCnt)
-//	binary.Write(buf,binary.BigEndian,uh.posNum)
-//	binary.Write(buf,binary.BigEndian,uh.dataTyp)
-//	binary.Write(buf,binary.BigEndian,uh.tryCnt)
-//	buf.Write(uh.data)
-//
-//	return buf.Bytes()
-//}
-//
-//func (uh *UDPPacketData)DeSerialize(data []byte) {
-//	buf := new(bytes.Buffer)
-//	buf.Write(data)
-//	binary.Read(buf,binary.BigEndian,&uh.serialNo)
-//	binary.Read(buf,binary.BigEndian,&uh.totalCnt)
-//	binary.Read(buf,binary.BigEndian,&uh.posNum)
-//	binary.Read(buf,binary.BigEndian,&uh.dataTyp)
-//	binary.Read(buf,binary.BigEndian,&uh.tryCnt)
-//
-//	uh.data = buf.Bytes()
-//}
 
 
 func (uh *UDPPacketData)Serialize() ([]byte,error)  {
@@ -186,3 +161,4 @@ func (uh *UDPPacketData)SetTransInfo(ti []byte)  {
 func (uh *UDPPacketData)GetTransInfo() []byte {
 	return uh.transInfo
 }
+
