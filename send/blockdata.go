@@ -140,6 +140,10 @@ func (bd *BlockData)nonesend() (uint32,error) {
 	return round,nil
 }
 
+func (bd *BlockData)Rcv() error  {
+	
+}
+
 func (bd *BlockData)Send() error {
 
 	ret := 0
