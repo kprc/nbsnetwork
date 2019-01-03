@@ -12,7 +12,7 @@ type udpClient struct {
 	dialAddr address.UdpAddresser
 	localAddr address.UdpAddresser
 	realAddr address.UdpAddresser
-	uw send.UdpWriterer
+	uw send.UdpReaderWriterer
 
 	processWait chan int
 }
@@ -71,6 +71,8 @@ func (uc *udpClient)ReDial() error  {
 func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadSeeker) error  {
 	bd := send.NewBlockData(r,constant.UDP_MTU)
 	bd.SetWriter(uc.uw)
+
+	bd.Rcv()
 
 	bd.Send()
 

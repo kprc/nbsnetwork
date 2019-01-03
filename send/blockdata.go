@@ -38,6 +38,7 @@ type BlockData struct {
 
 type BlockDataer interface {
 	Send() error
+	Rcv() error
 	SetWriter(w io.Writer)
 	GetSerialNo() uint64
 	PushResult(result interface{})
@@ -141,7 +142,10 @@ func (bd *BlockData)nonesend() (uint32,error) {
 }
 
 func (bd *BlockData)Rcv() error  {
-	
+
+
+
+	return nil
 }
 
 func (bd *BlockData)Send() error {

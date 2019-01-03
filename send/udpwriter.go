@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-type udpWriter struct {
+type udpReaderWriter struct {
 	addr *net.UDPAddr
 	sock *net.UDPConn
 }
@@ -31,25 +31,25 @@ func (uwrs *uwReaderSeeker)Seek(offset int64, whence int) (int64, error)  {
 }
 
 
-type UdpWriterer interface {
+type UdpReaderWriterer interface {
 	Send(r io.ReadSeeker) error
 	SendBytes(data []byte)
 	io.Writer
 }
 
-func NewWriter(addr *net.UDPAddr, sock *net.UDPConn) UdpWriterer {
-	uw:=&udpWriter{addr:addr,sock:sock}
+func NewWriter(addr *net.UDPAddr, sock *net.UDPConn) UdpReaderWriterer {
+	uw:=&udpReaderWriter{addr:addr,sock:sock}
 
 	return uw
 }
 
-func (uw *udpWriter)SendBytes(data []byte)  {
+func (uw *udpReaderWriter)SendBytes(data []byte)  {
 	uwrs := &uwReaderSeeker{data:data}
 
 	uw.Send(uwrs)
 }
 
-func (uw *udpWriter)Send(r io.ReadSeeker) error  {
+func (uw *udpReaderWriter)Send(r io.ReadSeeker) error  {
 	bd := NewBlockData(r,constant.UDP_MTU)
 	bd.SetWriter(uw)
 
@@ -66,6 +66,6 @@ func (uw *udpWriter)Send(r io.ReadSeeker) error  {
 	return nil
 }
 
-func (uw *udpWriter)Write(p []byte) (n int, err error)   {
+func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {
 	return uw.sock.WriteToUDP(p,uw.addr)
 }

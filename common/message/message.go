@@ -18,7 +18,7 @@ type rcvmsg struct {
 	w io.WriteSeeker     //used in rcv
 	refcnt int32
 	timeout int64		//if no packet use the rcvmsg, we will delete it
-	uw send.UdpWriterer   //for reply
+	uw send.UdpReaderWriterer   //for reply
 	rcv recv.RcvDataer    //for receive
 }
 
@@ -32,8 +32,8 @@ type RcvMsg interface {
 	DecRefCnt() int32
 	SetKey(key *MsgKey)
 	GetKey() *MsgKey
-	SetUW(uw send.UdpWriterer)
-	GetUW() send.UdpWriterer
+	SetUW(uw send.UdpReaderWriterer)
+	GetUW() send.UdpReaderWriterer
 	GetRecv() recv.RcvDataer
 	SetRecv(rcv recv.RcvDataer)
 }
@@ -92,11 +92,11 @@ func (rm *rcvmsg)GetKey() *MsgKey {
 	return rm.key
 }
 
-func (rm *rcvmsg)SetUW(uw send.UdpWriterer) {
+func (rm *rcvmsg)SetUW(uw send.UdpReaderWriterer) {
 	rm.uw = uw
 }
 
-func (rm *rcvmsg)GetUW() send.UdpWriterer  {
+func (rm *rcvmsg)GetUW() send.UdpReaderWriterer  {
 	return rm.uw
 }
 
