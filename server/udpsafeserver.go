@@ -178,7 +178,7 @@ func sockRecv(sock *net.UDPConn){
 			m = message.NewRcvMsg()
 			handler := mc.GetHandler(msgid)
 			m.SetWS(handler.GetWSNew()())
-			uw:=send.NewWriter(remoteAddr,sock)
+			uw:=send.NewReaderWriter(remoteAddr,sock)
 			m.SetUW(uw)
 			m.SetKey(k)
 			rcv = recv.NewRcvDataer(pkt.GetSerialNo(),m.GetWS())

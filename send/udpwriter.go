@@ -35,9 +35,10 @@ type UdpReaderWriterer interface {
 	Send(r io.ReadSeeker) error
 	SendBytes(data []byte)
 	io.Writer
+	io.Reader
 }
 
-func NewWriter(addr *net.UDPAddr, sock *net.UDPConn) UdpReaderWriterer {
+func NewReaderWriter(addr *net.UDPAddr, sock *net.UDPConn) UdpReaderWriterer {
 	uw:=&udpReaderWriter{addr:addr,sock:sock}
 
 	return uw
@@ -68,4 +69,8 @@ func (uw *udpReaderWriter)Send(r io.ReadSeeker) error  {
 
 func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {
 	return uw.sock.WriteToUDP(p,uw.addr)
+}
+
+func (uw *udpReaderWriter)Read(p []byte) (n int, err error)  {
+	return uw.sock.Read(p)
 }
