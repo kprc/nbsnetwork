@@ -25,6 +25,7 @@ type udpClient struct {
 
 type UdpClient interface {
 	Send(headinfo []byte,msgid int32,stationId string,r io.ReadSeeker) error
+	SendBytes(headinfo []byte,msgid int32,stationId string,data []byte) error
 	Rcv() error
 	Dial() error
 	ReDial() error
@@ -77,6 +78,7 @@ func (uc *udpClient)ReDial() error  {
 func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadSeeker) error  {
 	bd := send.NewBlockData(r,constant.UDP_MTU)
 	bd.SetWriter(uc.uw)
+	bd.SetTransInfoOrigin(stationId,msgid,headinfo)
 
 	go uc.Rcv()
 

@@ -78,7 +78,7 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 		}
 	}
 	//fmt.Println("Server will start at:")
-	ua.PrintAll()
+	//ua.PrintAll()
 
 	usua:=address.NewUdpAddress()
 

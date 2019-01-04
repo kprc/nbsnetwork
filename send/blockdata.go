@@ -9,6 +9,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"github.com/kprc/nbsnetwork/common/message/pb"
+	"github.com/gogo/protobuf/proto"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send error"}
@@ -31,6 +33,7 @@ type BlockData struct {
 	totalCnt uint32
 	totalRetryCnt uint32
 	dataType uint16
+	transinfo []byte
 	chResult chan interface{}
 	rwlock sync.RWMutex
 	sndData map[uint32]packet.UdpPacketDataer
@@ -41,6 +44,15 @@ type BlockDataer interface {
 	SetWriter(w io.Writer)
 	GetSerialNo() uint64
 	PushResult(result interface{})
+	SetTransInfo(info []byte)
+	GetTransInfo() []byte
+	SetTransInfoCommon(stationId string,msgid int32) error
+	GetTransInfoCommon() (stationId string, msgid int32,err error)
+	SetTransInfoHead(head []byte) error
+	GetTransInfoHead() (head []byte,err error)
+	SetTransInfoOrigin(stationId string,msgid int32,head []byte) error
+	GetTransInfoOrigin() (stationId string,msgid int32,head []byte,err error)
+
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -76,6 +88,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 		upr.SetTyp(bd.dataType)
 		upr.SetSerialNo(bd.serialNo)
 		upr.SetData(buf[:n])
+		upr.SetTransInfo(bd.transinfo)
 
 		upr.SetTotalCnt(0)
 		upr.SetPos(round)
@@ -241,4 +254,99 @@ func (bd *BlockData)enqueue(pos uint32, data packet.UdpPacketDataer)  {
 	bd.rwlock.Lock()
 	defer bd.rwlock.Unlock()
 	bd.sndData[pos] = data
+}
+
+
+func (bd *BlockData)SetTransInfo(info []byte){
+	bd.transinfo = info
+
+}
+func (bd *BlockData)GetTransInfo() []byte{
+	return bd.transinfo
+}
+func (bd *BlockData)SetTransInfoCommon(stationId string,msgid int32) error{
+	mh:=message.MsgHead{StationId:[]byte(stationId),MessageId:msgid}
+
+	bmh,err := proto.Marshal(&mh)
+	if err!=nil {
+		return err
+	}
+
+	bd.transinfo = bmh
+
+	return nil
+}
+func (bd *BlockData)GetTransInfoCommon() (stationId string, msgid int32,err error){
+	mh:=message.MsgHead{}
+
+	err = proto.Unmarshal(bd.transinfo,&mh)
+
+	if err!=nil {
+		return "",0,err
+	}
+
+	return string(mh.StationId),mh.MessageId,err
+
+}
+func (bd *BlockData)SetTransInfoHead(head []byte) error{
+	if bd.transinfo == nil {
+		return nbserr.NbsErr{Errmsg:"Transfer info is nil",ErrId:nbserr.UDP_TRANSINFO_ERR}
+	}
+	mh:=message.MsgHead{}
+
+	err := proto.Unmarshal(bd.transinfo,&mh)
+	if err!=nil {
+		return err
+	}
+	mh.Headinfo = head
+
+	bmh,err1:=proto.Marshal(&mh)
+	if err1 != nil {
+		return err1
+	}
+
+	bd.transinfo = bmh
+
+	return nil
+}
+func (bd *BlockData)GetTransInfoHead() (head []byte,err error){
+	if bd.transinfo == nil {
+		return nil,nbserr.NbsErr{Errmsg:"Transfer info is nil",ErrId:nbserr.UDP_TRANSINFO_ERR}
+	}
+
+	mh:=message.MsgHead{}
+
+	err = proto.Unmarshal(bd.transinfo,&mh)
+	if err!=nil {
+		return nil,err
+	}
+
+	head = mh.Headinfo
+
+	return
+}
+
+
+func (bd *BlockData)SetTransInfoOrigin(stationId string,msgid int32,head []byte) error {
+	mh:=message.MsgHead{MessageId:msgid,StationId:[]byte(stationId),Headinfo:head}
+
+	bmh,err:=proto.Marshal(&mh)
+	if err!=nil {
+		return err
+	}
+
+	bd.transinfo = bmh
+
+	return nil
+}
+func (bd *BlockData)GetTransInfoOrigin() (stationId string,msgid int32,head []byte,err error){
+	if bd.transinfo == nil {
+		return "",0,nil,nbserr.NbsErr{Errmsg:"Transfer info is nil",ErrId:nbserr.UDP_TRANSINFO_ERR}
+	}
+	mh:=message.MsgHead{}
+
+	err = proto.Unmarshal(bd.transinfo,&mh)
+
+	return string(mh.StationId),mh.MessageId,mh.Headinfo,err
+
 }
