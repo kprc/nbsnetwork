@@ -2,10 +2,10 @@ package message
 
 import (
 	"github.com/kprc/nbsnetwork/recv"
-	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"sync/atomic"
 	"time"
+	"github.com/kprc/nbsnetwork/rw"
 )
 
 type MsgKey struct {
@@ -18,7 +18,7 @@ type rcvmsg struct {
 	w io.WriteSeeker     //used in rcv
 	refcnt int32
 	timeout int64		//if no packet use the rcvmsg, we will delete it
-	uw send.UdpReaderWriterer   //for reply
+	uw rw.UdpReaderWriterer   //for reply
 	rcv recv.RcvDataer    //for receive
 }
 
@@ -32,8 +32,8 @@ type RcvMsg interface {
 	DecRefCnt() int32
 	SetKey(key *MsgKey)
 	GetKey() *MsgKey
-	SetUW(uw send.UdpReaderWriterer)
-	GetUW() send.UdpReaderWriterer
+	SetUW(uw rw.UdpReaderWriterer)
+	GetUW() rw.UdpReaderWriterer
 	GetRecv() recv.RcvDataer
 	SetRecv(rcv recv.RcvDataer)
 }
@@ -92,11 +92,11 @@ func (rm *rcvmsg)GetKey() *MsgKey {
 	return rm.key
 }
 
-func (rm *rcvmsg)SetUW(uw send.UdpReaderWriterer) {
+func (rm *rcvmsg)SetUW(uw rw.UdpReaderWriterer) {
 	rm.uw = uw
 }
 
-func (rm *rcvmsg)GetUW() send.UdpReaderWriterer  {
+func (rm *rcvmsg)GetUW() rw.UdpReaderWriterer  {
 	return rm.uw
 }
 

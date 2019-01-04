@@ -11,13 +11,14 @@ import (
 	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"net"
+	"github.com/kprc/nbsnetwork/rw"
 )
 
 type udpClient struct {
 	dialAddr address.UdpAddresser
 	localAddr address.UdpAddresser
 	realAddr address.UdpAddresser
-	uw send.UdpReaderWriterer
+	uw rw.UdpReaderWriterer
 
 	processWait chan int
 }
@@ -45,6 +46,9 @@ func NewUdpClient(rip,lip string,rport,lport uint16) UdpClient {
 }
 
 func assembleUdpAddr(addr address.UdpAddresser) *net.UDPAddr  {
+	if addr == nil {
+		return nil
+	}
 	ipstr,port := addr.FirstS()
 	if ipstr == "" {
 		return nil
@@ -66,13 +70,18 @@ func (uc *udpClient)Dial() error {
 		uc.realAddr.AddIP4Str(la.String())
 	}
 
-	uc.uw = send.NewReaderWriter(ra,conn)
+	uc.uw = rw.NewReaderWriter(ra,conn)
 
 	return nil
 }
 
 func (uc *udpClient)ReDial() error  {
 	return uc.Dial()
+}
+
+func (uc *udpClient)SendBytes(headinfo []byte,msgid int32,stationId string,data []byte) error  {
+	rs := rw.NewReadSeeker(data)
+	return uc.Send(headinfo,msgid,stationId,rs)
 }
 
 func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadSeeker) error  {

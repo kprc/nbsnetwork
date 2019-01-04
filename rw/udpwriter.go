@@ -1,9 +1,10 @@
-package send
+package rw
 
 import (
 	"github.com/kprc/nbsnetwork/common/constant"
 	"io"
 	"net"
+	"github.com/kprc/nbsnetwork/send"
 )
 
 type udpReaderWriter struct {
@@ -14,6 +15,10 @@ type udpReaderWriter struct {
 
 type uwReaderSeeker struct {
 	data []byte
+}
+
+type UdpBytesReaderSeeker interface {
+	io.ReadSeeker
 }
 
 func (uwrs *uwReaderSeeker)Read(p []byte) (n int, err error){
@@ -28,6 +33,10 @@ func (uwrs *uwReaderSeeker)Read(p []byte) (n int, err error){
 
 func (uwrs *uwReaderSeeker)Seek(offset int64, whence int) (int64, error)  {
 	return 0,nil
+}
+
+func NewReadSeeker(data []byte) UdpBytesReaderSeeker {
+	return &uwReaderSeeker{data:data}
 }
 
 
@@ -45,18 +54,18 @@ func NewReaderWriter(addr *net.UDPAddr, sock *net.UDPConn) UdpReaderWriterer {
 }
 
 func (uw *udpReaderWriter)SendBytes(data []byte)  {
-	uwrs := &uwReaderSeeker{data:data}
+	uwrs := NewReadSeeker(data)
 
 	uw.Send(uwrs)
 }
 
 func (uw *udpReaderWriter)Send(r io.ReadSeeker) error  {
-	bd := NewBlockData(r,constant.UDP_MTU)
+	bd := send.NewBlockData(r,constant.UDP_MTU)
 	bd.SetWriter(uw)
 
-	sd:=NewStoreData(bd)
+	sd:=send.NewStoreData(bd)
 
-	bs:=GetInstance()
+	bs:=send.GetInstance()
 
 	bs.AddBlockDataer(bd.GetSerialNo(),sd)
 
