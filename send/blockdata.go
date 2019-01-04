@@ -68,6 +68,7 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	//uh.mtu = constant.UDP_MTU
 	uh.maxcache = constant.UDP_MAX_CACHE
 	uh.timeout = constant.UDP_SEND_TIMEOUT
+	uh.sndData = make(map[uint32]packet.UdpPacketDataer,1024)
 	return uh
 }
 
