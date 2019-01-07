@@ -93,6 +93,8 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadS
 
 	bd.Send()
 
+	<- uc.processWait
+
 	return nil
 }
 
@@ -186,6 +188,8 @@ func (uc *udpClient)Rcv() error  {
 		}
 
 	}
+
+	uc.processWait <- 1
 
 	return nil
 }

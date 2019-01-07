@@ -20,7 +20,7 @@ func main()  {
 
 	ws.(rw.UdpBytesWriterSeeker).PrintAll()
 
-	RegMsg()
+	RegPingMsg()
 
 
 	us := server.GetUdpServer()
@@ -31,7 +31,7 @@ func main()  {
 	fmt.Println("End Server")
 }
 
-func RegMsg()  {
+func RegPingMsg()  {
 	mh:=regcenter.NewMsgHandler()
 
 	mh.SetHandler(handlePing)
