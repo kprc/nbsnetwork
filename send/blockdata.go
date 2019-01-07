@@ -97,7 +97,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 		atomic.AddUint32(&bd.totalreadlen,uint32(n))
 
 		if err==io.EOF {
-			upr.SetTotalCnt(round+1)
+			upr.SetTotalCnt(round)
 		}
 		bupr,_ := upr.Serialize()
 		fmt.Println(len(bupr))
@@ -158,7 +158,7 @@ func (bd *BlockData)nonesend() (uint32,error) {
 func (bd *BlockData)Send() error {
 
 	ret := 0
-	curtime := time.Now().Unix()
+	//curtime := time.Now().Unix()
 
 	if bd.r == nil || bd.w == nil{
 		return blocksnderr
@@ -180,9 +180,13 @@ func (bd *BlockData)Send() error {
 	}
 
 	for {
-		if time.Now().Unix() - curtime > int64(bd.timeout) {
-			return blocksndtimeout
-		}
+		//tv:=time.Now().Unix() -curtime
+		//fmt.Println("time interval:",tv,int64(bd.timeout))
+		//if time.Now().Unix() - curtime > int64(bd.timeout) {
+		//	fmt.Println("time out")
+		//
+		//	return blocksndtimeout
+		//}
 		if ret == 0  || atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
 			if r,err := bd.send(round); err==nil{
 				round++
@@ -329,7 +333,13 @@ func (bd *BlockData)GetTransInfoHead() (head []byte,err error){
 
 
 func (bd *BlockData)SetTransInfoOrigin(stationId string,msgid int32,head []byte) error {
-	mh:=message.MsgHead{MessageId:msgid,StationId:[]byte(stationId),Headinfo:head}
+	mh:=message.MsgHead{MessageId:msgid}
+
+
+	mh.Headinfo = make([]byte,len(head))
+	copy(mh.Headinfo,head)
+	mh.StationId = make([]byte,len([]byte(stationId)))
+	copy(mh.StationId,[]byte(stationId))
 
 	bmh,err:=proto.Marshal(&mh)
 	if err!=nil {

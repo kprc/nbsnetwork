@@ -60,7 +60,7 @@ func (uc *udpClient)Dial() error {
 	la := assembleUdpAddr(uc.localAddr)
 	ra := assembleUdpAddr(uc.dialAddr)
 
-	conn,err:=net.DialUDP("udp",la,ra)
+	conn,err:=net.DialUDP("udp4",la,ra)
 	if err!=nil{
 		return err
 	}
@@ -157,7 +157,7 @@ func (uc *udpClient)Rcv() error  {
 		if m==nil {
 			m = message.NewRcvMsg()
 			handler := mc.GetHandler(msgid)
-			m.SetWS(handler.GetWSNew()())
+			m.SetWS(handler.GetWSNew()(headinfo))
 			//uw:=send.NewReaderWriter(remoteAddr,sock)
 			m.SetUW(uc.uw)
 			m.SetKey(k)
