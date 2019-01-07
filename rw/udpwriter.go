@@ -50,7 +50,7 @@ func (uw *udpReaderWriter)Send(r io.ReadSeeker) error  {
 }
 
 func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {
-	return uw.sock.WriteToUDP(p,uw.addr)
+	return uw.sock.Write(p)
 }
 
 func (uw *udpReaderWriter)Read(p []byte) (n int, err error)  {
