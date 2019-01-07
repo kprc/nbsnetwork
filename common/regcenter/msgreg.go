@@ -65,7 +65,7 @@ func (mc *msgCenter)DelHandler(msgid int32)  {
 
 func (mc *msgCenter)GetHandler(msgid int32)  MsgHandler{
 	mc.rwlock.RLock()
-	defer mc.rwlock.Unlock()
+	defer mc.rwlock.RUnlock()
 
 	if v,ok:=mc.coor[msgid]; ok {
 		v.IncRef()
