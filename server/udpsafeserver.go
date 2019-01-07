@@ -178,7 +178,7 @@ func sockRecv(sock *net.UDPConn){
 		if m==nil {
 			m = message.NewRcvMsg()
 			handler := mc.GetHandler(msgid)
-			m.SetWS(handler.GetWSNew()())
+			m.SetWS(handler.GetWSNew()(headinfo))
 			uw:=rw.NewReaderWriter(remoteAddr,sock)
 			m.SetUW(uw)
 			m.SetKey(k)
