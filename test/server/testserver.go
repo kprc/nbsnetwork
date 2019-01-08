@@ -5,20 +5,15 @@ import (
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/regcenter"
 	"github.com/kprc/nbsnetwork/rw"
-	"github.com/kprc/nbsnetwork/server"
 	"io"
+	"github.com/kprc/nbsnetwork/server"
 )
 
 func main()  {
 	fmt.Println("Test Server")
 
-	ws:= getPingWS(nil)
-
-	ws.Write([]byte("hello,"))
-	ws.Write([]byte("world"))
-
-
-	ws.(rw.UdpBytesWriterSeeker).PrintAll()
+	//testWriteSeeker()
+	//testReadSeeker()
 
 	RegPingMsg()
 
@@ -67,5 +62,40 @@ func handlePing(head interface{},data interface{},snd io.Writer) error  {
 	fmt.Println("Send Pong")
 
 	return nil
+
+}
+
+func testWriteSeeker()  {
+	ws:= getPingWS(nil)
+
+	ws.Write([]byte("hello,"))
+	ws.Write([]byte("world"))
+
+
+	ws.(rw.UdpBytesWriterSeeker).PrintAll()
+
+	fmt.Println(string(ws.(rw.UdpBytesWriterSeeker).GetBytes()))
+}
+
+func testReadSeeker()  {
+	rs:=rw.NewReadSeeker([]byte("hello,world"))
+
+	rs.PrintAll()
+
+	p:=make([]byte,5)
+
+
+
+	for  {
+		nr,err := rs.Read(p)
+		if nr>0 {
+			fmt.Println(string(p[:nr]))
+		}
+		if err == io.EOF || err != nil{
+			break
+		}
+
+	}
+
 
 }
