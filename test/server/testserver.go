@@ -12,21 +12,19 @@ import (
 func main()  {
 	fmt.Println("Test Server")
 
-	ws:= getPingWS(nil)
-
-	ws.Write([]byte("hello,"))
-	ws.Write([]byte("world"))
-
-
-	ws.(rw.UdpBytesWriterSeeker).PrintAll()
+	//ws:= getPingWS(nil)
+	//
+	//ws.Write([]byte("hello,"))
+	//ws.Write([]byte("world"))
+	//
+	//
+	//ws.(rw.UdpBytesWriterSeeker).PrintAll()
 
 	RegPingMsg()
-
 
 	us := server.GetUdpServer()
 
 	us.Run("",11223)
-
 
 	fmt.Println("End Server")
 }

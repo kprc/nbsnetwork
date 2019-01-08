@@ -44,6 +44,8 @@ type BlockDataer interface {
 	SetWriter(w io.Writer)
 	GetSerialNo() uint64
 	PushResult(result interface{})
+	SetDataTyp(typ uint16)
+	GetDataTyp() uint16
 	SetTransInfo(info []byte)
 	GetTransInfo() []byte
 	SetTransInfoCommon(stationId string,msgid int32) error
@@ -360,4 +362,12 @@ func (bd *BlockData)GetTransInfoOrigin() (stationId string,msgid int32,head []by
 
 	return string(mh.StationId),mh.MessageId,mh.Headinfo,err
 
+}
+
+func (bd *BlockData)SetDataTyp(typ uint16){
+	bd.dataType = typ
+}
+
+func (bd *BlockData)GetDataTyp() uint16  {
+	return bd.dataType
 }

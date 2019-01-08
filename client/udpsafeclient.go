@@ -88,6 +88,8 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadS
 	bd := send.NewBlockData(r,constant.UDP_MTU)
 	bd.SetWriter(uc.uw)
 	bd.SetTransInfoOrigin(stationId,msgid,headinfo)
+	bd.SetDataTyp(constant.DATA_TRANSER)
+
 
 	go uc.Rcv()
 

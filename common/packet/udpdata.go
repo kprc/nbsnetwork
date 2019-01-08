@@ -36,14 +36,13 @@ type UdpPacketDataer interface {
 type UDPPacketData struct {
 	serialNo uint64    //for upper protocol used
 	totalCnt uint32    //last packet will be set,other packet will be set to 0
-	posNum uint32      //current packet serial number
-	dataTyp uint16     //data type, for transfer priority
-	tryCnt  uint8      //try transfer times
-	transInfo []byte    //transfer layer infomation
+	posNum uint32      //current packet serial number, start number is 1
+	dataTyp uint16     //data type, for transfer priority,ACK or Data
+	tryCnt  uint8      //try transfer times, default is set to 0
+	transInfo []byte    //transfer layer infomation,msgid stationid, head info
 	pad8    uint8
-	len   int32
+	len   int32			//data len, for check the data len
 	data  []byte
-
 }
 
 
