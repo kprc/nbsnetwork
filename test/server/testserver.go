@@ -17,11 +17,9 @@ func main()  {
 
 	RegPingMsg()
 
-
 	us := server.GetUdpServer()
 
 	us.Run("",11223)
-
 
 	fmt.Println("End Server")
 }
