@@ -19,6 +19,7 @@ type MsgCenter interface {
 	AddHandler(msgid int32,handler MsgHandler)
 	DelHandler(msgid int32)
 	GetHandler(msgid int32) MsgHandler
+	PutHandler(msgid int32)
 	GetMsgId([] byte) (msgid int32,stationId string,headinfo []byte)
 }
 

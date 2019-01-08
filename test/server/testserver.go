@@ -84,8 +84,6 @@ func testReadSeeker()  {
 
 	p:=make([]byte,5)
 
-
-
 	for  {
 		nr,err := rs.Read(p)
 		if nr>0 {
@@ -94,8 +92,6 @@ func testReadSeeker()  {
 		if err == io.EOF || err != nil{
 			break
 		}
-
 	}
-
 
 }

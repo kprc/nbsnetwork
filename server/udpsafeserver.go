@@ -198,6 +198,7 @@ func sockRecv(sock *net.UDPConn){
 		}
 		if rcv.Finish() {
 			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),m.GetUW())
+			mc.PutHandler(msgid)
 			rmr.PutMsg(k)
 			rmr.DelMsg(k)
 		}else {
