@@ -111,6 +111,10 @@ func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error
 
 	err := rd.write()
 
+	if rd.finish {
+		ack.Finished()
+	}
+
 	return ack,err
 }
 

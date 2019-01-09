@@ -63,6 +63,7 @@ func (ur *udpresult)Serialize() ([]byte,error)  {
 	ua.SerialNo = ur.serialNo
 	ua.Ack = ur.rcved
 	ua.Resend = ur.resend
+	ua.Finished = ur.finished
 
 	return proto.Marshal(ua)
 }
@@ -76,6 +77,7 @@ func (ur *udpresult)DeSerialize(buf []byte) error{
 		ur.resend = ua.Resend
 		ur.rcved = ua.Ack
 		ur.serialNo = ua.SerialNo
+		ur.finished = ua.Finished
 	}
 
 	return err

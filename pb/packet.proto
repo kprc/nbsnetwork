@@ -11,6 +11,7 @@ message UDPPacketData{
     uint32 tryCnt = 17;
     int32 len = 4;
     bytes transInfo = 18;
+    bool finished = 19;
     bytes data = 5;
 }
 

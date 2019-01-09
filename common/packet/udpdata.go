@@ -29,6 +29,8 @@ type UdpPacketDataer interface {
 	SetLength(len int32)
 	SetTransInfo(ti []byte)
 	GetTransInfo() []byte
+	Finished()
+	IsFinished() bool
 }
 
 
@@ -39,7 +41,7 @@ type UDPPacketData struct {
 	dataTyp uint16     //data type, for transfer priority,ACK or Data
 	tryCnt  uint8      //try transfer times, default is set to 0
 	transInfo []byte    //transfer layer infomation,msgid stationid, head info
-	pad8    uint8
+	finished    bool
 	len   int32			//data len, for check the data len
 	data  []byte
 }
@@ -157,3 +159,10 @@ func (uh *UDPPacketData)GetTransInfo() []byte {
 	return uh.transInfo
 }
 
+func (uh *UDPPacketData)Finished()  {
+	uh.finished = true
+}
+
+func (uh *UDPPacketData)IsFinished() bool  {
+	return uh.finished
+}
