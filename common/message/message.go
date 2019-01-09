@@ -1,19 +1,16 @@
 package message
 
 import (
+	"github.com/kprc/nbsnetwork/common/flowkey"
 	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/rw"
 	"io"
 	"sync/atomic"
 )
 
-type MsgKey struct {
-	serialNo uint64
-	stationId string
-}
 
 type rcvmsg struct {
-	key *MsgKey
+	key *flowkey.FlowKey
 	w io.WriteSeeker     //used in rcv
 	refcnt int32
 	uw rw.UdpReaderWriterer   //for reply
@@ -28,8 +25,8 @@ type RcvMsg interface {
 	GetRefCnt() int32
 	IncRefCnt()
 	DecRefCnt() int32
-	SetKey(key *MsgKey)
-	GetKey() *MsgKey
+	SetKey(key *flowkey.FlowKey)
+	GetKey() *flowkey.FlowKey
 	SetUW(uw rw.UdpReaderWriterer)
 	GetUW() rw.UdpReaderWriterer
 	GetRecv() recv.RcvDataer
@@ -42,9 +39,6 @@ func NewRcvMsg() RcvMsg  {
 	return rm
 }
 
-func NewMsgKey(sn uint64,stationId string) *MsgKey {
-	return &MsgKey{serialNo:sn,stationId:stationId}
-}
 
 func (rm *rcvmsg)SetWS(w io.WriteSeeker) {
 	rm.w = w
@@ -52,18 +46,7 @@ func (rm *rcvmsg)SetWS(w io.WriteSeeker) {
 func (rm *rcvmsg)GetWS() io.WriteSeeker {
 	return rm.w
 }
-func (mk *MsgKey)SetSerialNo(sn uint64)  {
-	mk.serialNo = sn
-}
-func (mk *MsgKey)GetSerialNo() uint64 {
-	return mk.serialNo
-}
-func (mk *MsgKey)SetStationId(id string)  {
-	mk.stationId = id
-}
-func (rm *MsgKey)GetStationId() string {
-	return rm.stationId
-}
+
 
 func (rm *rcvmsg)SetRefCnt(cnt int32){
 	atomic.StoreInt32(&rm.refcnt,cnt)
@@ -81,11 +64,11 @@ func (rm *rcvmsg)DecRefCnt() int32  {
 	return atomic.AddInt32(&rm.refcnt,-1)
 }
 
-func (rm *rcvmsg)SetKey(key *MsgKey)  {
+func (rm *rcvmsg)SetKey(key *flowkey.FlowKey)  {
 	rm.key = key
 }
 
-func (rm *rcvmsg)GetKey() *MsgKey {
+func (rm *rcvmsg)GetKey() *flowkey.FlowKey {
 	return rm.key
 }
 

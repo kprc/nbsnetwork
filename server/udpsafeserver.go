@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/kprc/nbsnetwork/common/flowkey"
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
@@ -172,7 +173,7 @@ func sockRecv(sock *net.UDPConn){
 		}
 
 		rmr := message.GetInstance()
-		k := message.NewMsgKey(pkt.GetSerialNo(),stationId)
+		k := flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
 		m := rmr.GetMsg(k)
 		var rcv recv.RcvDataer
 		if m==nil {

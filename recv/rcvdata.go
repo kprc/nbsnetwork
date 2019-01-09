@@ -1,14 +1,13 @@
 package recv
 
 import (
-	"sync"
+	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/packet"
 	"io"
-	"github.com/kprc/nbsnetwork/common/constant"
-	"github.com/kprc/nbsdht/nbserr"
-	"time"
-	"sort"
 	"reflect"
+	"sort"
+	"sync"
+	"time"
 )
 
 var rcvdataerr = nbserr.NbsErr{ErrId:nbserr.UDP_RCV_DEFAULT_ERR,Errmsg:"Please initial the node "}
@@ -16,16 +15,15 @@ var rcvwriteioerr = nbserr.NbsErr{ErrId:nbserr.UDP_RCV_WRITER_IO_ERR,Errmsg:"wri
 
 type rcvData struct {
 	serialNo uint64
-	lastAccessTime int64
-	timeout uint32
-	rwlock sync.RWMutex
-	rcvData map[uint32]packet.UdpPacketDataer
 	w io.WriteSeeker
+	lastAccessTime int64
+	rwlock sync.RWMutex
+	rcvData map[uint32]packet.UdpPacketDataer     //cache receive data for write to w
 	lastRcvId uint32
 	lastWriteId uint32
 	totalCnt uint32
 	rwlockResend sync.RWMutex
-	needResend map[uint32]struct{}
+	needResend map[uint32]struct{}    //for caculate what sn is need to resend
 	finish bool
 }
 
@@ -37,7 +35,7 @@ type RcvDataer interface {
 
 func NewRcvDataer(sn uint64,w io.WriteSeeker) RcvDataer{
 	rd := &rcvData{serialNo:sn,w:w}
-	rd.timeout = constant.UDP_RECHECK_TIMEOUT
+	rd.lastAccessTime = time.Now().Unix()
 	rd.rcvData = make(map[uint32]packet.UdpPacketDataer)
 	rd.needResend = make(map[uint32]struct{})
 
@@ -88,21 +86,28 @@ func (rd *rcvData)write() error  {
 	return nil
 }
 
+func max(a,b uint32) uint32 {
+	if a>b{
+		return a
+	}else {
+		return b
+	}
+}
+
 func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error)  {
-	if rd.serialNo==0 || rd.w==nil {
+	if rd.serialNo==0 || rd.w==nil || dataer == nil {
 		return nil,rcvdataerr
 	}
 
 	var ack packet.UdpResulter
 
 	rd.lastAccessTime = time.Now().Unix()
-	if dataer != nil {
-		if dataer.GetTotalCnt() > 0 {
-			rd.totalCnt = dataer.GetTotalCnt()
-		}
-		rd.enqueen(dataer)
-		ack=rd.fillNeedResend(dataer)
+
+	if dataer.GetTotalCnt() > 0 {
+		rd.totalCnt = max(rd.totalCnt,dataer.GetTotalCnt())
 	}
+	rd.enqueen(dataer)
+	ack=rd.fillNeedResend(dataer)
 
 	err := rd.write()
 
