@@ -164,13 +164,13 @@ func sockRecv(sock *net.UDPConn){
 		}
 
 		mc := regcenter.GetMsgCenterInstance()
-
+		//get transfer layer information
 		msgid,stationId,headinfo := mc.GetMsgId(pkt.GetTransInfo())
 		if msgid == constant.MSG_NONE || stationId == "" {
 			fmt.Printf("Receive msgid %d, stationId %s",msgid,stationId)
 			continue
 		}
-
+		//get msg block
 		rmr := message.GetInstance()
 		k := message.NewMsgKey(pkt.GetSerialNo(),stationId)
 		m := rmr.GetMsg(k)
@@ -191,9 +191,10 @@ func sockRecv(sock *net.UDPConn){
 		}else {
 			rcv = m.GetRecv()
 		}
-
+		//wait to test
 		ack,err := rcv.Write(pkt)
 		if ack != nil{
+			//wait to test
 			sendAck(m.GetUW(),ack,pkt)
 		}
 		if rcv.Finish() {
