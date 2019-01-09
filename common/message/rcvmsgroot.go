@@ -1,10 +1,13 @@
 package message
 
-import "sync"
+import (
+	"github.com/kprc/nbsnetwork/common/flowkey"
+	"sync"
+)
 
 type rcvmsgroot struct {
 	rwlock sync.RWMutex
-	msgroot map[MsgKey]RcvMsg
+	msgroot map[flowkey.FlowKey]RcvMsg
 }
 
 var (
@@ -14,10 +17,10 @@ var (
 
 
 type RcvMsgRoot interface {
-	AddMSG(mk *MsgKey,rm RcvMsg)
-	DelMsg(mk *MsgKey)
-	GetMsg(mk *MsgKey) RcvMsg
-	PutMsg(mk *MsgKey)
+	AddMSG(mk *flowkey.FlowKey,rm RcvMsg)
+	DelMsg(mk *flowkey.FlowKey)
+	GetMsg(mk *flowkey.FlowKey) RcvMsg
+	PutMsg(mk *flowkey.FlowKey)
 }
 
 func GetInstance() RcvMsgRoot {
@@ -33,12 +36,12 @@ func GetInstance() RcvMsgRoot {
 
 func newRcvMsgRoot() RcvMsgRoot {
 	rmr:=&rcvmsgroot{}
-	rmr.msgroot = make(map[MsgKey]RcvMsg)
+	rmr.msgroot = make(map[flowkey.FlowKey]RcvMsg)
 
 	return rmr
 }
 
-func (rmr *rcvmsgroot)AddMSG(mk *MsgKey,rm RcvMsg) {
+func (rmr *rcvmsgroot)AddMSG(mk *flowkey.FlowKey,rm RcvMsg) {
 	rmr.rwlock.Lock()
 	defer rmr.rwlock.Unlock()
 	if _,ok := rmr.msgroot[*mk];ok{
@@ -49,7 +52,7 @@ func (rmr *rcvmsgroot)AddMSG(mk *MsgKey,rm RcvMsg) {
 }
 
 
-func (rmr *rcvmsgroot)DelMsg(mk *MsgKey)  {
+func (rmr *rcvmsgroot)DelMsg(mk *flowkey.FlowKey)  {
 	rmr.rwlock.Lock()
 	defer rmr.rwlock.Unlock()
 	if v,ok := rmr.msgroot[*mk];ok{
@@ -61,7 +64,7 @@ func (rmr *rcvmsgroot)DelMsg(mk *MsgKey)  {
 }
 
 
-func (rmr *rcvmsgroot)GetMsg(mk *MsgKey) RcvMsg  {
+func (rmr *rcvmsgroot)GetMsg(mk *flowkey.FlowKey) RcvMsg  {
 	rmr.rwlock.RLock()
 	defer rmr.rwlock.RUnlock()
 	if v,ok := rmr.msgroot[*mk];ok{
@@ -71,7 +74,7 @@ func (rmr *rcvmsgroot)GetMsg(mk *MsgKey) RcvMsg  {
 	return nil
 }
 
-func (rmr *rcvmsgroot)PutMsg(mk *MsgKey)  {
+func (rmr *rcvmsgroot)PutMsg(mk *flowkey.FlowKey)  {
 	rmr.rwlock.RLock()
 
 	if v,ok := rmr.msgroot[*mk];ok{

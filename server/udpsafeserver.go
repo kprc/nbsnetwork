@@ -129,14 +129,23 @@ func (us *udpServer)GetListenAddr() address.UdpAddresser  {
 func doAck(pkt packet.UdpPacketDataer)  {
 	bs:= send.GetInstance()
 
-	sd := bs.GetBlockDataer(pkt.GetSerialNo())
+	rmr := regcenter.GetMsgCenterInstance()
+	_,stationId,_:=rmr.GetMsgId(pkt.GetTransInfo())
+
+	if stationId == "" {
+		return
+	}
+
+	fk := flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
+
+	sd := bs.GetBlockDataer(fk)
 	if sd == nil {
 		return
 	}
 
 	bdr := sd.GetBlockData()
 	bdr.PushResult(pkt.GetData())
-	bs.PutBlockDataer(pkt.GetSerialNo())
+	bs.PutBlockDataer(fk)
 
 }
 
@@ -198,13 +207,18 @@ func sockRecv(sock *net.UDPConn){
 			//wait to test
 			sendAck(m.GetUW(),ack,pkt)
 		}
-		if rcv.Finish() {
-			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),m.GetUW())
-			mc.PutHandler(msgid)
+
+		if rcv.CanDelete() {
 			rmr.PutMsg(k)
 			rmr.DelMsg(k)
 		}else {
-			rmr.PutMsg(k)
+			if rcv.Finish() {
+				mc.GetHandler(msgid).GetHandler()(headinfo, m.GetWS(), m.GetUW())
+				mc.PutHandler(msgid)
+				rmr.PutMsg(k)
+			} else {
+				rmr.PutMsg(k)
+			}
 		}
 
 	}
@@ -213,6 +227,7 @@ func sockRecv(sock *net.UDPConn){
 func sendAck(w io.Writer, ack packet.UdpResulter, pkt packet.UdpPacketDataer){
 	upd := packet.NewUdpPacketData()
 	upd.SetSerialNo(pkt.GetSerialNo())
+	upd.SetTransInfo(pkt.GetTransInfo())
 	upd.SetACK()
 	back,_ := ack.Serialize()
 	upd.SetLength(int32(len(back)))

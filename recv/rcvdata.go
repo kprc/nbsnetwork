@@ -24,13 +24,19 @@ type rcvData struct {
 	totalCnt uint32
 	rwlockResend sync.RWMutex
 	needResend map[uint32]struct{}    //for caculate what sn is need to resend
-	finish bool
+	finished bool
+	canDelete bool
 }
 
 
 type RcvDataer interface {
 	Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error)
 	Finish() bool
+	CanDelete() bool
+}
+
+func (rd *rcvData)CanDelete() bool  {
+	return rd.canDelete
 }
 
 func NewRcvDataer(sn uint64,w io.WriteSeeker) RcvDataer{
@@ -80,7 +86,7 @@ func (rd *rcvData)write() error  {
 	}
 
 	if rd.totalCnt>0 && rd.lastWriteId == rd.totalCnt {
-		rd.finish = true
+		rd.finished = true
 	}
 
 	return nil
@@ -99,6 +105,11 @@ func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error
 		return nil,rcvdataerr
 	}
 
+	if dataer.IsFinished() {
+		rd.canDelete = true
+		return nil,nil
+	}
+
 	var ack packet.UdpResulter
 
 	rd.lastAccessTime = time.Now().Unix()
@@ -111,7 +122,7 @@ func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error
 
 	err := rd.write()
 
-	if rd.finish {
+	if rd.finished {
 		ack.Finished()
 	}
 
@@ -184,5 +195,5 @@ func (rd *rcvData)enqueen(upd packet.UdpPacketDataer){
 }
 
 func (rd *rcvData)Finish() bool {
-	return rd.finish
+	return rd.finished
 }

@@ -1,21 +1,20 @@
 package send
 
 import (
+	"github.com/kprc/nbsnetwork/common/flowkey"
 	"sync"
 )
 
-
-
 type bstore struct {
 	glock *sync.RWMutex
-	sd map[uint64]StoreDataer
+	sd map[flowkey.FlowKey]StoreDataer
 }
 
 type BStorer interface {
-	AddBlockDataer(sn uint64,sdr StoreDataer)
-	GetBlockDataer(sn uint64) StoreDataer
-	PutBlockDataer(sn uint64)
-	DelBlockDataer(sn uint64)
+	AddBlockDataer(key *flowkey.FlowKey,sdr StoreDataer)
+	GetBlockDataer(key *flowkey.FlowKey) StoreDataer
+	PutBlockDataer(key *flowkey.FlowKey)
+	DelBlockDataer(key *flowkey.FlowKey)
 }
 
 var (
@@ -29,7 +28,7 @@ func GetInstance() BStorer {
 		initlock.Lock()
 
 		if instance == nil{
-			instance = &bstore{sd:make(map[uint64]StoreDataer),
+			instance = &bstore{sd:make(map[flowkey.FlowKey]StoreDataer),
 				glock:&sync.RWMutex{}}
 		}
 		initlock.Unlock()
@@ -37,24 +36,24 @@ func GetInstance() BStorer {
 	return instance
 }
 
-func (bs *bstore)AddBlockDataer(sn uint64,bdr StoreDataer)  {
+func (bs *bstore)AddBlockDataer(key *flowkey.FlowKey,bdr StoreDataer)  {
 	bs.glock.Lock()
 	defer bs.glock.Unlock()
 
-	if _,ok := bs.sd[sn];ok {
+	if _,ok := bs.sd[*key];ok {
 		return
 	}
 
 	//sd := &storeData{bdr:bdr}
 	bdr.ReferCntInc()
-	bs.sd[sn] = bdr
+	bs.sd[*key] = bdr
 
 }
 
-func (bs *bstore)GetBlockDataer(sn uint64) StoreDataer{
+func (bs *bstore)GetBlockDataer(key *flowkey.FlowKey) StoreDataer{
 	bs.glock.RLock()
 	defer bs.glock.RUnlock()
-	if v,ok:=bs.sd[sn];ok {
+	if v,ok:=bs.sd[*key];ok {
 		v.ReferCntInc()
 		return v
 	}
@@ -62,22 +61,22 @@ func (bs *bstore)GetBlockDataer(sn uint64) StoreDataer{
 	return nil
 }
 
-func (bs *bstore)decRefer(sn uint64){
+func (bs *bstore)decRefer(key *flowkey.FlowKey){
 	bs.glock.Lock()
 	defer bs.glock.Unlock()
-	if v,ok :=bs.sd[sn];ok {
+	if v,ok :=bs.sd[*key];ok {
 		v.ReferCntDec()
 		if v.GetReferCnt()<=0 {
-			delete(bs.sd,sn)
+			delete(bs.sd,*key)
 		}
 	}
 }
 
 
-func (bs *bstore)PutBlockDataer(sn uint64) {
-	bs.decRefer(sn)
+func (bs *bstore)PutBlockDataer(key *flowkey.FlowKey) {
+	bs.decRefer(key)
 }
 
-func (bs *bstore)DelBlockDataer(sn uint64)  {
-	bs.decRefer(sn)
+func (bs *bstore)DelBlockDataer(key *flowkey.FlowKey)  {
+	bs.decRefer(key)
 }

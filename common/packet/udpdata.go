@@ -63,6 +63,7 @@ func (uh *UDPPacketData)Serialize() ([]byte,error)  {
 	p.Data = uh.data
 	p.Len = uh.len
 	p.TransInfo = uh.transInfo
+	p.Finished = uh.finished
 
 	return proto.Marshal(&p)
 }
@@ -79,6 +80,7 @@ func (uh *UDPPacketData)DeSerialize(data []byte) error {
 		uh.data = p.Data
 		uh.len = p.Len
 		uh.transInfo = p.TransInfo
+		uh.finished = p.Finished
 	}
 
 	return err
