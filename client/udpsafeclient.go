@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/kprc/nbsnetwork/common/flowkey"
 	"github.com/kprc/nbsnetwork/common/message"
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/common/regcenter"
@@ -103,20 +104,29 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadS
 func doAck(pkt packet.UdpPacketDataer)  {
 	bs:= send.GetInstance()
 
-	sd := bs.GetBlockDataer(pkt.GetSerialNo())
+	mc:=regcenter.GetMsgCenterInstance()
+	_,stationId,_:=mc.GetMsgId(pkt.GetTransInfo())
+	if stationId == ""{
+		return
+	}
+
+	fk:=flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
+
+	sd := bs.GetBlockDataer(fk)
 	if sd == nil {
 		return
 	}
 
 	bdr := sd.GetBlockData()
 	bdr.PushResult(pkt.GetData())
-	bs.PutBlockDataer(pkt.GetSerialNo())
+	bs.PutBlockDataer(fk)
 
 }
 
 func sendAck(w io.Writer, ack packet.UdpResulter, pkt packet.UdpPacketDataer){
 	upd := packet.NewUdpPacketData()
 	upd.SetSerialNo(pkt.GetSerialNo())
+	upd.SetTransInfo(pkt.GetTransInfo())
 	upd.SetACK()
 	back,_ := ack.Serialize()
 	upd.SetLength(int32(len(back)))
@@ -155,7 +165,7 @@ func (uc *udpClient)Rcv() error  {
 		}
 
 		rmr := message.GetInstance()
-		k := message.NewMsgKey(pkt.GetSerialNo(),stationId)
+		k := flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
 		m := rmr.GetMsg(k)
 		var rcv recv.RcvDataer
 		if m==nil {
