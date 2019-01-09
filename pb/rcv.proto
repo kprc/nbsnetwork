@@ -5,7 +5,7 @@ package packet;
 
 message UdpAck{
     uint64 serialNo = 1;
-    uint32 dataType = 2;
     uint32 ack=3;
+    bool finished = 16;
     repeated uint32 resend=4;
 }

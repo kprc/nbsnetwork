@@ -1,18 +1,19 @@
 package packet
 
 import (
-	"github.com/kprc/nbsnetwork/pb"
-	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/gogo/protobuf/proto"
+	"github.com/kprc/nbsnetwork/pb"
 )
 
 type udpack struct {
 	resend []uint32
 	rcved uint32
+
 }
 
 type udpresult struct {
 	serialNo uint64
+	finished bool
 	udpack
 }
 
@@ -26,6 +27,8 @@ type UdpAcker interface {
 type UdpResulter interface {
 	SetSerialNo(sn uint64)
 	GetSerialNo() uint64
+	Finished()
+	IsFinished() bool
 	Serialize() ([]byte,error)
 	DeSerialize(buf []byte) error
 	UdpAcker
@@ -38,6 +41,15 @@ func NewUdpResult(sn uint64) UdpResulter {
 	return ur
 }
 
+func (ur *udpresult)Finished() {
+	ur.finished = true
+}
+
+func (ur *udpresult)IsFinished() bool  {
+	return ur.finished
+}
+
+
 func (ur *udpresult) SetSerialNo(sn uint64) {
 	ur.serialNo = sn
 }
@@ -49,7 +61,6 @@ func (ur *udpresult) GetSerialNo() uint64 {
 func (ur *udpresult)Serialize() ([]byte,error)  {
 	ua:=&packet.UdpAck{}
 	ua.SerialNo = ur.serialNo
-	ua.DataType = constant.ACK   //need to implement
 	ua.Ack = ur.rcved
 	ua.Resend = ur.resend
 
@@ -91,6 +102,7 @@ func (ua *udpack) GetReSend() []uint32 {
 func (ua *udpack) GetRcved() uint32 {
 	return ua.rcved
 }
+
 
 
 

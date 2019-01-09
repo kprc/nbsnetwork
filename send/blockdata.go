@@ -54,7 +54,6 @@ type BlockDataer interface {
 	GetTransInfoHead() (head []byte,err error)
 	SetTransInfoOrigin(stationId string,msgid int32,head []byte) error
 	GetTransInfoOrigin() (stationId string,msgid int32,head []byte,err error)
-
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -160,7 +159,7 @@ func (bd *BlockData)nonesend() (uint32,error) {
 func (bd *BlockData)Send() error {
 
 	ret := 0
-	//curtime := time.Now().Unix()
+	curtime := time.Now().Unix()
 
 	if bd.r == nil || bd.w == nil{
 		return blocksnderr
@@ -182,13 +181,13 @@ func (bd *BlockData)Send() error {
 	}
 
 	for {
-		//tv:=time.Now().Unix() -curtime
-		//fmt.Println("time interval:",tv,int64(bd.timeout))
-		//if time.Now().Unix() - curtime > int64(bd.timeout) {
-		//	fmt.Println("time out")
-		//
-		//	return blocksndtimeout
-		//}
+		tv:=time.Now().Unix() -curtime
+		fmt.Println("time interval:",tv,int64(bd.timeout))
+		if time.Now().Unix() - curtime > int64(bd.timeout) {
+			fmt.Println("time out")
+
+			return blocksndtimeout
+		}
 		if ret == 0  || atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
 			if r,err := bd.send(round); err==nil{
 				round++
