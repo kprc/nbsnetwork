@@ -2,10 +2,9 @@ package message
 
 import (
 	"github.com/kprc/nbsnetwork/recv"
+	"github.com/kprc/nbsnetwork/rw"
 	"io"
 	"sync/atomic"
-	"time"
-	"github.com/kprc/nbsnetwork/rw"
 )
 
 type MsgKey struct {
@@ -17,7 +16,6 @@ type rcvmsg struct {
 	key *MsgKey
 	w io.WriteSeeker     //used in rcv
 	refcnt int32
-	timeout int64		//if no packet use the rcvmsg, we will delete it
 	uw rw.UdpReaderWriterer   //for reply
 	rcv recv.RcvDataer    //for receive
 }
@@ -40,7 +38,6 @@ type RcvMsg interface {
 
 func NewRcvMsg() RcvMsg  {
 	rm := &rcvmsg{}
-	rm.timeout = time.Now().Unix()
 
 	return rm
 }

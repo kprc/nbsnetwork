@@ -9,7 +9,6 @@ import (
 
 
 type UdpPacketDataer interface {
-	SetPing()
 	SetACK()
 	SetDataTranser()
 	SetTryCnt(cnt uint8)
@@ -117,9 +116,6 @@ func (uh *UDPPacketData)GetTyp() uint16  {
 	return uh.dataTyp
 }
 
-func (uh *UDPPacketData)SetPing()  {
-	uh.SetTyp(constant.PING)
-}
 
 func (uh *UDPPacketData)SetACK()  {
 	uh.SetTyp(constant.ACK)
