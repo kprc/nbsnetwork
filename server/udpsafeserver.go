@@ -6,6 +6,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/flowkey"
 	"github.com/kprc/nbsnetwork/common/packet"
+	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
 	"github.com/kprc/nbsnetwork/common/message"
@@ -13,7 +14,6 @@ import (
 	"io"
 	"net"
 	"sync"
-	"github.com/kprc/nbsnetwork/rw"
 )
 
 var (
@@ -129,23 +129,15 @@ func (us *udpServer)GetListenAddr() address.UdpAddresser  {
 func doAck(pkt packet.UdpPacketDataer)  {
 	bs:= send.GetInstance()
 
-	rmr := regcenter.GetMsgCenterInstance()
-	_,stationId,_:=rmr.GetMsgId(pkt.GetTransInfo())
 
-	if stationId == "" {
-		return
-	}
-
-	fk := flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
-
-	sd := bs.GetBlockDataer(fk)
+	sd := bs.GetBlockDataer(pkt.GetSerialNo())
 	if sd == nil {
 		return
 	}
 
 	bdr := sd.GetBlockData()
 	bdr.PushResult(pkt.GetData())
-	bs.PutBlockDataer(fk)
+	bs.PutBlockDataer(pkt.GetSerialNo())
 
 }
 
@@ -189,7 +181,7 @@ func sockRecv(sock *net.UDPConn){
 			m = message.NewRcvMsg()
 			handler := mc.GetHandler(msgid)
 			m.SetWS(handler.GetWSNew()(headinfo))
-			uw:=rw.NewReaderWriter(remoteAddr,sock)
+			uw:=netcommon.NewReaderWriter(remoteAddr,sock)
 			m.SetUW(uw)
 			m.SetKey(k)
 			rcv = recv.NewRcvDataer(pkt.GetSerialNo(),m.GetWS())

@@ -2,32 +2,34 @@ package client
 
 import (
 	"fmt"
+	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/flowkey"
 	"github.com/kprc/nbsnetwork/common/message"
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/common/regcenter"
+	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"net"
-	"github.com/kprc/nbsnetwork/rw"
+
 )
 
 type udpClient struct {
 	dialAddr address.UdpAddresser
 	localAddr address.UdpAddresser
 	realAddr address.UdpAddresser
-	uw rw.UdpReaderWriterer
+	uw netcommon.UdpReaderWriterer
 
 	processWait chan int
 }
 
 
 type UdpClient interface {
-	Send(headinfo []byte,msgid int32,stationId string,r io.ReadSeeker) error
-	SendBytes(headinfo []byte,msgid int32,stationId string,data []byte) error
+	Send(headinfo []byte,msgid int32,r io.ReadSeeker) error
+	SendBytes(headinfo []byte,msgid int32,data []byte) error
 	Rcv() error
 	Dial() error
 	ReDial() error
@@ -71,7 +73,7 @@ func (uc *udpClient)Dial() error {
 		uc.realAddr.AddIP4Str(la.String())
 	}
 
-	uc.uw = rw.NewReaderWriter(ra,conn)
+	uc.uw = netcommon.NewReaderWriter(ra,conn)
 
 	return nil
 }
@@ -80,15 +82,17 @@ func (uc *udpClient)ReDial() error  {
 	return uc.Dial()
 }
 
-func (uc *udpClient)SendBytes(headinfo []byte,msgid int32,stationId string,data []byte) error  {
-	rs := rw.NewReadSeeker(data)
-	return uc.Send(headinfo,msgid,stationId,rs)
+func (uc *udpClient)SendBytes(headinfo []byte,msgid int32,data []byte) error  {
+	rs := netcommon.NewReadSeeker(data)
+
+	return uc.Send(headinfo,msgid,rs)
 }
 
-func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadSeeker) error  {
+func (uc *udpClient)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	bd := send.NewBlockData(r,constant.UDP_MTU)
 	bd.SetWriter(uc.uw)
-	bd.SetTransInfoOrigin(stationId,msgid,headinfo)
+	inn:=nbsid.GetLocalId()
+	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
 	bd.SetDataTyp(constant.DATA_TRANSER)
 
 
@@ -104,22 +108,15 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,stationId string,r io.ReadS
 func doAck(pkt packet.UdpPacketDataer)  {
 	bs:= send.GetInstance()
 
-	mc:=regcenter.GetMsgCenterInstance()
-	_,stationId,_:=mc.GetMsgId(pkt.GetTransInfo())
-	if stationId == ""{
-		return
-	}
 
-	fk:=flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
-
-	sd := bs.GetBlockDataer(fk)
+	sd := bs.GetBlockDataer(pkt.GetSerialNo())
 	if sd == nil {
 		return
 	}
 
 	bdr := sd.GetBlockData()
 	bdr.PushResult(pkt.GetData())
-	bs.PutBlockDataer(fk)
+	bs.PutBlockDataer(pkt.GetSerialNo())
 
 }
 

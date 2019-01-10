@@ -1,4 +1,4 @@
-package rw
+package netcommon
 
 import (
 	"github.com/kprc/nbsnetwork/common/constant"

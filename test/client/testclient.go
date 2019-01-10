@@ -9,7 +9,7 @@ func main()  {
 	c := client.NewUdpClient("192.168.107.242","",11223,0)
 	c.Dial()
 
-	c.SendBytes([]byte("Title Ping")[:],constant.MSG_PING,"10366servber",[]byte("PING TO SERVER")[:])
+	c.SendBytes([]byte("Title Ping")[:],constant.MSG_PING,[]byte("PING TO SERVER")[:])
 
 
 }

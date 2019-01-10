@@ -2,8 +2,8 @@ package message
 
 import (
 	"github.com/kprc/nbsnetwork/common/flowkey"
+	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/recv"
-	"github.com/kprc/nbsnetwork/rw"
 	"io"
 	"sync/atomic"
 )
@@ -13,7 +13,7 @@ type rcvmsg struct {
 	key *flowkey.FlowKey
 	w io.WriteSeeker     //used in rcv
 	refcnt int32
-	uw rw.UdpReaderWriterer   //for reply
+	uw netcommon.UdpReaderWriterer   //for reply
 	rcv recv.RcvDataer    //for receive
 }
 
@@ -27,8 +27,8 @@ type RcvMsg interface {
 	DecRefCnt() int32
 	SetKey(key *flowkey.FlowKey)
 	GetKey() *flowkey.FlowKey
-	SetUW(uw rw.UdpReaderWriterer)
-	GetUW() rw.UdpReaderWriterer
+	SetUW(uw netcommon.UdpReaderWriterer)
+	GetUW() netcommon.UdpReaderWriterer
 	GetRecv() recv.RcvDataer
 	SetRecv(rcv recv.RcvDataer)
 }
@@ -72,11 +72,11 @@ func (rm *rcvmsg)GetKey() *flowkey.FlowKey {
 	return rm.key
 }
 
-func (rm *rcvmsg)SetUW(uw rw.UdpReaderWriterer) {
+func (rm *rcvmsg)SetUW(uw netcommon.UdpReaderWriterer) {
 	rm.uw = uw
 }
 
-func (rm *rcvmsg)GetUW() rw.UdpReaderWriterer  {
+func (rm *rcvmsg)GetUW() netcommon.UdpReaderWriterer  {
 	return rm.uw
 }
 
