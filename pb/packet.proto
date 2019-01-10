@@ -5,13 +5,14 @@ package packet;
 
 message UDPPacketData{
     uint64 serialNo = 1;
+    uint64 remoteSN = 2;
     uint32 totalCnt = 16;
-    uint32 posNum = 2;
-    uint32 dataType = 3;
+    uint32 posNum = 3;
+    uint32 dataType = 4;
     uint32 tryCnt = 17;
-    int32 len = 4;
+    int32 len = 5;
     bytes transInfo = 18;
     bool finished = 19;
-    bytes data = 5;
+    bytes data = 6;
 }
 
