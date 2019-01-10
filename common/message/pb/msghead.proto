@@ -4,8 +4,9 @@ package message;
 
 
 message MsgHead{
-    int32 messageId = 1;
-    bytes stationId = 2;
+    int32 msgId = 1;
+    bytes localStationId = 2;
+    bytes remoteStationId =3;
     bytes headinfo = 16;
 }
 
