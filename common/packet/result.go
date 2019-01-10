@@ -90,7 +90,6 @@ func (ua *udpack) AppendResend(ids...uint32) {
 
 }
 
-
 func (ua *udpack) SetRcved(id uint32) {
 	ua.rcved = id
 }
