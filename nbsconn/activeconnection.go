@@ -145,7 +145,15 @@ type MapConn interface {
 
 
 func GetMapConnInstance() MapConn  {
-	return nil
+	if mconnInstance == nil{
+		glock.Lock()
+		if mconnInstance == nil{
+			mconnInstance = &mapConn{collectConn:make(map[string]*mapRW)}
+		}
+		glock.Unlock()
+	}
+
+	return mconnInstance
 }
 
 func (mc *mapConn) AddConn(remoteStationId string, urw netcommon.UdpReaderWriterer) error {
@@ -207,7 +215,7 @@ func (mc *mapConn)PutActiveConn(remoteStationId string, urw netcommon.UdpReaderW
 
 }
 
-func (mc *mapConn)TimeOut()  {
+func (mc *mapConn)timeOut()  {
 	mc.lock.Lock()
 	defer mc.lock.Unlock()
 
@@ -225,7 +233,12 @@ func (mc *mapConn)TimeOut()  {
 	}
 }
 
+func (mc *mapConn)TimeOut()  {
+	for{
+		time.Sleep(time.Second*60)
+		mc.timeOut()
+	}
 
-
+}
 
 
