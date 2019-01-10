@@ -10,12 +10,16 @@ import (
 type udpReaderWriter struct {
 	addr *net.UDPAddr
 	sock *net.UDPConn
+	needRemoteAddress bool
 }
 
 
 type UdpReaderWriterer interface {
 	Send(r io.ReadSeeker) error
 	SendBytes(data []byte)
+	IsNeedRemoteAddress() bool
+	NeedRemoteAddress()
+	AddrString() string
 	io.Writer
 	io.Reader
 }
@@ -31,6 +35,11 @@ func (uw *udpReaderWriter)SendBytes(data []byte)  {
 
 	uw.Send(uwrs)
 }
+
+func (uw *udpReaderWriter)AddrString() string  {
+	return uw.addr.String()
+}
+
 
 func (uw *udpReaderWriter)Send(r io.ReadSeeker) error  {
 	bd := send.NewBlockData(r,constant.UDP_MTU)
@@ -55,4 +64,12 @@ func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {
 
 func (uw *udpReaderWriter)Read(p []byte) (n int, err error)  {
 	return uw.sock.Read(p)
+}
+
+func (uw *udpReaderWriter)IsNeedRemoteAddress() bool {
+	return uw.needRemoteAddress
+}
+
+func (uw *udpReaderWriter) NeedRemoteAddress() {
+	uw.needRemoteAddress = true
 }

@@ -10,6 +10,7 @@ const (
 
 
 	UDP_SERIAL_MAGIC_NUM = 0x20151031
+	UDP_CONN_TIMEOUT=300     //300 second
 
 )
 
