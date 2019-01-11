@@ -5,7 +5,7 @@ package packet;
 
 message UDPPacketData{
     uint64 serialNo = 1;
-    uint64 remoteSN = 2;
+//    uint64 remoteSN = 2;
     uint32 totalCnt = 16;
     uint32 posNum = 3;
     uint32 dataType = 4;
