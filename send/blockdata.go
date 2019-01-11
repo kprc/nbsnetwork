@@ -34,6 +34,7 @@ type BlockData struct {
 	transinfo []byte
 	chResult chan interface{}
 	cmd chan int
+	waitAck chan int
 	rwlock sync.RWMutex
 	sndData map[uint32]packet.UdpPacketDataer
 }
@@ -69,6 +70,9 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh.lastSendTime = time.Now().Unix()
 	uh.mtu = constant.UDP_MTU
 	uh.maxcache = constant.UDP_MAX_CACHE
+	uh.chResult = make(chan interface{},1024)
+	uh.cmd = make(chan int,0)
+	uh.waitAck = make(chan int, 0)
 
 	uh.sndData = make(map[uint32]packet.UdpPacketDataer,1024)
 	return uh
@@ -87,6 +91,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 
 	n,err := bd.r.Read(buf)
 	if n > 0 {
+		atomic.AddInt32(&bd.noacklen,int32(n))
 		upr := packet.NewUdpPacketData()
 		upr.SetTyp(bd.dataType)
 		upr.SetSerialNo(bd.serialNo)
@@ -105,17 +110,12 @@ func (bd *BlockData)send(round uint32) (int,error){
 		fmt.Println(len(bupr))
 		nw,err := bd.w.Write(bupr)
 
-		atomic.AddUint32(&bd.totalCnt,1)
-
 		if n!=nw ||  err!=nil{
 			//need resend
 			bd.enqueue(round,upr)
 			return 0,blocksndwriterioerr
 		}
-		atomic.AddInt32(&bd.noacklen,int32(n))
-
-		upr.SetTryCnt(1)
-		atomic.AddUint32(&bd.totalRetryCnt,1)
+		atomic.AddUint32(&bd.totalSndCnt,1)
 		bd.enqueue(round,upr)
 	}
 
@@ -180,7 +180,7 @@ func (bd *BlockData)Send() error {
 
 	for {
 		bd.lastSendTime = time.Now().Unix()
-		if ret == 0  || atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
+		if ret ==0 && atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
 			if r,err := bd.send(round); err==nil{
 				round++
 				ret = r
@@ -189,17 +189,19 @@ func (bd *BlockData)Send() error {
 			}
 		}
 
-		if ret == 1 {
-			bd.rwlock.RLock()
-			if len(bd.sndData)==0 {
-				bd.rwlock.RUnlock()
-				return nil
-			}
-			bd.rwlock.RUnlock()
+		if ret == 1{
+			return nil
 		}
+
+		wa:=<-bd.waitAck
+
+		if  wa == 1{
+			return nil
+		}
+
 	}
 
-	return nil
+
 
 }
 
