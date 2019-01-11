@@ -11,7 +11,9 @@ import (
 type UdpPacketDataer interface {
 	SetACK()
 	SetDataTranser()
+	SetFinishACK()
 	SetTryCnt(cnt uint8)
+	IncTryCnt()
 	GetTryCnt() uint8
 	SetPos(pos uint32)
 	GetPos() uint32
@@ -31,15 +33,12 @@ type UdpPacketDataer interface {
 	GetTransInfo() []byte
 	Finished()
 	IsFinished() bool
-	SetRemoteSN(sn uint64)
-	GetRemoteSN()  uint64
 
 }
 
 
 type UDPPacketData struct {
 	serialNo uint64    //for upper protocol used
-	remoteSN uint64    //for reply
 	totalCnt uint32    //last packet will be set,other packet will be set to 0
 	posNum uint32      //current packet serial number, start number is 1
 	dataTyp uint16     //data type, for transfer priority,ACK or Data
@@ -68,7 +67,6 @@ func (uh *UDPPacketData)Serialize() ([]byte,error)  {
 	p.Len = uh.len
 	p.TransInfo = uh.transInfo
 	p.Finished = uh.finished
-	p.RemoteSN = uh.remoteSN
 
 
 	return proto.Marshal(&p)
@@ -87,7 +85,6 @@ func (uh *UDPPacketData)DeSerialize(data []byte) error {
 		uh.len = p.Len
 		uh.transInfo = p.TransInfo
 		uh.finished = p.Finished
-		uh.remoteSN = p.RemoteSN
 	}
 
 	return err
@@ -108,6 +105,10 @@ func (uh *UDPPacketData)SetPos(pos uint32)  {
 
 func (uh *UDPPacketData)GetPos() uint32  {
 	return atomic.LoadUint32(&uh.posNum)
+}
+
+func (uh *UDPPacketData)IncTryCnt()  {
+	uh.tryCnt ++
 }
 
 func (uh *UDPPacketData)GetTryCnt()  uint8 {
@@ -134,6 +135,10 @@ func (uh *UDPPacketData)SetACK()  {
 
 func (uh *UDPPacketData)SetDataTranser()  {
 	uh.SetTyp(constant.DATA_TRANSER)
+}
+
+func (uh *UDPPacketData)SetFinishACK()  {
+	uh.SetTyp(constant.FINISH_ACK)
 }
 
 func (uh *UDPPacketData)SetData(data []byte)  {
@@ -176,10 +181,4 @@ func (uh *UDPPacketData)IsFinished() bool  {
 	return uh.finished
 }
 
-func (uh *UDPPacketData)SetRemoteSN(sn uint64) {
-	uh.remoteSN = sn
-}
 
-func (uh *UDPPacketData)GetRemoteSN()  uint64  {
-	return uh.remoteSN
-}

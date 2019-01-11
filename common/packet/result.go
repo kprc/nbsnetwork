@@ -87,7 +87,6 @@ func (ua *udpack) AppendResend(ids...uint32) {
 	for _,id:= range ids{
 		ua.resend = append(ua.resend,id)
 	}
-
 }
 
 func (ua *udpack) SetRcved(id uint32) {

@@ -16,6 +16,7 @@ const (
 
 const (
 	ACK = iota + 1
+	FINISH_ACK
 	DATA_TRANSER
 )
 

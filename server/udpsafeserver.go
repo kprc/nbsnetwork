@@ -64,7 +64,6 @@ func newUdpServer() UdpServerer {
 }
 
 
-
 func (us *udpServer)Run(ipstr string,port uint16) {
 	var ua address.UdpAddresser
 
@@ -114,8 +113,6 @@ func (us *udpServer)Run(ipstr string,port uint16) {
 
 	fmt.Println("Server will start at:")
 	usua.PrintAll()
-
-
 
 	wait:=<-us.processWait
 	fmt.Println("receive a quit command",wait)

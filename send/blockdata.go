@@ -20,21 +20,20 @@ var blocksndwriterioerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_WRITER_IO_ERR,Errms
 var blocksndtimeout = nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"send timeout"}
 
 type BlockData struct {
-	timeout int32
-	r io.ReadSeeker
-	w io.Writer
-	serialNo uint64
-	unixSec int64
+	lastSendTime int64   //for timeout
+	r io.ReadSeeker      //for read content
+	w io.Writer			 //for snd io
+	serialNo uint64      //for search the block
 	mtu   uint32
-	noacklen int32       //
 	totalreadlen uint32   //for seek
-	maxcache uint32
+	noacklen int32
+	maxcache int32       //for udp local stack
 	curNum uint32
-	totalCnt uint32
-	totalRetryCnt uint32
+	totalSndCnt uint32
 	dataType uint16
 	transinfo []byte
 	chResult chan interface{}
+	cmd chan int
 	rwlock sync.RWMutex
 	sndData map[uint32]packet.UdpPacketDataer
 }
@@ -54,6 +53,8 @@ type BlockDataer interface {
 	GetTransInfoHead() (head []byte,err error)
 	SetTransInfoOrigin(stationId string,msgid int32,head []byte) error
 	GetTransInfoOrigin() (stationId string,msgid int32,head []byte,err error)
+	Finished()
+	TimeOut()
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -65,10 +66,10 @@ func (uh *BlockData)nextSerialNo() {
 func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh := &BlockData{r:r,mtu:mtu}
 	uh.nextSerialNo()
-	uh.unixSec = time.Now().Unix()
-	//uh.mtu = constant.UDP_MTU
+	uh.lastSendTime = time.Now().Unix()
+	uh.mtu = constant.UDP_MTU
 	uh.maxcache = constant.UDP_MAX_CACHE
-	uh.timeout = constant.UDP_SEND_TIMEOUT
+
 	uh.sndData = make(map[uint32]packet.UdpPacketDataer,1024)
 	return uh
 }
@@ -139,7 +140,6 @@ func (bd *BlockData)nonesend() (uint32,error) {
 		if round < upr.GetPos() {
 			round = upr.GetPos()
 		}
-		atomic.AddUint32(&bd.totalCnt,1)
 
 		if len(bupr)!=nw ||  err!=nil{
 			//need resend
@@ -147,9 +147,8 @@ func (bd *BlockData)nonesend() (uint32,error) {
 			return 0,blocksndwriterioerr
 		}
 
-		atomic.AddInt32(&bd.noacklen,upr.GetLength())
-		upr.SetTryCnt(1)
-		atomic.AddUint32(&bd.totalRetryCnt,1)
+		upr.IncTryCnt()
+		atomic.AddUint32(&bd.totalSndCnt,1)
 	}
 
 	return round,nil
@@ -159,7 +158,6 @@ func (bd *BlockData)nonesend() (uint32,error) {
 func (bd *BlockData)Send() error {
 
 	ret := 0
-	curtime := time.Now().Unix()
 
 	if bd.r == nil || bd.w == nil{
 		return blocksnderr
@@ -181,13 +179,7 @@ func (bd *BlockData)Send() error {
 	}
 
 	for {
-		tv:=time.Now().Unix() -curtime
-		fmt.Println("time interval:",tv,int64(bd.timeout))
-		if time.Now().Unix() - curtime > int64(bd.timeout) {
-			fmt.Println("time out")
-
-			return blocksndtimeout
-		}
+		bd.lastSendTime = time.Now().Unix()
 		if ret == 0  || atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
 			if r,err := bd.send(round); err==nil{
 				round++
@@ -196,10 +188,7 @@ func (bd *BlockData)Send() error {
 				return err
 			}
 		}
-		select {
-		case result := <- bd.chResult:
-			bd.doresult(result)
-		}
+
 		if ret == 1 {
 			bd.rwlock.RLock()
 			if len(bd.sndData)==0 {
@@ -271,7 +260,7 @@ func (bd *BlockData)GetTransInfo() []byte{
 	return bd.transinfo
 }
 func (bd *BlockData)SetTransInfoCommon(stationId string,msgid int32) error{
-	mh:=message.MsgHead{StationId:[]byte(stationId),MessageId:msgid}
+	mh:=message.MsgHead{LocalStationId:[]byte(stationId),MsgId:msgid}
 
 	bmh,err := proto.Marshal(&mh)
 	if err!=nil {
@@ -291,7 +280,7 @@ func (bd *BlockData)GetTransInfoCommon() (stationId string, msgid int32,err erro
 		return "",0,err
 	}
 
-	return string(mh.StationId),mh.MessageId,err
+	return string(mh.LocalStationId),mh.MsgId,err
 
 }
 func (bd *BlockData)SetTransInfoHead(head []byte) error{
@@ -334,13 +323,13 @@ func (bd *BlockData)GetTransInfoHead() (head []byte,err error){
 
 
 func (bd *BlockData)SetTransInfoOrigin(stationId string,msgid int32,head []byte) error {
-	mh:=message.MsgHead{MessageId:msgid}
+	mh:=message.MsgHead{MsgId:msgid}
 
 
 	mh.Headinfo = make([]byte,len(head))
 	copy(mh.Headinfo,head)
-	mh.StationId = make([]byte,len([]byte(stationId)))
-	copy(mh.StationId,[]byte(stationId))
+	mh.LocalStationId = make([]byte,len([]byte(stationId)))
+	copy(mh.LocalStationId,[]byte(stationId))
 
 	bmh,err:=proto.Marshal(&mh)
 	if err!=nil {
@@ -359,7 +348,7 @@ func (bd *BlockData)GetTransInfoOrigin() (stationId string,msgid int32,head []by
 
 	err = proto.Unmarshal(bd.transinfo,&mh)
 
-	return string(mh.StationId),mh.MessageId,mh.Headinfo,err
+	return string(mh.LocalStationId),mh.MsgId,mh.Headinfo,err
 
 }
 
@@ -369,4 +358,24 @@ func (bd *BlockData)SetDataTyp(typ uint16){
 
 func (bd *BlockData)GetDataTyp() uint16  {
 	return bd.dataType
+}
+
+func (bd *BlockData)Finished()  {
+	bd.cmd <- 1
+}
+
+func (bd *BlockData)doACK() {
+	for {
+		select {
+		case result := <-bd.chResult:
+			bd.doresult(result)
+		case <-bd.cmd:
+
+			return
+		}
+	}
+}
+
+func (bd *BlockData)TimeOut()  {
+
 }
