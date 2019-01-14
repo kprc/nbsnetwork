@@ -74,7 +74,7 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh.cmd = make(chan int,0)
 	uh.waitAck = make(chan int, 0)
 
-	uh.sndData = make(map[uint32]packet.UdpPacketDataer,1024)
+	uh.sndData = make(map[uint32]packet.UdpPacketDataer)
 	return uh
 }
 
@@ -128,7 +128,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 	return 0,nil
 }
 
-func (bd *BlockData)nonesend() (uint32,error) {
+func (bd *BlockData)continuesend() (uint32,error) {
 
 	var round uint32 = 1
 	bd.rwlock.RLock()
@@ -167,7 +167,7 @@ func (bd *BlockData)Send() error {
 		return blocksndmtuerr
 	}
 
-	round,err := bd.nonesend()
+	round,err := bd.continuesend()
 	if err != nil{
 		return err
 	}
@@ -225,7 +225,7 @@ func (bd *BlockData)doresult(result interface{}) error {
 				atomic.AddInt32(&bd.noacklen,int32(upr.GetLength()))
 
 				upr.SetTryCnt(upr.GetTryCnt()+1)
-				atomic.AddUint32(&bd.totalRetryCnt,1)
+				atomic.AddUint32(&bd.totalSndCnt,1)
 			}
 		}
 		bd.rwlock.Unlock()
@@ -235,15 +235,34 @@ func (bd *BlockData)doresult(result interface{}) error {
 		    	atomic.AddInt32(&bd.noacklen,upr.GetLength()*(-1))
 			}
 			delete(bd.sndData,v.GetRcved())
-		}
+	case packet.UdpPacketDataer:
+
+	}
 
 		bd.rwlock.Unlock()
+
 
 	return nil
 }
 
 func (bd *BlockData)PushResult(result interface{})  {
 	bd.chResult <- result
+}
+
+func (bd *BlockData)doACK() {
+	for {
+		select {
+		case result := <-bd.chResult:
+			bd.doresult(result)
+		case <-bd.cmd:
+
+			return
+		}
+	}
+}
+
+func (bd *BlockData)TimeOut()  {
+
 }
 
 
@@ -366,18 +385,3 @@ func (bd *BlockData)Finished()  {
 	bd.cmd <- 1
 }
 
-func (bd *BlockData)doACK() {
-	for {
-		select {
-		case result := <-bd.chResult:
-			bd.doresult(result)
-		case <-bd.cmd:
-
-			return
-		}
-	}
-}
-
-func (bd *BlockData)TimeOut()  {
-
-}
