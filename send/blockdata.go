@@ -59,6 +59,7 @@ type BlockDataer interface {
 	IsFinished() bool
 	TimeOut()
 	Destroy()
+	SendAll()
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -224,7 +225,7 @@ func (bd *BlockData)sendFinish() error {
 
 	bd.w.Write(bupd)
 
-	bd.cmd <- 1
+	bd.Finished()
 
 	return nil
 }

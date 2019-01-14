@@ -95,10 +95,14 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
 	bd.SetDataTyp(constant.DATA_TRANSER)
 
+	sd:=send.NewStoreData(bd)
+
+	bs:=send.GetInstance()
+	bs.AddBlockDataer(bd.GetSerialNo(),sd)
 
 	go uc.Rcv()
 
-	bd.Send()
+	bd.SendAll()
 
 	<- uc.processWait
 
@@ -153,6 +157,11 @@ func (uc *udpClient)Rcv() error  {
 			doAck(pkt)
 			continue
 		}
+
+		if pkt.GetTyp() == constant.FINISH_ACK {
+			//we can delete the msg block
+		}
+		
 		mc := regcenter.GetMsgCenterInstance()
 
 		msgid,stationId,headinfo := mc.GetMsgId(pkt.GetTransInfo())

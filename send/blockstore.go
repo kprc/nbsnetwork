@@ -17,6 +17,7 @@ type BStorer interface {
 	GetBlockDataer(sn uint64) StoreDataer
 	PutBlockDataer(sn uint64)
 	DelBlockDataer(sn uint64)
+	TimeOut()
 }
 
 var (
@@ -41,7 +42,7 @@ func (bs *bstore)TimeOut()  {
 			if v,ok:=bs.sd[key]; ok {
 
 				bd:=v.GetBlockData()
-				v.GetReferCnt()
+				v.ReferCntInc()
 
 				if bd.IsFinished() {
 					bd.Destroy()
@@ -56,8 +57,6 @@ func (bs *bstore)TimeOut()  {
 		}
 		bs.glock.RUnlock()
 
-		time.Sleep(time.Second*1)
-
 		for _,sn := range delarr  {
 			bs.DelBlockDataer(sn)
 		}
@@ -67,13 +66,10 @@ func (bs *bstore)TimeOut()  {
 		case	<-bs.cmd:
 			return
 		default:
-			//nothing to do ...
+			time.Sleep(time.Second*1)
 		}
 
 	}
-
-
-
 
 }
 
