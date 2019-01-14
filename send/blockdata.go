@@ -37,6 +37,7 @@ type BlockData struct {
 	waitAck chan int
 	rwlock sync.RWMutex
 	sndData map[uint32]packet.UdpPacketDataer
+	finished bool
 }
 
 type BlockDataer interface {
@@ -55,6 +56,7 @@ type BlockDataer interface {
 	SetTransInfoOrigin(stationId string,msgid int32,head []byte) error
 	GetTransInfoOrigin() (stationId string,msgid int32,head []byte,err error)
 	Finished()
+	IsFinished() bool
 	TimeOut()
 }
 
@@ -154,6 +156,10 @@ func (bd *BlockData)continuesend() (uint32,error) {
 	return round,nil
 }
 
+func (bd *BlockData)SendAll()  {
+	go bd.doACK()
+	bd.Send()
+}
 
 func (bd *BlockData)Send() error {
 
@@ -201,46 +207,66 @@ func (bd *BlockData)Send() error {
 
 	}
 
-
-
 }
 
+func (bd *BlockData)sendFinish() error {
+	upd:=packet.NewUdpPacketData()
+	upd.SetFinishACK()
+	upd.SetSerialNo(bd.GetSerialNo())
+	upd.SetTransInfo(bd.GetTransInfo())
+
+	bupd,err := upd.Serialize()
+
+	if err!=nil {
+		return err
+	}
+
+	bd.w.Write(bupd)
+
+	bd.cmd <- 1
+
+	return nil
+}
 
 func (bd *BlockData)doresult(result interface{}) error {
 
 	switch v:=result.(type) {
-	case packet.UdpResulter:
+	case []byte:
+		r := packet.NewUdpResult(bd.GetSerialNo())
+		if err := r.DeSerialize(v); err!=nil{
+			return err
+		}
+
+		if r.IsFinished() {
+			bd.sendFinish()
+			return nil
+		}
 		bd.rwlock.RLock()
-	    resend := v.GetReSend()
-		for _,id:=range resend{
-			if upr,ok:=bd.sndData[id];ok {
-				bupr,_ := upr.Serialize()
-				nw,err := bd.w.Write(bupr)
+		resend := r.GetReSend()
+		for _, id := range resend {
+			if upr, ok := bd.sndData[id]; ok {
+				bupr, _ := upr.Serialize()
+				nw, err := bd.w.Write(bupr)
 
-				if len(bupr)!=nw ||  err!=nil{
+				if len(bupr) != nw || err != nil {
 					//need resend
-					bd.rwlock.RUnlock()
-					return blocksndwriterioerr
+					continue
 				}
-				atomic.AddInt32(&bd.noacklen,int32(upr.GetLength()))
-
-				upr.SetTryCnt(upr.GetTryCnt()+1)
-				atomic.AddUint32(&bd.totalSndCnt,1)
+				upr.SetTryCnt(upr.GetTryCnt() + 1)
+				atomic.AddUint32(&bd.totalSndCnt, 1)
 			}
 		}
-		bd.rwlock.Unlock()
+		bd.rwlock.RUnlock()
 		bd.rwlock.Lock()
-		if v.GetRcved() >0 {}
-		    if upr,ok:=bd.sndData[v.GetRcved()];ok{
-		    	atomic.AddInt32(&bd.noacklen,upr.GetLength()*(-1))
+		if r.GetRcved() > 0 {
+			if upr, ok := bd.sndData[r.GetRcved()]; ok {
+				atomic.AddInt32(&bd.noacklen, upr.GetLength()*(-1))
 			}
-			delete(bd.sndData,v.GetRcved())
-	case packet.UdpPacketDataer:
-
-	}
-
+			delete(bd.sndData, r.GetRcved())
+		}
 		bd.rwlock.Unlock()
-
+		bd.waitAck <- 0    // continue send
+	}
 
 	return nil
 }
@@ -255,13 +281,20 @@ func (bd *BlockData)doACK() {
 		case result := <-bd.chResult:
 			bd.doresult(result)
 		case <-bd.cmd:
-
+			bd.finished = true
 			return
 		}
 	}
 }
 
 func (bd *BlockData)TimeOut()  {
+	if time.Now().Unix() - bd.lastSendTime > 5 {
+		if bd.IsFinished() {
+			bd.Destroy()
+		}else {
+			bd.Notify()
+		}
+	}
 
 }
 
@@ -383,5 +416,20 @@ func (bd *BlockData)GetDataTyp() uint16  {
 
 func (bd *BlockData)Finished()  {
 	bd.cmd <- 1
+}
+
+func (bd *BlockData)IsFinished() bool {
+	return bd.finished
+}
+
+func (bd *BlockData)Notify()  {
+	bd.waitAck <- 1
+	bd.cmd <- 1
+}
+
+func (bd *BlockData)Destroy()  {
+	close(bd.waitAck)
+	close(bd.chResult)
+	close(bd.cmd)
 }
 
