@@ -58,6 +58,7 @@ type BlockDataer interface {
 	Finished()
 	IsFinished() bool
 	TimeOut()
+	Destroy()
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -288,12 +289,8 @@ func (bd *BlockData)doACK() {
 }
 
 func (bd *BlockData)TimeOut()  {
-	if time.Now().Unix() - bd.lastSendTime > 5 {
-		if bd.IsFinished() {
-			bd.Destroy()
-		}else {
-			bd.Notify()
-		}
+	if time.Now().Unix() - bd.lastSendTime > 3 {
+		bd.Notify()
 	}
 
 }

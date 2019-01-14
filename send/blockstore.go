@@ -1,12 +1,15 @@
 package send
 
 import (
+	"reflect"
 	"sync"
+	"time"
 )
 
 type bstore struct {
 	glock *sync.RWMutex
 	sd map[uint64]StoreDataer
+	cmd chan int
 }
 
 type BStorer interface {
@@ -21,6 +24,60 @@ var (
 	instance BStorer
 
 )
+
+
+func (bs *bstore)TimeOut()  {
+
+	delarr := make([]uint64,0)
+
+	for {
+
+		bs.glock.RLock()
+
+		keys := reflect.ValueOf(bs.sd).MapKeys()
+
+		for _,k := range keys {
+			key := k.Uint()
+			if v,ok:=bs.sd[key]; ok {
+
+				bd:=v.GetBlockData()
+				v.GetReferCnt()
+
+				if bd.IsFinished() {
+					bd.Destroy()
+					delarr = append(delarr, key)
+				}else {
+					bd.TimeOut()
+				}
+
+				v.ReferCntDec()
+			}
+
+		}
+		bs.glock.RUnlock()
+
+		time.Sleep(time.Second*1)
+
+		for _,sn := range delarr  {
+			bs.DelBlockDataer(sn)
+		}
+
+		select {
+
+		case	<-bs.cmd:
+			return
+		default:
+			//nothing to do ...
+		}
+
+	}
+
+
+
+
+}
+
+
 
 func GetInstance() BStorer {
 	if instance == nil{
