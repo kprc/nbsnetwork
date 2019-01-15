@@ -2,12 +2,15 @@ package recv
 
 import (
 	"github.com/kprc/nbsnetwork/common/flowkey"
+	"reflect"
 	"sync"
+	"time"
 )
 
 type rcvmsgroot struct {
 	rwlock sync.RWMutex
 	msgroot map[flowkey.FlowKey]RcvMsg
+	cmd chan int //1 for quit
 }
 
 var (
@@ -21,6 +24,7 @@ type RcvMsgRoot interface {
 	DelMsg(mk *flowkey.FlowKey)
 	GetMsg(mk *flowkey.FlowKey) RcvMsg
 	PutMsg(mk *flowkey.FlowKey)
+	TimeOut()
 }
 
 func GetInstance() RcvMsgRoot {
@@ -37,6 +41,7 @@ func GetInstance() RcvMsgRoot {
 func newRcvMsgRoot() RcvMsgRoot {
 	rmr:=&rcvmsgroot{}
 	rmr.msgroot = make(map[flowkey.FlowKey]RcvMsg)
+	rmr.cmd = make(chan int,0)
 
 	return rmr
 }
@@ -93,4 +98,48 @@ func (rmr *rcvmsgroot)PutMsg(mk *flowkey.FlowKey)  {
 	}else {
 		rmr.rwlock.RUnlock()
 	}
+}
+
+func (rmr *rcvmsgroot)TimeOut()  {
+
+	for {
+
+		fkarr := make([]flowkey.FlowKey, 0)
+
+		rmr.rwlock.RLock()
+
+		keys := reflect.ValueOf(rmr.msgroot).MapKeys()
+
+		for _, k := range keys {
+			fk := k.Interface().(flowkey.FlowKey)
+
+			rm := rmr.msgroot[fk]
+
+			rm.IncRefCnt()
+
+			rcv := rm.GetRecv()
+
+			if rcv.TimeOut() {
+				fkarr = append(fkarr, fk)
+			}
+			rm.DecRefCnt()
+
+		}
+		rmr.rwlock.RUnlock()
+
+		for _, fk := range fkarr {
+			rmr.DelMsg(&fk)
+		}
+		select {
+		case cmd:=<-rmr.cmd:
+			if cmd==1 {
+				return
+			}
+		default:
+			time.Sleep(time.Second*1)
+			//nothing to do ...
+		}
+
+	}
+
 }

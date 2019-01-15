@@ -6,7 +6,6 @@ import (
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/flowkey"
-	"github.com/kprc/nbsnetwork/message"
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/common/regcenter"
 	"github.com/kprc/nbsnetwork/netcommon"
@@ -36,7 +35,7 @@ type UdpClient interface {
 }
 
 func NewUdpClient(rip,lip string,rport,lport uint16) UdpClient {
-	uc := &udpClient{dialAddr:address.NewUdpAddress(),processWait:make(chan int,1024)}
+	uc := &udpClient{dialAddr:address.NewUdpAddress(),processWait:make(chan int,0)}
 	uc.dialAddr.AddIP4(rip,rport)
 	if lip != "" {
 		uc.localAddr = address.NewUdpAddress()

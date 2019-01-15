@@ -20,6 +20,8 @@ type UdpReaderWriterer interface {
 	IsNeedRemoteAddress() bool
 	NeedRemoteAddress()
 	AddrString() string
+	GetSock() *net.UDPConn
+	GetAddr() *net.UDPAddr
 	io.Writer
 	io.Reader
 }
@@ -28,6 +30,14 @@ func NewReaderWriter(addr *net.UDPAddr, sock *net.UDPConn) UdpReaderWriterer {
 	uw:=&udpReaderWriter{addr:addr,sock:sock}
 
 	return uw
+}
+
+func (uw *udpReaderWriter)GetSock() *net.UDPConn {
+	return uw.sock
+}
+
+func (uw *udpReaderWriter)GetAddr() *net.UDPAddr  {
+	return uw.addr
 }
 
 func (uw *udpReaderWriter)SendBytes(data []byte)  {

@@ -16,10 +16,8 @@ var rcvdataerr = nbserr.NbsErr{ErrId:nbserr.UDP_RCV_DEFAULT_ERR,Errmsg:"Please i
 var rcvwriteioerr = nbserr.NbsErr{ErrId:nbserr.UDP_RCV_WRITER_IO_ERR,Errmsg:"write error"}
 
 type rcvData struct {
-	serialNo uint64
 	key *flowkey.FlowKey
 	uw netcommon.UdpReaderWriterer   //for reply
-	r io.Reader
 	w io.WriteSeeker
 	lastAccessTime int64
 	rwlock sync.RWMutex
@@ -38,14 +36,21 @@ type RcvDataer interface {
 	Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error)
 	Finish() bool
 	CanDelete() bool
+	TimeOut() bool
 }
 
 func (rd *rcvData)CanDelete() bool  {
 	return rd.canDelete
 }
 
-func NewRcvDataer(sn uint64,w io.WriteSeeker) RcvDataer{
-	rd := &rcvData{serialNo:sn,w:w}
+func (rd *rcvData)TimeOut()  bool{
+
+	return false
+}
+
+func NewRcvDataer(stationId string,sn uint64,w io.WriteSeeker,uw netcommon.UdpReaderWriterer) RcvDataer{
+	fk := flowkey.NewFlowKey(stationId,sn)
+	rd := &rcvData{key:fk,w:w,uw:uw}
 	rd.lastAccessTime = time.Now().Unix()
 	rd.rcvData = make(map[uint32]packet.UdpPacketDataer)
 	rd.needResend = make(map[uint32]struct{})
