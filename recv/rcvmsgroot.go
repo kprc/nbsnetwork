@@ -1,4 +1,4 @@
-package message
+package recv
 
 import (
 	"github.com/kprc/nbsnetwork/common/flowkey"

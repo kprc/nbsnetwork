@@ -2,7 +2,7 @@ package regcenter
 
 import (
 	"sync"
-	"github.com/kprc/nbsnetwork/common/message/pb"
+	"github.com/kprc/nbsnetwork/message/pb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/kprc/nbsnetwork/common/constant"
 )

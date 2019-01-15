@@ -2,7 +2,9 @@ package recv
 
 import (
 	"github.com/kprc/nbsdht/nbserr"
+	"github.com/kprc/nbsnetwork/common/flowkey"
 	"github.com/kprc/nbsnetwork/common/packet"
+	"github.com/kprc/nbsnetwork/netcommon"
 	"io"
 	"reflect"
 	"sort"
@@ -15,6 +17,9 @@ var rcvwriteioerr = nbserr.NbsErr{ErrId:nbserr.UDP_RCV_WRITER_IO_ERR,Errmsg:"wri
 
 type rcvData struct {
 	serialNo uint64
+	key *flowkey.FlowKey
+	uw netcommon.UdpReaderWriterer   //for reply
+	r io.Reader
 	w io.WriteSeeker
 	lastAccessTime int64
 	rwlock sync.RWMutex

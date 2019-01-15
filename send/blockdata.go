@@ -5,11 +5,11 @@ import (
 	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/packet"
+	"github.com/kprc/nbsnetwork/pb/message"
 	"io"
 	"sync"
 	"sync/atomic"
 	"time"
-	"github.com/kprc/nbsnetwork/common/message/pb"
 	"github.com/gogo/protobuf/proto"
 )
 

@@ -9,7 +9,7 @@ import (
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
-	"github.com/kprc/nbsnetwork/common/message"
+	"github.com/kprc/nbsnetwork/message"
 	"github.com/kprc/nbsnetwork/common/regcenter"
 	"io"
 	"net"

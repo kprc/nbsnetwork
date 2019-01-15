@@ -6,7 +6,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/flowkey"
-	"github.com/kprc/nbsnetwork/common/message"
+	"github.com/kprc/nbsnetwork/message"
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/common/regcenter"
 	"github.com/kprc/nbsnetwork/netcommon"
@@ -137,6 +137,76 @@ func sendAck(w io.Writer, ack packet.UdpResulter, pkt packet.UdpPacketDataer){
 
 }
 
+const continue_rcv int = 1
+const break_rcv int = 2
+
+
+func (uc *udpClient)rcv(n int,buf []byte) int  {
+	pkt:=packet.NewUdpPacketData()
+	if err := pkt.DeSerialize(buf[:n]);err!=nil{
+		fmt.Println("Packet DeSerialize failed!",err)
+		return 1
+	}
+	//if type is ack, send to result channel and continue
+	if pkt.GetTyp() == constant.ACK {
+		//send to send block
+		doAck(pkt)
+		return continue_rcv
+	}
+
+	if pkt.GetTyp() == constant.FINISH_ACK {
+		//we can delete the msg block
+	}
+
+	mc := regcenter.GetMsgCenterInstance()
+
+	msgid,stationId,headinfo := mc.GetMsgId(pkt.GetTransInfo())
+	if msgid == constant.MSG_NONE || stationId == "" {
+		fmt.Printf("Receive msgid %d, stationId %s",msgid,stationId)
+		return continue_rcv
+	}
+
+	rmr := message.GetInstance()
+	k := flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
+	m := rmr.GetMsg(k)
+	var rcv recv.RcvDataer
+	var handler regcenter.MsgHandler
+	if m==nil {
+		m = message.NewRcvMsg()
+		handler = mc.GetHandler(msgid)
+		m.SetWS(handler.GetWSNew()(headinfo))
+		//uw:=send.NewReaderWriter(remoteAddr,sock)
+		m.SetUW(uc.uw)
+		m.SetKey(k)
+		rcv = recv.NewRcvDataer(pkt.GetSerialNo(),m.GetWS())
+		m.SetRecv(rcv)
+
+		rmr.AddMSG(k,m)
+
+		m = rmr.GetMsg(k)   //just to increase the ref count
+	}else {
+		rcv = m.GetRecv()
+	}
+
+	ack,_ := rcv.Write(pkt)
+	if ack != nil{
+		sendAck(m.GetUW(),ack,pkt)
+	}
+
+	if rcv.Finish() {
+		mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),m.GetUW())
+		rmr.PutMsg(k)
+		rmr.DelMsg(k)
+
+		return break_rcv
+	}else {
+		rmr.PutMsg(k)
+	}
+
+	return continue_rcv
+}
+
+
 
 func (uc *udpClient)Rcv() error  {
 
@@ -146,65 +216,10 @@ func (uc *udpClient)Rcv() error  {
 		if err!=nil {
 			return err
 		}
-		pkt:=packet.NewUdpPacketData()
-		if err = pkt.DeSerialize(buf[:n]);err!=nil{
-			fmt.Println("Packet DeSerialize failed!",err)
-			continue
+
+		if break_rcv == uc.rcv(n,buf){
+			 break
 		}
-		//if type is ack, send to result channel and continue
-		if pkt.GetTyp() == constant.ACK {
-			//send to send block
-			doAck(pkt)
-			continue
-		}
-
-		if pkt.GetTyp() == constant.FINISH_ACK {
-			//we can delete the msg block
-		}
-		
-		mc := regcenter.GetMsgCenterInstance()
-
-		msgid,stationId,headinfo := mc.GetMsgId(pkt.GetTransInfo())
-		if msgid == constant.MSG_NONE || stationId == "" {
-			fmt.Printf("Receive msgid %d, stationId %s",msgid,stationId)
-			continue
-		}
-
-		rmr := message.GetInstance()
-		k := flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
-		m := rmr.GetMsg(k)
-		var rcv recv.RcvDataer
-		if m==nil {
-			m = message.NewRcvMsg()
-			handler := mc.GetHandler(msgid)
-			m.SetWS(handler.GetWSNew()(headinfo))
-			//uw:=send.NewReaderWriter(remoteAddr,sock)
-			m.SetUW(uc.uw)
-			m.SetKey(k)
-			rcv = recv.NewRcvDataer(pkt.GetSerialNo(),m.GetWS())
-			m.SetRecv(rcv)
-
-			rmr.AddMSG(k,m)
-
-			m = rmr.GetMsg(k)   //just to increase the ref count
-		}else {
-			rcv = m.GetRecv()
-		}
-
-		ack,err := rcv.Write(pkt)
-		if ack != nil{
-			sendAck(m.GetUW(),ack,pkt)
-		}
-		if rcv.Finish() {
-			mc.GetHandler(msgid).GetHandler()(headinfo,m.GetWS(),m.GetUW())
-			rmr.PutMsg(k)
-			rmr.DelMsg(k)
-
-			break
-		}else {
-			rmr.PutMsg(k)
-		}
-
 	}
 
 	uc.processWait <- 1

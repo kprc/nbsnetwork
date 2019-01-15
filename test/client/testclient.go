@@ -16,7 +16,6 @@ func main()  {
 
 	c.SendBytes([]byte("Title Ping")[:],constant.MSG_PING,[]byte("PING TO SERVER")[:])
 
-
 }
 
 
