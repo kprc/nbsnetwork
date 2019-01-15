@@ -1,8 +1,9 @@
 package packet
 
 import (
+	"github.com/kprc/nbsnetwork/pb/packet"
 	"sync/atomic"
-	"github.com/kprc/nbsnetwork/pb"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/kprc/nbsnetwork/common/constant"
 )

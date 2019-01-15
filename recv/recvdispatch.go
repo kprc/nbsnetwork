@@ -8,6 +8,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/packet"
 	"github.com/kprc/nbsnetwork/common/regcenter"
 	"net"
+	"time"
 )
 
 type udpRcvDispath struct {
@@ -74,9 +75,7 @@ func (rd *udpRcvDispath)Dispatch() error  {
 			continue
 		}
 
-		if pkt.GetTyp() == constant.FINISH_ACK {
-			//we can delete the msg block
-		}
+
 		
 		mc:=regcenter.GetMsgCenterInstance()
 		msgid,sid,hi:=mc.GetMsgId(pkt.GetTransInfo())
@@ -86,6 +85,10 @@ func (rd *udpRcvDispath)Dispatch() error  {
 		
 		rmr:=GetInstance()
 		fk := flowkey.NewFlowKey(sid,pkt.GetSerialNo())
+		if pkt.GetTyp() == constant.FINISH_ACK {
+			rmr.DelMsg(fk)
+			continue
+		}
 		msg := rmr.GetMsg(fk)
 
 		if msg == nil {
