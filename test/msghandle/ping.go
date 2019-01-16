@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-
+var ws netcommon.UdpBytesWriterSeeker
 
 func RegPingMsg()  {
 	mh:=regcenter.NewMsgHandler()
@@ -23,7 +23,7 @@ func RegPingMsg()  {
 }
 
 func getPingWS(param interface{}) io.WriteSeeker {
-	ws:= netcommon.NewWriteSeeker(param)
+	ws= netcommon.NewWriteSeeker(param)
 
 	return ws
 
@@ -37,11 +37,10 @@ func handlePing(head interface{},data interface{},snd io.Writer) error  {
 	}
 
 	if data !=nil {
-		sd := data.([]byte)
-		fmt.Println("Data is :",string(sd))
+		data.(netcommon.UdpBytesWriterSeeker).PrintAll()
 	}
 
-	snd.Write([]byte("Pong"))
+	//snd.Write([]byte("Pong"))
 
 	fmt.Println("Send Pong")
 
