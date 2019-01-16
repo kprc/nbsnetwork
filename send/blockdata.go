@@ -116,7 +116,7 @@ func (bd *BlockData)send(round uint32) (int,error){
 		fmt.Println(len(bupr))
 		nw,err := bd.w.Write(bupr)
 
-		if n!=nw ||  err!=nil{
+		if len(bupr)!=nw ||  err!=nil{
 			//need resend
 			bd.enqueue(round,upr)
 			return 0,blocksndwriterioerr

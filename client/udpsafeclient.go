@@ -103,7 +103,7 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 
 	uc.Destroy()
 
-	time.Sleep(time.Second*1000)
+	time.Sleep(time.Second*1)
 
 	return nil
 }
