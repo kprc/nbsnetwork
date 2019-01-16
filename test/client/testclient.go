@@ -10,7 +10,7 @@ import (
 
 func main()  {
 
-	msghandle.RegPingMsg()
+	msghandle.RegPingAckMsg()
 
 	bs := send.GetInstance()
 	go bs.TimeOut()

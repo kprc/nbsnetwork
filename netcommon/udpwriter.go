@@ -1,10 +1,8 @@
 package netcommon
 
 import (
-	"github.com/kprc/nbsnetwork/common/constant"
 	"io"
 	"net"
-	"github.com/kprc/nbsnetwork/send"
 )
 
 type udpReaderWriter struct {
@@ -15,10 +13,9 @@ type udpReaderWriter struct {
 
 
 type UdpReaderWriterer interface {
-	Send(r io.ReadSeeker) error
-	SendBytes(data []byte)
 	IsNeedRemoteAddress() bool
 	NeedRemoteAddress()
+	SetNeedRmAddr(is bool)
 	AddrString() string
 	GetSock() *net.UDPConn
 	GetAddr() *net.UDPAddr
@@ -32,6 +29,10 @@ func NewReaderWriter(addr *net.UDPAddr, sock *net.UDPConn) UdpReaderWriterer {
 	return uw
 }
 
+func (uw *udpReaderWriter)SetNeedRmAddr(is bool)  {
+	uw.NeedRemoteAddress()
+}
+
 func (uw *udpReaderWriter)GetSock() *net.UDPConn {
 	return uw.sock
 }
@@ -40,32 +41,8 @@ func (uw *udpReaderWriter)GetAddr() *net.UDPAddr  {
 	return uw.addr
 }
 
-func (uw *udpReaderWriter)SendBytes(data []byte)  {
-	uwrs := NewReadSeeker(data)
-
-	uw.Send(uwrs)
-}
-
 func (uw *udpReaderWriter)AddrString() string  {
 	return uw.addr.String()
-}
-
-
-func (uw *udpReaderWriter)Send(r io.ReadSeeker) error  {
-	bd := send.NewBlockData(r,constant.UDP_MTU)
-	bd.SetWriter(uw)
-
-	sd:=send.NewStoreData(bd)
-
-	bs:=send.GetInstance()
-
-	bs.AddBlockDataer(bd.GetSerialNo(),sd)
-
-	sd = bs.GetBlockDataer(bd.GetSerialNo())
-
-	sd.GetBlockData().Send()
-
-	return nil
 }
 
 func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {

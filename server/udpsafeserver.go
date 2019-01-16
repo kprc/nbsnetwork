@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/address"
-	"github.com/kprc/nbsnetwork/recv"
+	"github.com/kprc/nbsnetwork/dispatch"
 	"net"
 	"sync"
 )
@@ -120,7 +120,7 @@ func (us *udpServer)GetListenAddr() address.UdpAddresser  {
 
 
 func sockRecv(sock *net.UDPConn) error{
-	dispatch:=recv.NewUdpDispath(true)
+	dispatch:=dispatch.NewUdpDispath(true)
 	dispatch.SetSock(sock)
 
 	return dispatch.Dispatch()

@@ -1,4 +1,4 @@
-package recv
+package dispatch
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/regcenter"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/pb/message"
+	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"net"
@@ -81,8 +82,8 @@ func toPkt(n int,buf []byte)packet.UdpPacketDataer  {
 	return pkt
 }
 
-func (rd *udpRcvDispath)newMsg(msgid int32,sn uint64, sid string, hi []byte,uw netcommon.UdpReaderWriterer) RcvMsg {
-	m:=NewRcvMsg()
+func (rd *udpRcvDispath)newMsg(msgid int32,sn uint64, sid string, hi []byte,uw netcommon.UdpReaderWriterer) recv.RcvMsg {
+	m:=recv.NewRcvMsg()
 
 	mc:=regcenter.GetMsgCenterInstance()
 	h:=mc.GetHandler(msgid)
@@ -95,13 +96,13 @@ func (rd *udpRcvDispath)newMsg(msgid int32,sn uint64, sid string, hi []byte,uw n
 	if ws == nil{
 		return nil
 	}
-	rcv:=NewRcvDataer(sid,sn,ws,uw)
+	rcv:=recv.NewRcvDataer(sid,sn,ws,uw)
 	m.SetRecv(rcv)
 
 	return m
 }
 
-func (rd *udpRcvDispath)handleMsg(msgid int32,hi []byte,rcv RcvDataer)  {
+func (rd *udpRcvDispath)handleMsg(msgid int32,hi []byte,rcv recv.RcvDataer)  {
 	mc:=regcenter.GetMsgCenterInstance()
 	h:=mc.GetHandler(msgid)
 	defer mc.PutHandler(msgid)
@@ -188,7 +189,7 @@ func (rd *udpRcvDispath)Dispatch() error  {
 			continue
 		}
 		
-		rmr:=GetInstance()
+		rmr:=recv.GetInstance()
 		fk := flowkey.NewFlowKey(sid,pkt.GetSerialNo())
 		if pkt.GetTyp() == constant.FINISH_ACK {
 			rmr.DelMsg(fk)

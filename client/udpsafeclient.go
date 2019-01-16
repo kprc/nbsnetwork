@@ -1,15 +1,16 @@
 package client
 
 import (
-	"github.com/kprc/nbsdht/dht/nbsid"
+
 	"github.com/kprc/nbsnetwork/common/address"
-	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/kprc/nbsnetwork/outer"
+
 	"github.com/kprc/nbsnetwork/netcommon"
-	"github.com/kprc/nbsnetwork/recv"
-	"github.com/kprc/nbsnetwork/send"
+
+
 	"io"
 	"net"
-	"time"
+
 )
 
 type udpClient struct {
@@ -18,7 +19,7 @@ type udpClient struct {
 	realAddr address.UdpAddresser
 	uw netcommon.UdpReaderWriterer
 
-	dispatch recv.UdpRcvDispather
+	uo outer.UdpOuter
 
 }
 
@@ -26,7 +27,6 @@ type udpClient struct {
 type UdpClient interface {
 	Send(headinfo []byte,msgid int32,r io.ReadSeeker) error
 	SendBytes(headinfo []byte,msgid int32,data []byte) error
-	Rcv() error
 	Dial() error
 	ReDial() error
 	Destroy()
@@ -80,47 +80,21 @@ func (uc *udpClient)ReDial() error  {
 }
 
 func (uc *udpClient)SendBytes(headinfo []byte,msgid int32,data []byte) error  {
-	rs := netcommon.NewReadSeeker(data)
+	uo:=outer.NewUdpOuter(uc.uw.GetAddr(),uc.uw.GetSock(),false)
+	uc.uo = uo
 
-	return uc.Send(headinfo,msgid,rs)
+	return uo.SendBytes(headinfo,msgid,data)
 }
 
 func (uc *udpClient)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
-	bd := send.NewBlockData(r,constant.UDP_MTU)
-	bd.SetWriter(uc.uw)
-	inn:=nbsid.GetLocalId()
-	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
-	bd.SetDataTyp(constant.DATA_TRANSER)
+	uo:=outer.NewUdpOuter(uc.uw.GetAddr(),uc.uw.GetSock(),false)
 
-	sd:=send.NewStoreData(bd)
+	uc.uo = uo
 
-	bs:=send.GetInstance()
-	bs.AddBlockDataer(bd.GetSerialNo(),sd)
-
-	go uc.Rcv()
-
-	bd.SendAll()
-
-	uc.Destroy()
-
-	time.Sleep(time.Second*1)
-
-	return nil
-}
-
-func (uc *udpClient)Rcv() error  {
-
-	dispatch:=recv.NewUdpDispath(false)
-	uc.dispatch = dispatch
-	dispatch.SetSock(uc.uw.GetSock())
-	dispatch.SetAddr(uc.uw.GetAddr())
-
-	return dispatch.Dispatch()
+	return uo.Send(headinfo,msgid,r)
 
 }
-
 func (uc *udpClient)Destroy()   {
-	if uc.dispatch != nil {
-		uc.dispatch.Close()
-	}
+	uc.uo.Destroy()
 }
+
