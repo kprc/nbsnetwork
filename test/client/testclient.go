@@ -3,13 +3,19 @@ package main
 import (
 	"github.com/kprc/nbsnetwork/client"
 	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/kprc/nbsnetwork/recv"
 	"github.com/kprc/nbsnetwork/send"
+	"github.com/kprc/nbsnetwork/test/msghandle"
 )
 
 func main()  {
 
+	msghandle.RegPingMsg()
+
 	bs := send.GetInstance()
-	bs.TimeOut()
+	go bs.TimeOut()
+	rmr:=recv.GetInstance()
+	go rmr.TimeOut()
 
 	c := client.NewUdpClient("192.168.107.242","",11223,0)
 	c.Dial()

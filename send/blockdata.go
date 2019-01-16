@@ -2,9 +2,11 @@ package send
 
 import (
 	"fmt"
+	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/packet"
+	"github.com/kprc/nbsnetwork/common/regcenter"
 	"github.com/kprc/nbsnetwork/pb/message"
 	"io"
 	"sync"
@@ -215,7 +217,19 @@ func (bd *BlockData)sendFinish() error {
 	upd:=packet.NewUdpPacketData()
 	upd.SetFinishACK()
 	upd.SetSerialNo(bd.GetSerialNo())
-	upd.SetTransInfo(bd.GetTransInfo())
+
+	mc:=regcenter.GetMsgCenterInstance()
+	msgid,_,hi:=mc.GetMsgId(bd.GetTransInfo())
+
+
+	mh:=message.MsgHead{LocalStationId:[]byte(nbsid.GetLocalId().String()),MsgId:msgid}
+	mh.Headinfo = hi
+
+	bmh,err := proto.Marshal(&mh)
+	if err!=nil {
+		return err
+	}
+	upd.SetTransInfo(bmh)
 
 	bupd,err := upd.Serialize()
 

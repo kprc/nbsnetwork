@@ -1,8 +1,8 @@
 package regcenter
 
 import (
+	"github.com/kprc/nbsnetwork/pb/message"
 	"sync"
-	"github.com/kprc/nbsnetwork/message/pb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/kprc/nbsnetwork/common/constant"
 )
@@ -108,7 +108,7 @@ func getMsgId(headData []byte) (msgid int32,stationId string,headinfo []byte)  {
 	err := proto.Unmarshal(headData,&mh)
 
 	if err == nil{
-		return mh.MessageId,string(mh.StationId),mh.Headinfo
+		return mh.MsgId,string(mh.LocalStationId),mh.Headinfo
 	}else {
 		return constant.MSG_NONE,"",nil
 	}

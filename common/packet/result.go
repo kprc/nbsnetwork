@@ -2,7 +2,7 @@ package packet
 
 import (
 	"github.com/gogo/protobuf/proto"
-	"github.com/kprc/nbsnetwork/pb"
+	"github.com/kprc/nbsnetwork/pb/packet"
 )
 
 type udpack struct {

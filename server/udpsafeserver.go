@@ -3,15 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/address"
-	"github.com/kprc/nbsnetwork/common/constant"
-	"github.com/kprc/nbsnetwork/common/flowkey"
-	"github.com/kprc/nbsnetwork/common/packet"
-	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/recv"
-	"github.com/kprc/nbsnetwork/send"
-	"github.com/kprc/nbsnetwork/message"
-	"github.com/kprc/nbsnetwork/common/regcenter"
-	"io"
 	"net"
 	"sync"
 )
@@ -59,6 +51,8 @@ func newUdpServer() UdpServerer {
 	//us.remoteAddr = make(map[address.UdpAddresser]*net.UDPAddr)
 	//us.rcvBuf = make(map[address.UdpAddresser][]bytes.Buffer)
 	us.processWait = make(chan int,0)
+
+
 
 	return us
 }
@@ -123,106 +117,13 @@ func (us *udpServer)GetListenAddr() address.UdpAddresser  {
 	return us.listenAddr
 }
 
-func doAck(pkt packet.UdpPacketDataer)  {
-	bs:= send.GetInstance()
 
 
-	sd := bs.GetBlockDataer(pkt.GetSerialNo())
-	if sd == nil {
-		return
-	}
+func sockRecv(sock *net.UDPConn) error{
+	dispatch:=recv.NewUdpDispath(true)
+	dispatch.SetSock(sock)
 
-	bdr := sd.GetBlockData()
-	bdr.PushResult(pkt.GetData())
-	bs.PutBlockDataer(pkt.GetSerialNo())
-
-}
-
-func sockRecv(sock *net.UDPConn){
-	gdata := make([]byte, 1024)
-
-	for {
-		data := gdata[0:]
-		n, remoteAddr, err := sock.ReadFromUDP(data)
-		if err != nil {
-			fmt.Println("Read data error", err)
-			continue
-		}
-
-		pkt:=packet.NewUdpPacketData()
-		if err = pkt.DeSerialize(data[:n]);err!=nil{
-			fmt.Println("Packet DeSerialize failed!",err)
-			continue
-		}
-
-		//if type is ack, send to result channel and continue
-		if pkt.GetTyp() == constant.ACK {
-			//send to send block
-			doAck(pkt)
-			continue
-		}
-
-		mc := regcenter.GetMsgCenterInstance()
-		//get transfer layer information
-		msgid,stationId,headinfo := mc.GetMsgId(pkt.GetTransInfo())
-		if msgid == constant.MSG_NONE || stationId == "" {
-			fmt.Printf("Receive msgid %d, stationId %s",msgid,stationId)
-			continue
-		}
-		//get msg block
-		rmr := message.GetInstance()
-		k := flowkey.NewFlowKey(stationId,pkt.GetSerialNo())
-		m := rmr.GetMsg(k)
-		var rcv recv.RcvDataer
-		if m==nil {
-			m = message.NewRcvMsg()
-			handler := mc.GetHandler(msgid)
-			m.SetWS(handler.GetWSNew()(headinfo))
-			uw:=netcommon.NewReaderWriter(remoteAddr,sock)
-			m.SetUW(uw)
-			m.SetKey(k)
-			rcv = recv.NewRcvDataer(pkt.GetSerialNo(),m.GetWS())
-			m.SetRecv(rcv)
-
-			rmr.AddMSG(k,m)
-
-			m = rmr.GetMsg(k)   //just to increase the ref count
-		}else {
-			rcv = m.GetRecv()
-		}
-		//wait to test
-		ack,err := rcv.Write(pkt)
-		if ack != nil{
-			//wait to test
-			sendAck(m.GetUW(),ack,pkt)
-		}
-
-		if rcv.CanDelete() {
-			rmr.PutMsg(k)
-			rmr.DelMsg(k)
-		}else {
-			if rcv.Finish() {
-				mc.GetHandler(msgid).GetHandler()(headinfo, m.GetWS(), m.GetUW())
-				mc.PutHandler(msgid)
-				rmr.PutMsg(k)
-			} else {
-				rmr.PutMsg(k)
-			}
-		}
-
-	}
-}
-
-func sendAck(w io.Writer, ack packet.UdpResulter, pkt packet.UdpPacketDataer){
-	upd := packet.NewUdpPacketData()
-	upd.SetSerialNo(pkt.GetSerialNo())
-	upd.SetTransInfo(pkt.GetTransInfo())
-	upd.SetACK()
-	back,_ := ack.Serialize()
-	upd.SetLength(int32(len(back)))
-	upd.SetData(back)
-
-	w.Write(back)
+	return dispatch.Dispatch()
 
 }
 

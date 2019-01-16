@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/regcenter"
-	"github.com/kprc/nbsnetwork/rw"
+	"github.com/kprc/nbsnetwork/netcommon"
+	"github.com/kprc/nbsnetwork/test/msghandle"
 	"io"
 	"github.com/kprc/nbsnetwork/server"
 )
@@ -15,7 +16,7 @@ func main()  {
 	//testWriteSeeker()
 	//testReadSeeker()
 
-	RegPingMsg()
+	msghandle.RegPingMsg()
 
 	us := server.GetUdpServer()
 
@@ -24,59 +25,22 @@ func main()  {
 	fmt.Println("End Server")
 }
 
-func RegPingMsg()  {
-	mh:=regcenter.NewMsgHandler()
 
-	mh.SetHandler(handlePing)
-	mh.SetWSNew(getPingWS)
-
-	mi:=regcenter.GetMsgCenterInstance()
-
-	mi.AddHandler(constant.MSG_PING,mh)
-
-}
-
-func getPingWS(param interface{}) io.WriteSeeker {
-	ws:= rw.NewWriteSeeker(param)
-
-	return ws
-
-}
-
-func handlePing(head interface{},data interface{},snd io.Writer) error  {
-
-	if head != nil{
-		sh:=head.([]byte)
-		fmt.Println("Head is :",string(sh))
-	}
-
-	if data !=nil {
-		sd := data.([]byte)
-		fmt.Println("Data is :",string(sd))
-	}
-
-	snd.Write([]byte("Pong"))
-
-	fmt.Println("Send Pong")
-
-	return nil
-
-}
 
 func testWriteSeeker()  {
-	ws:= getPingWS(nil)
+	ws:= regcenter.GetMsgCenterInstance().GetHandler(constant.MSG_PING).GetWSNew()(nil)
 
 	ws.Write([]byte("hello,"))
 	ws.Write([]byte("world"))
 
 
-	ws.(rw.UdpBytesWriterSeeker).PrintAll()
+	ws.(netcommon.UdpBytesWriterSeeker).PrintAll()
 
-	fmt.Println(string(ws.(rw.UdpBytesWriterSeeker).GetBytes()))
+	fmt.Println(string(ws.(netcommon.UdpBytesWriterSeeker).GetBytes()))
 }
 
 func testReadSeeker()  {
-	rs:=rw.NewReadSeeker([]byte("hello,world"))
+	rs:=netcommon.NewReadSeeker([]byte("hello,world"))
 
 	rs.PrintAll()
 

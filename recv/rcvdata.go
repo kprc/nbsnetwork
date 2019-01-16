@@ -28,22 +28,30 @@ type rcvData struct {
 	rwlockResend sync.RWMutex
 	needResend map[uint32]struct{}    //for caculate what sn is need to resend
 	finished bool
-	canDelete bool
 }
 
 
 type RcvDataer interface {
 	Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error)
 	Finish() bool
-	CanDelete() bool
 	TimeOut() bool
-}
-
-func (rd *rcvData)CanDelete() bool  {
-	return rd.canDelete
+	SetKey(key *flowkey.FlowKey)
+	GetKey() *flowkey.FlowKey
+	SetUdpReadWriter(uw netcommon.UdpReaderWriterer)
+	GetUdpReadWriter() netcommon.UdpReaderWriterer
+	SetWs(w io.WriteSeeker)
+	GetWs() io.WriteSeeker
+	GetLastAccessTime() int64
 }
 
 func (rd *rcvData)TimeOut()  bool{
+	if rd.Finish() == true {
+		return true
+	}
+
+	if time.Now().Unix() - rd.lastAccessTime > 3{
+		return true
+	}
 
 	return false
 }
@@ -111,13 +119,8 @@ func max(a,b uint32) uint32 {
 }
 
 func (rd *rcvData)Write(dataer packet.UdpPacketDataer) (packet.UdpResulter,error)  {
-	if rd.serialNo==0 || rd.w==nil || dataer == nil {
+	if rd.key ==nil || rd.w==nil || dataer == nil {
 		return nil,rcvdataerr
-	}
-
-	if dataer.IsFinished() {
-		rd.canDelete = true
-		return nil,nil
 	}
 
 	var ack packet.UdpResulter
@@ -206,4 +209,26 @@ func (rd *rcvData)enqueen(upd packet.UdpPacketDataer){
 
 func (rd *rcvData)Finish() bool {
 	return rd.finished
+}
+
+func (rd *rcvData)SetKey(key *flowkey.FlowKey){
+	rd.key = key
+}
+func (rd *rcvData)GetKey() *flowkey.FlowKey{
+	return rd.key
+}
+func (rd *rcvData)SetUdpReadWriter(uw netcommon.UdpReaderWriterer){
+	rd.uw = uw
+}
+func (rd *rcvData)GetUdpReadWriter() netcommon.UdpReaderWriterer{
+	return rd.uw
+}
+func (rd *rcvData)SetWs(w io.WriteSeeker){
+	rd.w = w
+}
+func (rd *rcvData)GetWs() io.WriteSeeker{
+	return rd.w
+}
+func (rd *rcvData)GetLastAccessTime() int64{
+	return rd.lastAccessTime
 }
