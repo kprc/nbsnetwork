@@ -137,6 +137,9 @@ func (rd *udpRcvDispath)sendAck(w io.Writer, ack packet.UdpResulter, pkt packet.
 }
 
 func (rd *udpRcvDispath)doAck(pkt packet.UdpPacketDataer)  {
+
+	pkt.PrintAll()
+
 	bs:=send.GetInstance()
 
 	sd:=bs.GetBlockDataer(pkt.GetSerialNo())

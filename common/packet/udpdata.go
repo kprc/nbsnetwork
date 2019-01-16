@@ -1,6 +1,7 @@
 package packet
 
 import (
+	"fmt"
 	"github.com/kprc/nbsnetwork/pb/packet"
 	"sync/atomic"
 
@@ -34,6 +35,7 @@ type UdpPacketDataer interface {
 	GetTransInfo() []byte
 	Finished()
 	IsFinished() bool
+	PrintAll()
 
 }
 
@@ -54,6 +56,10 @@ type UDPPacketData struct {
 
 func NewUdpPacketData() UdpPacketDataer {
 	return &UDPPacketData{}
+}
+
+func (uh *UDPPacketData)PrintAll()  {
+	fmt.Println(uh.serialNo,uh.totalCnt,uh.posNum,uh.dataTyp,uh.finished,uh.len)
 }
 
 
