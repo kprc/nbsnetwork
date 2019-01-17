@@ -163,7 +163,9 @@ func (rd *udpRcvDispath)Dispatch() error  {
 
 	for {
 		buf:=make([]byte,1024)
+		fmt.Println("Dispatch to read")
 		n,remoteAddr,err:=rd.read(buf)
+		fmt.Println("read byte number",n)
 
 		if err!=nil {
 			select {
@@ -172,7 +174,8 @@ func (rd *udpRcvDispath)Dispatch() error  {
 					break
 				}
 			default:
-				//nothing to do ...
+				fmt.Println("error")
+				continue
 			}
 		}
 

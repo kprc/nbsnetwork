@@ -17,7 +17,10 @@ func main()  {
 	rmr:=recv.GetInstance()
 	go rmr.TimeOut()
 
-	c := client.NewUdpClient("192.168.107.242","",11223,0)
+	//ip:="192.168.107.242"
+	ip:="192.168.103.66"
+
+	c := client.NewUdpClient(ip,"",11223,0)
 	c.Dial()
 
 	c.SendBytes([]byte("Title Ping")[:],constant.MSG_PING,[]byte("PING TO SERVER")[:])
