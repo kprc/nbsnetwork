@@ -140,7 +140,7 @@ func (rd *udpRcvDispath)doAck(pkt packet.UdpPacketDataer)  {
 
 	pkt.PrintAll()
 
-	bs:=send.GetInstance()
+	bs:=send.GetBSInstance()
 
 	sd:=bs.GetBlockDataer(pkt.GetSerialNo())
 	if sd == nil {

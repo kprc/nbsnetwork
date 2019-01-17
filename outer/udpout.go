@@ -85,7 +85,7 @@ func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 
 	sd:=send.NewStoreData(bd)
 
-	bs:=send.GetInstance()
+	bs:=send.GetBSInstance()
 	bs.AddBlockDataer(bd.GetSerialNo(),sd)
 
 	go uo.Rcv()

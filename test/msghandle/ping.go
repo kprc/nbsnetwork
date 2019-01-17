@@ -58,12 +58,6 @@ func handlePingAck(head interface{},data interface{},snd io.Writer) error  {
 		data.(netcommon.UdpBytesWriterSeeker).PrintAll()
 	}
 
-	//uw:=snd.(netcommon.UdpReaderWriterer)
-	//uo:=send.NewUdpOuter(uw.GetAddr(),uw.GetSock(),uw.IsNeedRemoteAddress())
-	//uo.SendBytes([]byte("Title Ack"),constant.MSG_PING_ACK,[]byte("Send Pong"))
-	//
-	//fmt.Println("Send Pong")
-
 	return nil
 
 }
