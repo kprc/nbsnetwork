@@ -12,7 +12,7 @@ func main()  {
 
 	msghandle.RegPingAckMsg()
 
-	bs := send.GetInstance()
+	bs := send.GetBSInstance()
 	go bs.TimeOut()
 	rmr:=recv.GetInstance()
 	go rmr.TimeOut()

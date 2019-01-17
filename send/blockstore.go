@@ -76,7 +76,7 @@ func (bs *bstore)TimeOut()  {
 
 
 
-func GetInstance() BStorer {
+func GetBSInstance() BStorer {
 	if instance == nil{
 		initlock.Lock()
 
