@@ -76,8 +76,7 @@ func (uo *udpOut)SendBytes(headinfo []byte,msgid int32,data []byte) error  {
 
 func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	bd := send.NewBlockData(r,constant.UDP_MTU)
-	uw:=netcommon.NewReaderWriter(uo.GetAddr(),uo.GetSock())
-	uw.SetNeedRmAddr(uo.isListen)
+	uw:=netcommon.NewReaderWriter(uo.GetAddr(),uo.GetSock(),uo.isListen)
 
 	bd.SetWriter(uw)
 	inn:=nbsid.GetLocalId()
@@ -93,9 +92,9 @@ func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 
 	bd.SendAll()
 
-	uo.Destroy()
+	//uo.Destroy()
 
-	time.Sleep(time.Second*1)
+	time.Sleep(time.Second*1000)
 
 	return nil
 }

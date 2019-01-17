@@ -163,9 +163,9 @@ func (rd *udpRcvDispath)Dispatch() error  {
 
 	for {
 		buf:=make([]byte,1024)
-		fmt.Println("Dispatch to read")
+		//fmt.Println("Dispatch to read")
 		n,remoteAddr,err:=rd.read(buf)
-		fmt.Println("read byte number",n)
+		//fmt.Println("read byte number",n)
 
 		if err!=nil {
 			select {
@@ -174,7 +174,7 @@ func (rd *udpRcvDispath)Dispatch() error  {
 					break
 				}
 			default:
-				fmt.Println("error")
+				//fmt.Println("error")
 				continue
 			}
 		}
@@ -204,7 +204,7 @@ func (rd *udpRcvDispath)Dispatch() error  {
 		msg := rmr.GetMsg(fk)
 
 		if msg == nil {
-			uw := netcommon.NewReaderWriter(remoteAddr,rd.sock)
+			uw := netcommon.NewReaderWriter(remoteAddr,rd.sock,rd.isListen)
 			msg = rd.newMsg(msgid,pkt.GetSerialNo(),sid,hi,uw)
 			rmr.AddMSG(fk,msg)
 			msg = rmr.GetMsg(fk)

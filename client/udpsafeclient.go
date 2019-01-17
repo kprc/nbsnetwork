@@ -70,7 +70,7 @@ func (uc *udpClient)Dial() error {
 		uc.realAddr.AddIP4Str(la.String())
 	}
 
-	uc.uw = netcommon.NewReaderWriter(ra,conn)
+	uc.uw = netcommon.NewReaderWriter(ra,conn,false)
 
 	return nil
 }
