@@ -15,10 +15,11 @@ type udpReaderWriter struct {
 type UdpReaderWriterer interface {
 	IsNeedRemoteAddress() bool
 	NeedRemoteAddress()
-
+	SetNeedRemote(is bool)
 	AddrString() string
 	GetSock() *net.UDPConn
 	GetAddr() *net.UDPAddr
+	SetSockNull()
 	io.Writer
 	io.Reader
 }
@@ -27,6 +28,14 @@ func NewReaderWriter(addr *net.UDPAddr, sock *net.UDPConn,need bool) UdpReaderWr
 	uw:=&udpReaderWriter{addr:addr,sock:sock,needRemoteAddress:need}
 
 	return uw
+}
+
+func (uw *udpReaderWriter)SetSockNull()  {
+	uw.sock = nil
+}
+
+func (uw *udpReaderWriter)SetNeedRemote(is bool)  {
+	uw.needRemoteAddress = is
 }
 
 

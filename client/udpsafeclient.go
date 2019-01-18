@@ -24,6 +24,7 @@ type udpClient struct {
 type UdpClient interface {
 	Send(headinfo []byte,msgid int32,r io.ReadSeeker) error
 	SendTimeOut(headinfo []byte,msgid int32,r io.ReadSeeker,tvsecond int) error
+	SendBytes(headinfo []byte,msgid int32,data []byte) error
 	SendBytesTimeOut(headinfo []byte,msgid int32,data []byte,tvsecond int) error
 	Dial() error
 	ReDial() error

@@ -6,6 +6,7 @@ import (
 	"github.com/kprc/nbsnetwork/dispatch"
 	"net"
 	"sync"
+	"github.com/kprc/nbsnetwork/netcommon"
 )
 
 var (
@@ -120,8 +121,10 @@ func (us *udpServer)GetListenAddr() address.UdpAddresser  {
 
 
 func sockRecv(sock *net.UDPConn) error{
-	dispatch:=dispatch.NewUdpDispath(true)
-	dispatch.SetSock(sock)
+	uw:=netcommon.NewReaderWriter(nil,sock,true)
+
+	dispatch:=dispatch.NewUdpDispath(uw)
+
 
 	return dispatch.Dispatch()
 

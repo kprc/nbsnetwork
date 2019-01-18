@@ -18,53 +18,42 @@ import (
 )
 
 type udpRcvDispath struct {
-	sock *net.UDPConn
-	addr *net.UDPAddr
-	isListen bool
+	uw netcommon.UdpReaderWriterer
 	cmd chan int   // 1 for quit
 }
 
 type UdpRcvDispather interface {
 	Dispatch() error
-	SetSock(sock *net.UDPConn)
-	SetAddr(addr *net.UDPAddr)
+
 	Close() error
 }
 
 
-func NewUdpDispath(listen bool)  UdpRcvDispather{
-	return &udpRcvDispath{isListen:listen}
+func NewUdpDispath(uw netcommon.UdpReaderWriterer)  UdpRcvDispather{
+	return &udpRcvDispath{uw:uw,cmd:make(chan int,0)}
 }
 
 
-func (rd *udpRcvDispath)SetSock(sock *net.UDPConn){
-	rd.sock = sock
-}
-
-func (rd *udpRcvDispath)SetAddr(addr *net.UDPAddr)  {
-	rd.addr = addr
-}
 
 func (rd *udpRcvDispath)read(buf []byte) (int,*net.UDPAddr,error)  {
-
-	if rd.sock == nil{
+	if rd.uw.GetSock() == nil{
 		return 0,nil,nbserr.NbsErr{Errmsg:"sock is none",ErrId:nbserr.UDP_RCV_DEFAULT_ERR}
 	}
-	if rd.isListen {
-		return rd.sock.ReadFromUDP(buf)
+	if rd.uw.IsNeedRemoteAddress() {
+		return rd.uw.GetSock().ReadFromUDP(buf)
 	}
 
-	n,err:=rd.sock.Read(buf)
+	n,err:=rd.uw.GetSock().Read(buf)
 
-	return n,rd.addr,err
+	return n,rd.uw.GetAddr(),err
 
 }
 
 func (rd *udpRcvDispath)Close() error  {
 	var err error = nil
-	if rd.sock != nil && !rd.isListen{
-		err= rd.sock.Close()
-		rd.sock = nil
+	if rd.uw.GetSock() != nil && !rd.uw.IsNeedRemoteAddress(){
+		err= rd.uw.GetSock().Close()
+		rd.uw.SetSockNull()
 	}
 
 	rd.cmd <- 1
@@ -157,7 +146,7 @@ func (rd *udpRcvDispath)doAck(pkt packet.UdpPacketDataer)  {
 
 
 func (rd *udpRcvDispath)Dispatch() error  {
-	if !rd.isListen && rd.addr == nil {
+	if !rd.uw.IsNeedRemoteAddress() && rd.uw.GetAddr() == nil {
 		return nbserr.NbsErr{ErrId:nbserr.UDP_RCV_DEFAULT_ERR,Errmsg:"Address is none"}
 	}
 
@@ -206,7 +195,7 @@ func (rd *udpRcvDispath)Dispatch() error  {
 		msg := rmr.GetMsg(fk)
 
 		if msg == nil {
-			uw := netcommon.NewReaderWriter(remoteAddr,rd.sock,rd.isListen)
+			uw := netcommon.NewReaderWriter(remoteAddr,rd.uw.GetSock(),rd.uw.IsNeedRemoteAddress())
 			msg = rd.newMsg(msgid,pkt.GetSerialNo(),sid,hi,uw)
 			rmr.AddMSG(fk,msg)
 			msg = rmr.GetMsg(fk)

@@ -12,9 +12,7 @@ import (
 )
 
 type udpOut struct {
-	addr *net.UDPAddr
-	sock *net.UDPConn
-	isListen bool
+	uw netcommon.UdpReaderWriterer
 	dispatch dispatch.UdpRcvDispather
 }
 
@@ -23,8 +21,7 @@ type udpOut struct {
 type UdpOuter interface {
 	Send(headinfo []byte,msgid int32,r io.ReadSeeker) error
 	SendBytes(headinfo []byte,msgid int32,data []byte) error
-	SetAddr(addr *net.UDPAddr)
-	SetSock(sock *net.UDPConn)
+
 	GetAddr() *net.UDPAddr
 	GetSock() *net.UDPConn
 	IsListen() bool
@@ -34,36 +31,35 @@ type UdpOuter interface {
 	Destroy()
 }
 
-func NewUdpOuter(addr *net.UDPAddr,sock *net.UDPConn, is bool) UdpOuter {
-	return &udpOut{addr,sock,is,nil}
+func NewUdpOuter(addr *net.UDPAddr,sock *net.UDPConn,is bool) UdpOuter {
+	return &udpOut{uw:netcommon.NewReaderWriter(addr,sock,is)}
 }
+
+func NewUdpOuterUW(uw netcommon.UdpReaderWriterer) UdpOuter {
+	return &udpOut{uw:uw}
+}
+
 func (uo *udpOut)GetDispatch() dispatch.UdpRcvDispather  {
 	return uo.dispatch
 }
 
-func (uo *udpOut)SetAddr(addr *net.UDPAddr){
-	uo.addr = addr
-}
-func (uo *udpOut)SetSock(sock *net.UDPConn){
-	uo.sock = sock
-}
+
 func (uo *udpOut)GetAddr() *net.UDPAddr{
-	return uo.addr
+	return uo.uw.GetAddr()
 }
 func (uo *udpOut)GetSock() *net.UDPConn{
-	return uo.sock
+	return uo.uw.GetSock()
 }
 func (uo *udpOut)IsListen() bool{
-	return uo.isListen
+	return uo.uw.IsNeedRemoteAddress()
 }
 func (uo *udpOut)Listen(is bool){
-	uo.isListen = is
+	uo.uw.SetNeedRemote(is)
 }
 func (uo *udpOut)Rcv() error{
-	dispatch:=dispatch.NewUdpDispath(uo.isListen)
+	dispatch:=dispatch.NewUdpDispath(uo.uw)
 	uo.dispatch = dispatch
-	dispatch.SetSock(uo.GetSock())
-	dispatch.SetAddr(uo.GetAddr())
+
 
 	return dispatch.Dispatch()
 }
@@ -76,9 +72,8 @@ func (uo *udpOut)SendBytes(headinfo []byte,msgid int32,data []byte) error  {
 
 func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	bd := send.NewBlockData(r,constant.UDP_MTU)
-	uw:=netcommon.NewReaderWriter(uo.GetAddr(),uo.GetSock(),uo.isListen)
 
-	bd.SetWriter(uw)
+	bd.SetWriter(uo.uw)
 	inn:=nbsid.GetLocalId()
 	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
 	bd.SetDataTyp(constant.DATA_TRANSER)
