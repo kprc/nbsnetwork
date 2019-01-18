@@ -188,6 +188,8 @@ func (rd *udpRcvDispath)Dispatch() error  {
 			rd.doAck(pkt)
 			continue
 		}
+		fmt.Println("receive:===>")
+		pkt.PrintAll()
 
 		mc:=regcenter.GetMsgCenterInstance()
 		msgid,sid,hi:=mc.GetMsgId(pkt.GetTransInfo())
