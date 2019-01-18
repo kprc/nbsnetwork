@@ -15,9 +15,9 @@ func main()  {
 	//rmr:=recv.GetInstance()
 	//go rmr.TimeOut()
 
-	//ip:="192.168.107.242"
+	ip:="192.168.107.242"
 	//ip:="192.168.103.66"
-	ip:="192.168.20.142"
+	//ip:="192.168.20.142"
 
 	c := client.NewUdpClient(ip,"",11223,0)
 	c.Dial()

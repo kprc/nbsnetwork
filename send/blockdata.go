@@ -96,7 +96,9 @@ func (bd *BlockData)send(round uint32) (int,error){
 	buf := make([]byte,bd.mtu)
 
 	n,err := bd.r.Read(buf)
+
 	if n > 0 {
+		fmt.Println("read:===>",string(buf[:n]))
 		atomic.AddInt32(&bd.noacklen,int32(n))
 		upr := packet.NewUdpPacketData()
 		upr.SetTyp(bd.dataType)

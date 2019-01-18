@@ -1,16 +1,11 @@
 package client
 
 import (
-
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/outer"
-
 	"github.com/kprc/nbsnetwork/netcommon"
-
-
 	"io"
 	"net"
-
 	"github.com/NBSChain/go-nbs/utils"
 )
 
@@ -22,15 +17,14 @@ type udpClient struct {
 	localAddr address.UdpAddresser
 	realAddr address.UdpAddresser
 	uw netcommon.UdpReaderWriterer
-
 	uo outer.UdpOuter
-
 }
 
 
 type UdpClient interface {
 	Send(headinfo []byte,msgid int32,r io.ReadSeeker) error
-	SendBytes(headinfo []byte,msgid int32,data []byte) error
+	SendTimeOut(headinfo []byte,msgid int32,r io.ReadSeeker,tvsecond int) error
+	SendBytesTimeOut(headinfo []byte,msgid int32,data []byte,tvsecond int) error
 	Dial() error
 	ReDial() error
 	Destroy()
@@ -48,6 +42,15 @@ func NewUdpClient(rip,lip string,rport,lport uint16) UdpClient {
 
 	return uc
 }
+
+func (uc *udpClient)SendTimeOut(headinfo []byte,msgid int32,r io.ReadSeeker,tvsecond int) error {
+	return nil
+}
+
+func (uc *udpClient)SendBytesTimeOut(headinfo []byte,msgid int32,data []byte,tvsecond int) error  {
+	return nil
+}
+
 
 func assembleUdpAddr(addr address.UdpAddresser) *net.UDPAddr  {
 	if addr == nil {
@@ -98,6 +101,9 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	return uo.Send(headinfo,msgid,r)
 
 }
+
+
+
 func (uc *udpClient)Destroy()   {
 	uc.uo.Destroy()
 }
