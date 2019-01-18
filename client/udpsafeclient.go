@@ -11,7 +11,11 @@ import (
 	"io"
 	"net"
 
+	"github.com/NBSChain/go-nbs/utils"
 )
+
+
+var logger = utils.GetLogInstance()
 
 type udpClient struct {
 	dialAddr address.UdpAddresser

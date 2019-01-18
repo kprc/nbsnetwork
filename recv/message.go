@@ -26,9 +26,6 @@ func NewRcvMsg() RcvMsg  {
 	return rm
 }
 
-
-
-
 func (rm *rcvmsg)SetRefCnt(cnt int32){
 	atomic.StoreInt32(&rm.refcnt,cnt)
 }
