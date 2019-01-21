@@ -20,11 +20,14 @@ import (
 type udpRcvDispath struct {
 	uw netcommon.UdpReaderWriterer
 	cmd chan int   // 1 for quit
+	quit chan int
 }
+
+
 
 type UdpRcvDispather interface {
 	Dispatch() error
-
+	WaitQuit()
 	Close() error
 }
 
@@ -33,7 +36,9 @@ func NewUdpDispath(uw netcommon.UdpReaderWriterer)  UdpRcvDispather{
 	return &udpRcvDispath{uw:uw,cmd:make(chan int,0)}
 }
 
-
+func (rd *udpRcvDispath)WaitQuit()  {
+	<-rd.quit
+}
 
 func (rd *udpRcvDispath)read(buf []byte) (int,*net.UDPAddr,error)  {
 	if rd.uw.GetSock() == nil{

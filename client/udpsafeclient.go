@@ -9,7 +9,6 @@ import (
 	"github.com/NBSChain/go-nbs/utils"
 )
 
-
 var logger = utils.GetLogInstance()
 
 type udpClient struct {
@@ -103,9 +102,7 @@ func (uc *udpClient)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 
 }
 
-
-
-func (uc *udpClient)Destroy()   {
+func (uc *udpClient)Destroy() {
 	uc.uo.Destroy()
 }
 

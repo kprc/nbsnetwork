@@ -8,12 +8,12 @@ import (
 	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"net"
-	"time"
 )
 
 type udpOut struct {
 	uw netcommon.UdpReaderWriterer
 	dispatch dispatch.UdpRcvDispather
+	cmd chan int
 }
 
 
@@ -21,7 +21,6 @@ type udpOut struct {
 type UdpOuter interface {
 	Send(headinfo []byte,msgid int32,r io.ReadSeeker) error
 	SendBytes(headinfo []byte,msgid int32,data []byte) error
-
 	GetAddr() *net.UDPAddr
 	GetSock() *net.UDPConn
 	IsListen() bool
@@ -87,9 +86,9 @@ func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 
 	bd.SendAll()
 
-	//uo.Destroy()
+	uo.dispatch.WaitQuit()
 
-	time.Sleep(time.Second*1000)
+	<- uo.cmd
 
 	return nil
 }
