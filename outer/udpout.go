@@ -82,7 +82,10 @@ func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	sd = bs.GetBlockDataer(bd.GetSerialNo())
 	bd = sd.GetBlockData()
 	fmt.Println("====Begin to receive",bd.GetSerialNo())
-	go uo.Rcv()
+	if !uo.uw.IsNeedRemoteAddress() {
+		go uo.Rcv()
+	}
+
 
 	bd.SendAll()
 
