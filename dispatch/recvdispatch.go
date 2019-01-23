@@ -15,12 +15,14 @@ import (
 	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"net"
+	"time"
 )
 
 type udpRcvDispath struct {
 	uw netcommon.UdpReaderWriterer
 	cmd chan int   // 1 for quit
 	quit chan int
+	timeout int    //ms
 }
 
 
@@ -132,8 +134,6 @@ func (rd *udpRcvDispath)sendAck(w io.Writer, ack packet.UdpResulter, pkt packet.
 
 func (rd *udpRcvDispath)doAck(pkt packet.UdpPacketDataer)  {
 
-	pkt.PrintAll()
-
 	bs:=send.GetBSInstance()
 
 	sd:=bs.GetBlockDataer(pkt.GetSerialNo())
@@ -151,21 +151,34 @@ func (rd *udpRcvDispath)doAck(pkt packet.UdpPacketDataer)  {
 
 
 func (rd *udpRcvDispath)Dispatch() error  {
+
+	fmt.Println("=== Enter a Dispatch")
 	if !rd.uw.IsNeedRemoteAddress() && rd.uw.GetAddr() == nil {
 		return nbserr.NbsErr{ErrId:nbserr.UDP_RCV_DEFAULT_ERR,Errmsg:"Address is none"}
 	}
 
 	for {
 		buf:=make([]byte,1024)
+
+		if rd.timeout > 0 {
+			rd.uw.SetDeadLine(time.Duration(rd.timeout))
+		}
+		fmt.Println("===Begin to read message")
 		//fmt.Println("Dispatch to read")
 		n,remoteAddr,err:=rd.read(buf)
 		//fmt.Println("read byte number",n)
-
 		if err!=nil {
+			if rd.uw.IsTimeOut(err){
+				rd.quit <- 0
+				fmt.Println("===Time out and send quit signal to quit channel")
+				return err
+			}
 			select {
 			case cmd:=<-rd.cmd:
 				if cmd == 1{
-					break
+					fmt.Println("===Get a cmd and send quit to quit channel")
+					rd.quit <- 1
+					return err
 				}
 			default:
 				//fmt.Println("error")
@@ -179,10 +192,11 @@ func (rd *udpRcvDispath)Dispatch() error  {
 		}
 
 		if pkt.GetTyp() == constant.ACK {
+			fmt.Println("===receive ack:",pkt.GetSerialNo())
 			rd.doAck(pkt)
 			continue
 		}
-		fmt.Println("receive:===>")
+		fmt.Println("receive data:===>")
 		pkt.PrintAll()
 
 		mc:=regcenter.GetMsgCenterInstance()
@@ -194,6 +208,7 @@ func (rd *udpRcvDispath)Dispatch() error  {
 		rmr:=recv.GetInstance()
 		fk := flowkey.NewFlowKey(sid,pkt.GetSerialNo())
 		if pkt.GetTyp() == constant.FINISH_ACK {
+			fmt.Println("===receive ack finish:",pkt.GetSerialNo())
 			rmr.DelMsg(fk)
 			continue
 		}
@@ -221,6 +236,8 @@ func (rd *udpRcvDispath)Dispatch() error  {
 
 		rmr.PutMsg(fk)
 	}
+
+	fmt.Println("=== dispatch Normal to quit")
 
 	return nil
 

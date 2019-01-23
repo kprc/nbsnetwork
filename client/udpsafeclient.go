@@ -87,14 +87,14 @@ func (uc *udpClient)ReDial() error  {
 }
 
 func (uc *udpClient)SendBytes(headinfo []byte,msgid int32,data []byte) error  {
-	uo:=outer.NewUdpOuter(uc.uw.GetAddr(),uc.uw.GetSock(),false)
+	uo:=outer.NewUdpOuterUW(uc.uw)
 	uc.uo = uo
 
 	return uo.SendBytes(headinfo,msgid,data)
 }
 
 func (uc *udpClient)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
-	uo:=outer.NewUdpOuter(uc.uw.GetAddr(),uc.uw.GetSock(),false)
+	uo:=outer.NewUdpOuterUW(uc.uw)
 
 	uc.uo = uo
 

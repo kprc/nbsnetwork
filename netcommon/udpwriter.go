@@ -3,12 +3,14 @@ package netcommon
 import (
 	"io"
 	"net"
+	"time"
 )
 
 type udpReaderWriter struct {
 	addr *net.UDPAddr
 	sock *net.UDPConn
 	needRemoteAddress bool
+	ok bool
 }
 
 
@@ -20,6 +22,9 @@ type UdpReaderWriterer interface {
 	GetSock() *net.UDPConn
 	GetAddr() *net.UDPAddr
 	SetSockNull()
+	SetDeadLine(tv time.Duration)
+	IsTimeOut(err error) bool
+	IsOK() bool
 	io.Writer
 	io.Reader
 }
@@ -52,7 +57,6 @@ func (uw *udpReaderWriter)AddrString() string  {
 }
 
 func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {
-
 	if uw.IsNeedRemoteAddress(){
 		return uw.sock.WriteToUDP(p, uw.addr)
 	}else {
@@ -71,4 +75,20 @@ func (uw *udpReaderWriter)IsNeedRemoteAddress() bool {
 
 func (uw *udpReaderWriter) NeedRemoteAddress() {
 	uw.needRemoteAddress = true
+}
+
+func (uw *udpReaderWriter)SetDeadLine(tv time.Duration)  {
+	uw.sock.SetReadDeadline(time.Now().Add(time.Millisecond*tv))
+}
+
+func (uw *udpReaderWriter)IsTimeOut(err error) bool {
+	if nerr,ok:=err.(net.Error);ok && nerr.Timeout(){
+		uw.ok = true
+		return true
+	}
+	return false
+}
+
+func (uw *udpReaderWriter)IsOK() bool {
+	return uw.ok
 }

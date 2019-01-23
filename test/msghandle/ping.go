@@ -74,7 +74,7 @@ func handlePing(head interface{},data interface{},snd io.Writer) error  {
 	}
 
 	uw:=snd.(netcommon.UdpReaderWriterer)
-	uo:=outer.NewUdpOuter(uw.GetAddr(),uw.GetSock(),uw.IsNeedRemoteAddress())
+	uo:=outer.NewUdpOuterUW(uw)
 	uo.SendBytes([]byte("Title Ack"),constant.MSG_PING_ACK,[]byte("Get Send Pong"))
 
 	fmt.Println("Send Pong")

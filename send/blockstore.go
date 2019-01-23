@@ -64,7 +64,7 @@ func (bs *bstore)TimeOut()  {
 
 		select {
 
-		case	<-bs.cmd:
+		case <-bs.cmd:
 			return
 		default:
 			time.Sleep(time.Second*1)

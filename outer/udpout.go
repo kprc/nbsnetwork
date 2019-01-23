@@ -1,6 +1,7 @@
 package outer
 
 import (
+	"fmt"
 	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/dispatch"
@@ -28,10 +29,6 @@ type UdpOuter interface {
 	Rcv() error
 	GetDispatch() dispatch.UdpRcvDispather
 	Destroy()
-}
-
-func NewUdpOuter(addr *net.UDPAddr,sock *net.UDPConn,is bool) UdpOuter {
-	return &udpOut{uw:netcommon.NewReaderWriter(addr,sock,is)}
 }
 
 func NewUdpOuterUW(uw netcommon.UdpReaderWriterer) UdpOuter {
@@ -82,13 +79,20 @@ func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	bs:=send.GetBSInstance()
 	bs.AddBlockDataer(bd.GetSerialNo(),sd)
 
+	sd = bs.GetBlockDataer(bd.GetSerialNo())
+	bd = sd.GetBlockData()
+	fmt.Println("====Begin to receive",bd.GetSerialNo())
 	go uo.Rcv()
 
 	bd.SendAll()
 
-	uo.dispatch.WaitQuit()
+	fmt.Println("===begin destroy")
 
-	<- uo.cmd
+	uo.Destroy()
+	fmt.Println("=== wait dispatch quit")
+	uo.dispatch.WaitQuit()
+	fmt.Println("=== dispatch quit")
+	bs.PutBlockDataer(bd.GetSerialNo())
 
 	return nil
 }

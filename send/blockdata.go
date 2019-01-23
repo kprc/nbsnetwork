@@ -163,8 +163,10 @@ func (bd *BlockData)continuesend() (uint32,error) {
 }
 
 func (bd *BlockData)SendAll()  {
-	go bd.doACK()
-	bd.Send()
+	fmt.Println("====Begin to Send",bd.GetSerialNo())
+	go bd.Send()
+	fmt.Println("====Begin to do ACK",bd.GetSerialNo())
+	bd.doACK()
 }
 
 func (bd *BlockData)Send() error {
@@ -202,14 +204,18 @@ func (bd *BlockData)Send() error {
 		}
 
 		if ret == 1{
+			fmt.Println("===Send Finish",bd.GetSerialNo())
 			return nil
 		}
 
 		wa:=<-bd.waitAck
 
 		if  wa == 1{
+			fmt.Println("=== receive a waitAck finish signal",bd.GetSerialNo())
+
 			return nil
 		}
+		fmt.Println("=== Get a wait Ack sinal",bd.GetSerialNo())
 
 	}
 
@@ -252,14 +258,17 @@ func (bd *BlockData)doresult(result interface{}) error {
 	case []byte:
 		r := packet.NewUdpResult(bd.GetSerialNo())
 		if err := r.DeSerialize(v); err!=nil{
+			bd.waitAck <- 0    // continue send
 			return err
 		}
 
 		if r.IsFinished() {
 			bd.sendFinish()
+			fmt.Println("===doresult get a Finish ack",bd.GetSerialNo())
 			return nil
 		}
 		bd.rwlock.RLock()
+		fmt.Println("=== Get a ACK is: ",r.GetRcved(),r.GetSerialNo())
 		resend := r.GetReSend()
 		for _, id := range resend {
 			if upr, ok := bd.sndData[id]; ok {
@@ -283,6 +292,7 @@ func (bd *BlockData)doresult(result interface{}) error {
 			delete(bd.sndData, r.GetRcved())
 		}
 		bd.rwlock.Unlock()
+		fmt.Println("=== send 0 to wait ack channel",bd.GetSerialNo())
 		bd.waitAck <- 0    // continue send
 	}
 
@@ -297,9 +307,11 @@ func (bd *BlockData)doACK() {
 	for {
 		select {
 		case result := <-bd.chResult:
+			fmt.Println("=== doACK get a result",bd.GetSerialNo())
 			bd.doresult(result)
 		case <-bd.cmd:
 			bd.finished = true
+			fmt.Println("=== doACK Get a finish cmd",bd.GetSerialNo())
 			return
 		}
 	}
