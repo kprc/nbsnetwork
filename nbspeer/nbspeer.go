@@ -1,19 +1,26 @@
 package nbspeer
 
 import (
+	"github.com/gogo/protobuf/io"
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/netcommon"
 )
 
 type peer struct {
-	address.UdpAddresser
-	netcommon.UdpReaderWriterer
+	addrs address.UdpAddresser
+	net netcommon.UdpReaderWriterer
 	stationId string
+
 }
 
 
 type NbsPeer interface {
+	AddIPAddr(ip string,port uint16)
+	DelIpAddr(ip string,port uint16)
+	GetNet() netcommon.UdpReaderWriterer
+	SetNet(net netcommon.UdpReaderWriterer)
 	SendAsync(msgid int,headinfo []byte,data []byte) (sn uint64, err error)
+	SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader)(uint64, error)
 	SendSync(msgid int, headinfo []byte,data []byte) (interface{},error)
 	SendSyncTime(msgid int,headinfo []byte,data []byte, ms int) (interface{},error)
 	WaitResult(sn uint64) (interface{},error)
@@ -26,17 +33,31 @@ func NewNbsPeer(sid string) NbsPeer  {
 
 
 func (p *peer)AddIPAddr(ip string,port uint16)  {
-	p.AddIP4(ip,port)
+	p.addrs.AddIP4(ip,port)
 }
 
 func (p *peer)DelIpAddr(ip string,port uint16)  {
-	p.DelIP4(ip,port)
+	p.addrs.DelIP4(ip,port)
 }
+
+func (p *peer)GetNet() netcommon.UdpReaderWriterer  {
+	return p.net
+}
+
+func (p *peer)SetNet(net netcommon.UdpReaderWriterer)  {
+	p.net = net
+}
+
 
 func (p *peer)SendAsync(msgid int,headinfo []byte,data []byte) (uint64, error)  {
 
 	return 0,nil
 }
+
+func (p *peer)SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader)(uint64, error) {
+	return 0,nil
+}
+
 
 func (p *peer)SendSync(msgid int, headinfo []byte,data []byte) (interface{},error)  {
 	return nil,nil
