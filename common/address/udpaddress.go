@@ -1,6 +1,7 @@
 package address
 
 import (
+	"bytes"
 	"github.com/kprc/nbsdht/nbserr"
 	"strconv"
 	"strings"
@@ -57,7 +58,26 @@ func NewUdpAddressP(addr []byte, port uint16) UdpAddresser  {
 }
 
 func (ua *udpAddress)DelIP4(ipstr string,port uint16)  {
+	byteIp := ipString2Byte(ipstr)
+	idx:=-1
+	for i,addr := range ua.addrs{
+		if bytes.Compare(byteIp,addr.addr) == 0 && port == addr.port{
+			idx = i
+			break
+		}
+	}
 
+	if idx == -1{
+		return
+	}
+
+
+	l := len(ua.addrs)
+	if idx < l -1 {
+		ua.addrs[idx] = ua.addrs[l-1]
+
+	}
+	ua.addrs = ua.addrs[:l-1]
 }
 
 func (ua *udpAddress)Len() int{

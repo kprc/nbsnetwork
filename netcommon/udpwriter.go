@@ -3,7 +3,6 @@ package netcommon
 import (
 	"io"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -12,7 +11,6 @@ type udpReaderWriter struct {
 	sock *net.UDPConn
 	needRemoteAddress bool
 	ok bool
-	readlock sync.RWMutex
 }
 
 
@@ -21,7 +19,9 @@ type UdpReaderWriterer interface {
 	NeedRemoteAddress()
 	SetNeedRemote(is bool)
 	AddrString() string
+	SetSock(sock *net.UDPConn)
 	GetSock() *net.UDPConn
+	SetAddr(addr *net.UDPAddr)
 	GetAddr() *net.UDPAddr
 	SetSockNull()
 	SetDeadLine(tv time.Duration)
@@ -46,9 +46,16 @@ func (uw *udpReaderWriter)SetNeedRemote(is bool)  {
 	uw.needRemoteAddress = is
 }
 
+func (uw *udpReaderWriter)SetSock(sock *net.UDPConn)  {
+	uw.sock = sock
+}
 
 func (uw *udpReaderWriter)GetSock() *net.UDPConn {
 	return uw.sock
+}
+
+func (uw *udpReaderWriter)SetAddr(addr *net.UDPAddr)  {
+	uw.addr = addr
 }
 
 func (uw *udpReaderWriter)GetAddr() *net.UDPAddr  {
@@ -68,7 +75,6 @@ func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {
 }
 
 func (uw *udpReaderWriter)Read(p []byte) (n int, err error)  {
-
 	return uw.sock.Read(p)
 }
 
