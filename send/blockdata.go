@@ -77,7 +77,7 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 	uh.mtu = constant.UDP_MTU
 	uh.maxcache = constant.UDP_MAX_CACHE
 	uh.chResult = make(chan interface{},1024)
-	uh.cmd = make(chan int,0)
+	uh.cmd = make(chan int,1)
 	uh.waitAck = make(chan int, 0)
 
 	uh.sndData = make(map[uint32]packet.UdpPacketDataer)
@@ -305,6 +305,7 @@ func (bd *BlockData)PushResult(result interface{})  {
 
 func (bd *BlockData)doACK() {
 	for {
+		fmt.Println("--------------begin do ACK")
 		select {
 		case result := <-bd.chResult:
 			fmt.Println("=== doACK get a result",bd.GetSerialNo())

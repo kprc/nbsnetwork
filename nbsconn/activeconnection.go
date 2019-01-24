@@ -238,7 +238,6 @@ func (mc *mapConn)TimeOut()  {
 		time.Sleep(time.Second*60)
 		mc.timeOut()
 	}
-
 }
 
 
