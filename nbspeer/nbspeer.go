@@ -17,6 +17,7 @@ type NbsPeer interface {
 	SendSync(msgid int, headinfo []byte,data []byte) (interface{},error)
 	SendSyncTime(msgid int,headinfo []byte,data []byte, ms int) (interface{},error)
 	WaitResult(sn uint64) (interface{},error)
+	Wait(sn uint64) error
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
@@ -49,7 +50,9 @@ func (p *peer)WaitResult(sn uint64) (interface{},error)  {
 	return nil,nil
 }
 
-
+func (p *peer)Wait(sn uint64) error  {
+	return nil
+}
 
 
 
