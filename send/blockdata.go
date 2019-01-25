@@ -23,9 +23,11 @@ var blocksndtimeout = nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"sen
 
 type BlockData struct {
 	lastSendTime int64   //for timeout
+	deadTime int
 	r io.ReadSeeker      //for read content
 	w io.Writer			 //for snd io
 	serialNo uint64      //for search the block
+	rcvSn uint64
 	mtu   uint32
 	totalreadlen uint32   //for seek
 	noacklen int32
@@ -46,9 +48,13 @@ type BlockDataer interface {
 	Send() error
 	SetWriter(w io.Writer)
 	GetSerialNo() uint64
+	SetDeadTime(millsec int)
+	GetDeadTime() int
 	PushResult(result interface{})
 	SetDataTyp(typ uint16)
 	GetDataTyp() uint16
+	SetRcvSn(sn uint64)
+	GetRcvSn() uint64
 	SetTransInfo(info []byte)
 	GetTransInfo() []byte
 	SetTransInfoCommon(stationId string,msgid int32) error
@@ -70,8 +76,8 @@ func (uh *BlockData)nextSerialNo() {
 	uh.serialNo = atomic.AddUint64(&gSerialNo,1)
 }
 
-func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
-	uh := &BlockData{r:r,mtu:mtu}
+func NewBlockData(r io.ReadSeeker) BlockDataer {
+	uh := &BlockData{r:r}
 	uh.nextSerialNo()
 	uh.lastSendTime = time.Now().Unix()
 	uh.mtu = constant.UDP_MTU
@@ -86,6 +92,22 @@ func NewBlockData(r io.ReadSeeker,mtu uint32) BlockDataer {
 
 func (bd *BlockData)GetSerialNo() uint64  {
 	return bd.serialNo
+}
+
+func (bd *BlockData)SetDeadTime(millsec int)  {
+	bd.deadTime = millsec
+}
+
+func (bd *BlockData)GetDeadTime() int  {
+	return bd.deadTime
+}
+
+func (bd *BlockData)SetRcvSn(sn uint64)  {
+	bd.rcvSn = sn
+}
+
+func (bd *BlockData)GetRcvSn() uint64  {
+	return bd.rcvSn
 }
 
 func (bd *BlockData)SetWriter(w io.Writer)  {

@@ -27,7 +27,7 @@ func Print(arg interface{},data interface{})  {
 	s:=arg.(string)
 	sdata := data.(string)
 
-	fmt.Println(s,":",sdata)
+	fmt.Println(s,sdata)
 }
 
 func (q *queue) EnQueue(node *nbslink.LinkNode) {

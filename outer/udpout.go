@@ -67,7 +67,7 @@ func (uo *udpOut)SendBytes(headinfo []byte,msgid int32,data []byte) error  {
 }
 
 func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
-	bd := send.NewBlockData(r,constant.UDP_MTU)
+	bd := send.NewBlockData(r)
 
 	bd.SetWriter(uo.uw)
 	inn:=nbsid.GetLocalId()
