@@ -3,6 +3,7 @@ package nbspeer
 import (
 	"github.com/gogo/protobuf/io"
 	"github.com/kprc/nbsnetwork/common/address"
+	"github.com/kprc/nbsnetwork/common/queue"
 	"github.com/kprc/nbsnetwork/netcommon"
 )
 
@@ -10,7 +11,7 @@ type peer struct {
 	addrs address.UdpAddresser
 	net netcommon.UdpReaderWriterer
 	stationId string
-
+	data2Send queue.Queue
 }
 
 
@@ -21,8 +22,8 @@ type NbsPeer interface {
 	SetNet(net netcommon.UdpReaderWriterer)
 	SendAsync(msgid int,headinfo []byte,data []byte) (sn uint64, err error)
 	SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader)(uint64, error)
-	SendSync(msgid int, headinfo []byte,data []byte) (interface{},error)
-	SendSyncTime(msgid int,headinfo []byte,data []byte, ms int) (interface{},error)
+	SendSync(msgid int, headinfo []byte,data []byte) error
+	SendSyncTimeOut(msgid int,headinfo []byte,data []byte, ms int) error
 	WaitResult(sn uint64) (interface{},error)
 	Wait(sn uint64) error
 }
@@ -41,6 +42,7 @@ func (p *peer)DelIpAddr(ip string,port uint16)  {
 }
 
 func (p *peer)GetNet() netcommon.UdpReaderWriterer  {
+
 	return p.net
 }
 
@@ -59,12 +61,12 @@ func (p *peer)SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader)(uint64, 
 }
 
 
-func (p *peer)SendSync(msgid int, headinfo []byte,data []byte) (interface{},error)  {
-	return nil,nil
+func (p *peer)SendSync(msgid int, headinfo []byte,data []byte) error{
+	return nil
 }
 
-func (p *peer)SendSyncTime(msgid int,headinfo []byte,data []byte, ms int) (interface{},error)  {
-	return nil,nil
+func (p *peer)SendSyncTimeOut(msgid int,headinfo []byte,data []byte, ms int) error  {
+	return nil
 }
 
 func (p *peer)WaitResult(sn uint64) (interface{},error)  {

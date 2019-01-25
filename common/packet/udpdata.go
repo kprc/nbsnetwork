@@ -42,6 +42,7 @@ type UdpPacketDataer interface {
 
 type UDPPacketData struct {
 	serialNo uint64    //for upper protocol used
+	rcvSn uint64
 	totalCnt uint32    //last packet will be set,other packet will be set to 0
 	posNum uint32      //current packet serial number, start number is 1
 	dataTyp uint16     //data type, for transfer priority,ACK or Data
@@ -66,6 +67,7 @@ func (uh *UDPPacketData)PrintAll()  {
 func (uh *UDPPacketData)Serialize() ([]byte,error)  {
 	p := packet.UDPPacketData{}
 	p.SerialNo = uh.serialNo
+	
 	p.TotalCnt = uh.totalCnt
 	p.PosNum = uh.posNum
 	p.DataType = uint32(uh.dataTyp)
