@@ -30,14 +30,18 @@ type NbsPeer interface {
 	SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, rcvSn uint64)(*chan int,uint64, error)
 	SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) (uint64,error)
 	SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) (uint64,error)
-	WaitResult(sn uint64) (interface{},error)
+	//WaitResult(sn uint64) (interface{},error)
 	Wait(ch *chan int) error
+	Run() error
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
 	return &peer{stationId:sid,data2Send:queue.NewQueue()}
 }
 
+func (p *peer) Run() error{
+	return nil
+}
 
 func (p *peer)AddIPAddr(ip string,port uint16)  {
 	p.addrs.AddIP4(ip,port)
@@ -48,7 +52,6 @@ func (p *peer)DelIpAddr(ip string,port uint16)  {
 }
 
 func (p *peer)GetNet() netcommon.UdpReaderWriterer  {
-
 	return p.net
 }
 
@@ -104,10 +107,7 @@ func (p *peer)SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uin
 	return sn,p.Wait(pch)
 }
 
-func (p *peer)WaitResult(sn uint64) (interface{},error)  {
 
-	return nil,nil
-}
 
 func (p *peer)Wait(ch *chan int) error  {
 	code:=<-*ch
