@@ -25,6 +25,8 @@ type UdpPacketDataer interface {
 	GetData() []byte
 	SetSerialNo(sn uint64)
 	GetSerialNo() uint64
+	SetRcvSN(sn uint64)
+	GetRcvSN() uint64
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
 	SetTyp(typ uint16)
@@ -67,7 +69,7 @@ func (uh *UDPPacketData)PrintAll()  {
 func (uh *UDPPacketData)Serialize() ([]byte,error)  {
 	p := packet.UDPPacketData{}
 	p.SerialNo = uh.serialNo
-	
+	p.RcvSn = uh.rcvSn
 	p.TotalCnt = uh.totalCnt
 	p.PosNum = uh.posNum
 	p.DataType = uint32(uh.dataTyp)
@@ -94,6 +96,7 @@ func (uh *UDPPacketData)DeSerialize(data []byte) error {
 		uh.len = p.Len
 		uh.transInfo = p.TransInfo
 		uh.finished = p.Finished
+		uh.rcvSn = p.RcvSn
 	}
 
 	return err
@@ -172,6 +175,14 @@ func (uh *UDPPacketData)SetLength(len int32){
 
 func (uh *UDPPacketData)SetSerialNo(sn uint64)  {
 	uh.serialNo = sn
+}
+
+func (uh *UDPPacketData)SetRcvSN(sn uint64) {
+	uh.rcvSn = sn
+}
+
+func (uh *UDPPacketData)GetRcvSN() uint64  {
+	return uh.rcvSn
 }
 
 func (uh *UDPPacketData)SetTransInfo(ti []byte)  {

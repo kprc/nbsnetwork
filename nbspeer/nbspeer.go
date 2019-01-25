@@ -20,10 +20,10 @@ type NbsPeer interface {
 	DelIpAddr(ip string,port uint16)
 	GetNet() netcommon.UdpReaderWriterer
 	SetNet(net netcommon.UdpReaderWriterer)
-	SendAsync(msgid int,headinfo []byte,data []byte) (sn uint64, err error)
-	SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader)(uint64, error)
-	SendSync(msgid int, headinfo []byte,data []byte) error
-	SendSyncTimeOut(msgid int,headinfo []byte,data []byte, ms int) error
+	SendAsync(msgid int,headinfo []byte,data []byte, rcvSn uint64) (sn uint64, err error)
+	SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader, rcvSn uint64)(uint64, error)
+	SendSync(msgid int, headinfo []byte,data []byte, rcvSn uint64) error
+	SendSyncTimeOut(msgid int,headinfo []byte,data []byte, rcvSn uint64, ms int) error
 	WaitResult(sn uint64) (interface{},error)
 	Wait(sn uint64) error
 }
@@ -51,21 +51,21 @@ func (p *peer)SetNet(net netcommon.UdpReaderWriterer)  {
 }
 
 
-func (p *peer)SendAsync(msgid int,headinfo []byte,data []byte) (uint64, error)  {
+func (p *peer)SendAsync(msgid int,headinfo []byte,data []byte, rcvSn uint64) (uint64, error)  {
 
 	return 0,nil
 }
 
-func (p *peer)SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader)(uint64, error) {
+func (p *peer)SendLargeDataAsync(msgid int,headinfo []byte,r io.Reader, rcvSn uint64)(uint64, error) {
 	return 0,nil
 }
 
 
-func (p *peer)SendSync(msgid int, headinfo []byte,data []byte) error{
+func (p *peer)SendSync(msgid int, headinfo []byte,data []byte, rcvSn uint64) error{
 	return nil
 }
 
-func (p *peer)SendSyncTimeOut(msgid int,headinfo []byte,data []byte, ms int) error  {
+func (p *peer)SendSyncTimeOut(msgid int,headinfo []byte,data []byte, rcvSn uint64, ms int) error  {
 	return nil
 }
 
