@@ -9,6 +9,7 @@ import (
 	"github.com/kprc/nbsnetwork/send"
 	"io"
 	"sync"
+	"github.com/kprc/nbsdht/nbserr"
 )
 
 type peer struct {
@@ -25,12 +26,12 @@ type NbsPeer interface {
 	DelIpAddr(ip string,port uint16)
 	GetNet() netcommon.UdpReaderWriterer
 	SetNet(net netcommon.UdpReaderWriterer)
-	SendAsync(msgid int32,headinfo []byte,data []byte, rcvSn uint64) (sn uint64, err error)
-	SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, rcvSn uint64)(uint64, error)
-	SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) error
-	SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) error
+	SendAsync(msgid int32,headinfo []byte,data []byte, rcvSn uint64) (*chan int, uint64,  error)
+	SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, rcvSn uint64)(*chan int,uint64, error)
+	SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) (uint64,error)
+	SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) (uint64,error)
 	WaitResult(sn uint64) (interface{},error)
-	Wait(sn uint64) error
+	Wait(ch *chan int) error
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
@@ -56,50 +57,74 @@ func (p *peer)SetNet(net netcommon.UdpReaderWriterer)  {
 }
 
 
-func (p *peer)SendAsync(msgid int32,headinfo []byte,data []byte, rcvSn uint64) (uint64, error)  {
+func (p *peer)SendAsync(msgid int32,headinfo []byte,data []byte, rcvSn uint64) (*chan int,uint64, error)  {
 	rs:=netcommon.NewReadSeeker(data)
 
-	return p.SendLargeDataAsync(msgid,headinfo,rs,rcvSn)
+	pch,sn:= p.send(msgid,headinfo,rs,rcvSn,0)
+
+	return pch,sn,nil
 
 }
 
-func (p *peer)SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, rcvSn uint64)(uint64, error) {
+func (p *peer)send(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint64,ms int) (*chan int,uint64) {
 	bd:=send.NewBlockData(rs)
 	bd.SetRcvSn(rcvSn)
 	bd.SetWriter(p.net)
+	bd.SetDeadTime(ms)
+	ch := make(chan int,0)
+	bd.SetSendResultChan(&ch)
 	inn:=nbsid.GetLocalId()
 	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
 	bd.SetDataTyp(constant.DATA_TRANSER)
 	p.lock.Lock()
 	p.data2Send.EnQueueValue(bd)
 	p.lock.Unlock()
-	return 0,nil
+
+	return bd.GetSendResultChan(),bd.GetSerialNo()
+}
+
+func (p *peer)SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, rcvSn uint64)(*chan int,uint64, error) {
+	pch,sn:= p.send(msgid,headinfo,rs,rcvSn,0)
+
+	return pch,sn,nil
 }
 
 
-func (p *peer)SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) error{
+func (p *peer)SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) (uint64,error){
 	rs:=netcommon.NewReadSeeker(data)
-	p.SendLargeDataAsync(msgid,headinfo,rs,rcvSn)
+	pch,sn:=p.send(msgid,headinfo,rs,rcvSn,0)
 
-
-
-	//begin wait
-
-	return nil
+	return sn,p.Wait(pch)
 }
 
-func (p *peer)SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) error  {
-
+func (p *peer)SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) (uint64,error)  {
+	rs:=netcommon.NewReadSeeker(data)
+	pch,sn:=p.send(msgid,headinfo,rs,rcvSn,ms)
 	
-	return nil
+	return sn,p.Wait(pch)
 }
 
 func (p *peer)WaitResult(sn uint64) (interface{},error)  {
+
 	return nil,nil
 }
 
-func (p *peer)Wait(sn uint64) error  {
-	return nil
+func (p *peer)Wait(ch *chan int) error  {
+	code:=<-*ch
+
+	var err error
+
+	switch code {
+	case 1:
+		err=nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"TimeOut"}
+	case 2:
+		err=nbserr.NbsErr{ErrId:nbserr.UDP_SND_WRITER_IO_ERR,Errmsg:"Write Error"}
+	case 3:
+		err = nil
+		//nothing todo...
+	}
+
+	return err
 }
 
 
