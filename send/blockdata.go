@@ -42,6 +42,7 @@ type BlockData struct {
 	rwlock sync.RWMutex
 	sndData map[uint32]packet.UdpPacketDataer
 	finished bool
+	sendResult *chan int   //send result
 }
 
 type BlockDataer interface {
@@ -68,6 +69,8 @@ type BlockDataer interface {
 	TimeOut()
 	Destroy()
 	SendAll()
+	SetSendResultChan(ch *chan int)
+	GetSendResultChan() *chan int
 }
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -112,6 +115,14 @@ func (bd *BlockData)GetRcvSn() uint64  {
 
 func (bd *BlockData)SetWriter(w io.Writer)  {
 	bd.w = w
+}
+
+func (bd *BlockData)SetSendResultChan(ch *chan int)  {
+	bd.sendResult = ch
+}
+
+func (bd *BlockData)GetSendResultChan() *chan int  {
+	return bd.sendResult
 }
 
 func (bd *BlockData)send(round uint32) (int,error){
