@@ -90,7 +90,7 @@ func (p *peer)SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) e
 
 func (p *peer)SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) error  {
 
-	
+
 	return nil
 }
 
