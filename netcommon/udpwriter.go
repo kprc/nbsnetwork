@@ -92,7 +92,7 @@ func (uw *udpReaderWriter)SetDeadLine(tv time.Duration)  {
 
 func (uw *udpReaderWriter)IsTimeOut(err error) bool {
 	if nerr,ok:=err.(net.Error);ok && nerr.Timeout(){
-		uw.ok = true
+		uw.ok = false
 		return true
 	}
 	return false

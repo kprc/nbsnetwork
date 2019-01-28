@@ -2,22 +2,20 @@ package nbspeer
 
 import (
 	"github.com/kprc/nbsdht/dht/nbsid"
+	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
-	"github.com/kprc/nbsnetwork/common/queue"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/send"
 	"io"
-	"sync"
-	"github.com/kprc/nbsdht/nbserr"
 )
 
 type peer struct {
 	addrs address.UdpAddresser
 	net netcommon.UdpReaderWriterer
 	stationId string
-	lock sync.Mutex
-	data2Send queue.Queue
+
+	data2Send chan send.BlockDataer
 }
 
 
@@ -36,12 +34,37 @@ type NbsPeer interface {
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
-	return &peer{stationId:sid,data2Send:queue.NewQueue()}
+	return &peer{stationId:sid,data2Send:make(chan send.BlockDataer,32)}
 }
 
+
 func (p *peer) Run() error{
+
+	for{
+		bd:=<-p.data2Send
+
+
+
+
+	}
+
+
 	return nil
 }
+
+func (p *peer)recv() {
+
+}
+
+
+func (p *peer)Close()  {
+
+}
+
+func (p *peer)Dial()  {
+	
+}
+
 
 func (p *peer)AddIPAddr(ip string,port uint16)  {
 	p.addrs.AddIP4(ip,port)
@@ -79,9 +102,7 @@ func (p *peer)send(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint64,ms 
 	inn:=nbsid.GetLocalId()
 	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
 	bd.SetDataTyp(constant.DATA_TRANSER)
-	p.lock.Lock()
-	p.data2Send.EnQueueValue(bd)
-	p.lock.Unlock()
+	p.data2Send <- bd
 
 	return bd.GetSendResultChan(),bd.GetSerialNo()
 }
@@ -106,8 +127,6 @@ func (p *peer)SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uin
 	return sn,p.Wait(pch)
 }
 
-
-
 func (p *peer)Wait(ch *chan int) error  {
 	code:=<-*ch
 
@@ -118,7 +137,7 @@ func (p *peer)Wait(ch *chan int) error  {
 		err=nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"TimeOut"}
 	case 2:
 		err=nbserr.NbsErr{ErrId:nbserr.UDP_SND_WRITER_IO_ERR,Errmsg:"Write Error"}
-	case 3:
+	case 0,3:
 		err = nil
 		//nothing todo...
 	}

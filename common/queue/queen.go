@@ -56,10 +56,9 @@ func (q *queue)DeQueue() *nbslink.LinkNode  {
 
 	if q.root == node {
 		q.root = nil
+	}else {
+		node.Remove()
 	}
-
-	node.Remove()
-
 	return node
 }
 
