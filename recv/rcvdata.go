@@ -19,6 +19,7 @@ type rcvData struct {
 	key *flowkey.FlowKey
 	uw netcommon.UdpReaderWriterer   //for reply
 	w io.WriteSeeker
+	rcvSn uint64
 	lastAccessTime int64
 	rwlock sync.RWMutex
 	rcvData map[uint32]packet.UdpPacketDataer     //cache receive data for write to w

@@ -41,7 +41,7 @@ type NbsPeer interface {
 	SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) (uint64,error)
 	//WaitResult(sn uint64) (interface{},error)
 	Wait(ch *chan int) error
-	Run() error
+	Run()
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
@@ -52,14 +52,15 @@ func (p *peer)sendbd(bd send.BlockDataer) error {
 	return nil
 }
 
-func (p *peer)Run() error {
+func (p *peer)Run()  {
 	if !p.runningSend  {
 		go p.Sendbd()
 	}
 
-	if !p.runningRecv {
+	if !p.runningRecv && !p.net.IsNeedRemoteAddress(){
 		go p.recv()
 	}
+
 
 }
 
@@ -205,7 +206,6 @@ func (p *peer)recv() error{
 			continue
 		}
 		if pkt.GetTyp() == constant.ACK {
-			fmt.Println("===receive ack:",pkt.GetSerialNo())
 			doAck(pkt)
 			continue
 		}
@@ -217,7 +217,6 @@ func (p *peer)recv() error{
 		rmr:=recv.GetInstance()
 		fk := flowkey.NewFlowKey(sid,pkt.GetSerialNo())
 		if pkt.GetTyp() == constant.FINISH_ACK {
-			fmt.Println("===receive ack finish:",pkt.GetSerialNo())
 			rmr.DelMsg(fk)
 			continue
 		}
@@ -255,10 +254,11 @@ func (p *peer)recv() error{
 
 func (p *peer)Close()  {
 
+
 }
 
 func (p *peer)Dial()  {
-	
+
 }
 
 
