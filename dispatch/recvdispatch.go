@@ -53,7 +53,6 @@ func (rd *udpRcvDispath)read(buf []byte) (int,*net.UDPAddr,error)  {
 	n,err:=rd.uw.GetSock().Read(buf)
 
 	return n,rd.uw.GetAddr(),err
-
 }
 
 func (rd *udpRcvDispath)Close() error  {

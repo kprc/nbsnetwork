@@ -1,6 +1,7 @@
 package netcommon
 
 import (
+	"github.com/kprc/nbsdht/nbserr"
 	"io"
 	"net"
 	"time"
@@ -27,6 +28,7 @@ type UdpReaderWriterer interface {
 	SetDeadLine(tv time.Duration)
 	IsTimeOut(err error) bool
 	IsOK() bool
+	ReadUdp(p []byte)(int,*net.UDPAddr,error)
 	io.Writer
 	io.Reader
 }
@@ -38,7 +40,6 @@ func NewReaderWriter(addr *net.UDPAddr, sock *net.UDPConn,need bool) UdpReaderWr
 }
 
 func (uw *udpReaderWriter)SetSockNull()  {
-
 	uw.sock = nil
 }
 
@@ -77,6 +78,19 @@ func (uw *udpReaderWriter)Write(p []byte) (n int, err error)   {
 func (uw *udpReaderWriter)Read(p []byte) (n int, err error)  {
 	return uw.sock.Read(p)
 }
+
+func (uw *udpReaderWriter)ReadUdp(p []byte)(int,*net.UDPAddr,error)  {
+	if uw.sock == nil {
+		return 0,nil,nbserr.NbsErr{Errmsg:"sock is none",ErrId:nbserr.UDP_RCV_DEFAULT_ERR}
+	}
+	if uw.needRemoteAddress {
+		return uw.sock.ReadFromUDP(p)
+	}
+	n,err:=uw.sock.Read(p)
+
+	return n,uw.addr,err
+}
+
 
 func (uw *udpReaderWriter)IsNeedRemoteAddress() bool {
 	return uw.needRemoteAddress

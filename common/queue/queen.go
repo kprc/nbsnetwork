@@ -51,7 +51,6 @@ func (q *queue)DeQueue() *nbslink.LinkNode  {
 
 	node:=q.root
 
-
 	q.root = q.root.Next()
 
 	if q.root == node {
@@ -90,7 +89,3 @@ func (q *queue)Traverse(arg interface{},fDo func(arg interface{},data interface{
 		}
 	}
 }
-
-
-
-
