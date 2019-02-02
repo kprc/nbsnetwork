@@ -50,7 +50,14 @@ func NewNbsPeer(sid string) NbsPeer  {
 
 func (p *peer)sendbd(bd send.BlockDataer) error {
 
+	sd:=send.NewStoreData(bd)
+	bs:=send.GetBSInstance()
+	bs.AddBlockDataer(bd.GetSerialNo(),sd)
+	sd = bs.GetBlockDataer(bd.GetSerialNo())
+	defer bs.PutBlockDataer(bd.GetSerialNo())
+
 	return bd.Send2Peer()
+
 }
 
 func (p *peer)Run()  {
