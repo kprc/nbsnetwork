@@ -290,29 +290,54 @@ func (p *peer)SetNet(net netcommon.UdpReaderWriterer)  {
 func (p *peer)SendAsync(msgid int32,headinfo []byte,data []byte, rcvSn uint64) (*chan int,uint64, error)  {
 	rs:=netcommon.NewReadSeeker(data)
 
-	pch,sn:= p.send(msgid,headinfo,rs,rcvSn,0)
+	pch,sn:= p.sendAsync(msgid,headinfo,rs,rcvSn,0)
 
 	return pch,sn,nil
 
 }
 
-func (p *peer)send(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint64,ms int) (*chan int,uint64) {
+func (p *peer)newBDAsync(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint64,ms int) send.BlockDataer  {
 	bd:=send.NewBlockData(rs)
 	bd.SetRcvSn(rcvSn)
 	bd.SetWriter(p.net)
 	bd.SetDeadTime(ms)
-	ch := make(chan int,0)
-	bd.SetSendResultChan(&ch)
+
 	inn:=nbsid.GetLocalId()
 	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
 	bd.SetDataTyp(constant.DATA_TRANSER)
+
+	return bd
+}
+
+func (p *peer)newBDSync(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint64,ms int) send.BlockDataer {
+	bd:=p.newBDAsync(msgid,headinfo,rs,rcvSn,ms)
+
+	ch := make(chan int,0)
+	bd.SetSendResultChan(&ch)
+
+	return bd
+}
+
+func (p *peer)sendAsync(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint64,ms int) (*chan int,uint64) {
+
+	bd:=p.newBDAsync(msgid,headinfo,rs,rcvSn,ms)
+
+	p.data2Send <- bd
+
+	return bd.GetSendResultChan(),bd.GetSerialNo()
+}
+
+func (p *peer)sendSync(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint64,ms int) (*chan int,uint64) {
+
+	bd:=p.newBDSync(msgid,headinfo,rs,rcvSn,ms)
+
 	p.data2Send <- bd
 
 	return bd.GetSendResultChan(),bd.GetSerialNo()
 }
 
 func (p *peer)SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, rcvSn uint64)(*chan int,uint64, error) {
-	pch,sn:= p.send(msgid,headinfo,rs,rcvSn,0)
+	pch,sn:= p.sendAsync(msgid,headinfo,rs,rcvSn,0)
 
 	return pch,sn,nil
 }
@@ -320,14 +345,14 @@ func (p *peer)SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, r
 
 func (p *peer)SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) (uint64,error){
 	rs:=netcommon.NewReadSeeker(data)
-	pch,sn:=p.send(msgid,headinfo,rs,rcvSn,0)
+	pch,sn:=p.sendSync(msgid,headinfo,rs,rcvSn,0)
 
 	return sn,p.Wait(pch)
 }
 
 func (p *peer)SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) (uint64,error)  {
 	rs:=netcommon.NewReadSeeker(data)
-	pch,sn:=p.send(msgid,headinfo,rs,rcvSn,ms)
+	pch,sn:=p.sendSync(msgid,headinfo,rs,rcvSn,ms)
 	return sn,p.Wait(pch)
 }
 

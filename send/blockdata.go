@@ -2,6 +2,7 @@ package send
 
 import (
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/constant"
@@ -12,7 +13,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"github.com/gogo/protobuf/proto"
 )
 
 var blocksnderr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send error"}
@@ -39,6 +39,7 @@ type BlockData struct {
 	chResult chan interface{}
 	cmd chan int
 	waitAck chan int
+	timeOutChan chan int
 	rwlock sync.RWMutex
 	sndData map[uint32]packet.UdpPacketDataer
 	finished bool
@@ -71,7 +72,14 @@ type BlockDataer interface {
 	SendAll()
 	SetSendResultChan(ch *chan int)
 	GetSendResultChan() *chan int
+	Send2Peer() error
 }
+
+var (
+	SEND_TIME_OUT = 1
+	SEND_WRITE_ERR = 2
+	SEND_FINISH = 3
+)
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
 
@@ -88,6 +96,7 @@ func NewBlockData(r io.ReadSeeker) BlockDataer {
 	uh.chResult = make(chan interface{},1024)
 	uh.cmd = make(chan int,1)
 	uh.waitAck = make(chan int, 0)
+	uh.timeOutChan = make(chan int,0)
 
 	uh.sndData = make(map[uint32]packet.UdpPacketDataer)
 	return uh
@@ -131,7 +140,6 @@ func (bd *BlockData)send(round uint32) (int,error){
 	n,err := bd.r.Read(buf)
 
 	if n > 0 {
-		fmt.Println("read:===>",string(buf[:n]))
 		atomic.AddInt32(&bd.noacklen,int32(n))
 		upr := packet.NewUdpPacketData()
 		upr.SetTyp(bd.dataType)
@@ -153,11 +161,11 @@ func (bd *BlockData)send(round uint32) (int,error){
 
 		if len(bupr)!=nw ||  err!=nil{
 			//need resend
-			bd.enqueue(round,upr)
+			bd.encache(round,upr)
 			return 0,blocksndwriterioerr
 		}
 		atomic.AddUint32(&bd.totalSndCnt,1)
-		bd.enqueue(round,upr)
+		bd.encache(round,upr)
 	}
 
 	if err == io.EOF {
@@ -195,8 +203,55 @@ func (bd *BlockData)continuesend() (uint32,error) {
 	return round,nil
 }
 
+func (bd *BlockData)Send2Peer() error {
+
+	ret := 0
+
+	if bd.r == nil || bd.w == nil{
+		return blocksnderr
+	}
+
+	if bd.mtu == 0 {
+		return blocksndmtuerr
+	}
+
+	var round uint32 =1
 
 
+	for {
+		bd.lastSendTime = time.Now().Unix()
+		if ret ==0 && atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
+			if r,err := bd.send(round); err==nil{
+				round++
+				ret = r
+			}else if err!=nil{
+				if bd.sendResult != nil {
+					*bd.sendResult <- SEND_WRITE_ERR
+				}
+				return err
+			}
+		}
+
+		select{
+		case result:=<-bd.chResult:
+			bd.doresult(result)
+			//if finish
+			if bd.sendResult != nil {
+				*bd.sendResult <- SEND_FINISH
+			}
+
+		case <-bd.timeOutChan:
+			if bd.sendResult != nil {
+				*bd.sendResult <- SEND_TIME_OUT
+			}
+
+			return blocksndtimeout
+		}
+
+
+	}
+
+}
 
 
 func (bd *BlockData)SendAll()  {
@@ -363,7 +418,7 @@ func (bd *BlockData)TimeOut()  {
 }
 
 
-func (bd *BlockData)enqueue(pos uint32, data packet.UdpPacketDataer)  {
+func (bd *BlockData)encache(pos uint32, data packet.UdpPacketDataer)  {
 	bd.rwlock.Lock()
 	defer bd.rwlock.Unlock()
 	bd.sndData[pos] = data
