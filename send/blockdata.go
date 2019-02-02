@@ -195,6 +195,10 @@ func (bd *BlockData)continuesend() (uint32,error) {
 	return round,nil
 }
 
+
+
+
+
 func (bd *BlockData)SendAll()  {
 	fmt.Println("====Begin to Send",bd.GetSerialNo())
 	go bd.Send()

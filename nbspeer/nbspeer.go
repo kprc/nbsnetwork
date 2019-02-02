@@ -49,7 +49,8 @@ func NewNbsPeer(sid string) NbsPeer  {
 }
 
 func (p *peer)sendbd(bd send.BlockDataer) error {
-	return nil
+
+	return bd.Send2Peer()
 }
 
 func (p *peer)Run()  {
@@ -60,8 +61,6 @@ func (p *peer)Run()  {
 	if !p.runningRecv && !p.net.IsNeedRemoteAddress(){
 		go p.recv()
 	}
-
-
 }
 
 
@@ -89,7 +88,7 @@ func (p *peer) Sendbd() error{
 	}
 
 
-	p.runningSend = false
+
 
 	return err
 }
@@ -253,7 +252,9 @@ func (p *peer)recv() error{
 
 
 func (p *peer)Close()  {
+	//try to close socket
 
+	p.runningSend = false
 
 }
 
