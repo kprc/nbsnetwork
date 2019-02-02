@@ -23,7 +23,8 @@ var blocksndtimeout = nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"sen
 
 type BlockData struct {
 	lastSendTime int64   //for timeout
-	deadTime int
+	//deadTime int
+	timeoutInterval int
 	r io.ReadSeeker      //for read content
 	w io.Writer			 //for snd io
 	serialNo uint64      //for search the block
@@ -37,12 +38,10 @@ type BlockData struct {
 	dataType uint16
 	transinfo []byte
 	chResult chan interface{}
-	cmd chan int
-	waitAck chan int
 	timeOutChan chan int
 	rwlock sync.RWMutex
 	sndData map[uint32]packet.UdpPacketDataer
-	finished bool
+	//finished bool
 	sendResult *chan int   //send result
 }
 
@@ -50,8 +49,10 @@ type BlockDataer interface {
 	Send() error
 	SetWriter(w io.Writer)
 	GetSerialNo() uint64
-	SetDeadTime(millsec int)
-	GetDeadTime() int
+	//SetDeadTime(millsec int)
+	//GetDeadTime() int
+	SetTV(millsec int)
+	GetTV() int
 	PushResult(result interface{})
 	SetDataTyp(typ uint16)
 	GetDataTyp() uint16
@@ -65,20 +66,26 @@ type BlockDataer interface {
 	GetTransInfoHead() (head []byte,err error)
 	SetTransInfoOrigin(stationId string,msgid int32,head []byte) error
 	GetTransInfoOrigin() (stationId string,msgid int32,head []byte,err error)
-	Finished()
-	IsFinished() bool
+	//Finished()
+	//IsFinished() bool
 	TimeOut()
-	Destroy()
-	SendAll()
+	//Destroy()
+	//SendAll()
 	SetSendResultChan(ch *chan int)
 	GetSendResultChan() *chan int
-	Send2Peer() error
+	//Send2Peer() error
 }
 
 var (
 	SEND_TIME_OUT = 1
 	SEND_WRITE_ERR = 2
 	SEND_FINISH = 3
+
+	DO_RESULT_FINISH = 0
+	DO_RESULT_CONTINUE=1
+	DO_RESULT_ERROR = 2
+
+	SEND_DEFAULT_TIMEOUT=5 //second
 )
 
 var gSerialNo uint64 = constant.UDP_SERIAL_MAGIC_NUM
@@ -90,12 +97,10 @@ func (uh *BlockData)nextSerialNo() {
 func NewBlockData(r io.ReadSeeker) BlockDataer {
 	uh := &BlockData{r:r}
 	uh.nextSerialNo()
-	uh.lastSendTime = time.Now().Unix()
+	uh.lastSendTime = time.Now().UnixNano()
 	uh.mtu = constant.UDP_MTU
 	uh.maxcache = constant.UDP_MAX_CACHE
 	uh.chResult = make(chan interface{},1024)
-	uh.cmd = make(chan int,1)
-	uh.waitAck = make(chan int, 0)
 	uh.timeOutChan = make(chan int,0)
 
 	uh.sndData = make(map[uint32]packet.UdpPacketDataer)
@@ -106,12 +111,12 @@ func (bd *BlockData)GetSerialNo() uint64  {
 	return bd.serialNo
 }
 
-func (bd *BlockData)SetDeadTime(millsec int)  {
-	bd.deadTime = millsec
+func (bd *BlockData)SetTV(millsec int)  {
+	bd.timeoutInterval = millsec
 }
 
-func (bd *BlockData)GetDeadTime() int  {
-	return bd.deadTime
+func (bd *BlockData)GetTV() int  {
+	return bd.timeoutInterval
 }
 
 func (bd *BlockData)SetRcvSn(sn uint64)  {
@@ -177,33 +182,33 @@ func (bd *BlockData)send(round uint32) (int,error){
 	return 0,nil
 }
 
-func (bd *BlockData)continuesend() (uint32,error) {
+//func (bd *BlockData)continuesend() (uint32,error) {
+//
+//	var round uint32 = 1
+//	bd.rwlock.RLock()
+//	defer bd.rwlock.RUnlock()
+//
+//	for _,upr := range bd.sndData{
+//		bupr,_ := upr.Serialize()
+//		nw,err := bd.w.Write(bupr)
+//		if round < upr.GetPos() {
+//			round = upr.GetPos()
+//		}
+//
+//		if len(bupr)!=nw ||  err!=nil{
+//			//need resend
+//
+//			return 0,blocksndwriterioerr
+//		}
+//
+//		upr.IncTryCnt()
+//		atomic.AddUint32(&bd.totalSndCnt,1)
+//	}
+//
+//	return round,nil
+//}
 
-	var round uint32 = 1
-	bd.rwlock.RLock()
-	defer bd.rwlock.RUnlock()
-
-	for _,upr := range bd.sndData{
-		bupr,_ := upr.Serialize()
-		nw,err := bd.w.Write(bupr)
-		if round < upr.GetPos() {
-			round = upr.GetPos()
-		}
-
-		if len(bupr)!=nw ||  err!=nil{
-			//need resend
-
-			return 0,blocksndwriterioerr
-		}
-
-		upr.IncTryCnt()
-		atomic.AddUint32(&bd.totalSndCnt,1)
-	}
-
-	return round,nil
-}
-
-func (bd *BlockData)Send2Peer() error {
+func (bd *BlockData)Send() error {
 
 	ret := 0
 
@@ -219,7 +224,7 @@ func (bd *BlockData)Send2Peer() error {
 
 
 	for {
-		bd.lastSendTime = time.Now().Unix()
+		bd.lastSendTime = time.Now().UnixNano()
 		if ret ==0 && atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
 			if r,err := bd.send(round); err==nil{
 				round++
@@ -230,15 +235,23 @@ func (bd *BlockData)Send2Peer() error {
 				}
 				return err
 			}
+			continue
 		}
 
 		select{
 		case result:=<-bd.chResult:
-			bd.doresult(result)
-			//if finish
-			if bd.sendResult != nil {
-				*bd.sendResult <- SEND_FINISH
+			err,finish:=bd.doresult(result)
+			if finish == DO_RESULT_FINISH{
+				if bd.sendResult != nil {
+					*bd.sendResult <- SEND_FINISH
+				}
+				return nil
 			}
+
+			if err!=nil && finish != DO_RESULT_CONTINUE{
+				return err
+			}
+
 
 		case <-bd.timeOutChan:
 			if bd.sendResult != nil {
@@ -254,64 +267,57 @@ func (bd *BlockData)Send2Peer() error {
 }
 
 
-func (bd *BlockData)SendAll()  {
-	fmt.Println("====Begin to Send",bd.GetSerialNo())
-	go bd.Send()
-	fmt.Println("====Begin to do ACK",bd.GetSerialNo())
-	bd.doACK()
-}
-
-func (bd *BlockData)Send() error {
-
-	ret := 0
-
-	if bd.r == nil || bd.w == nil{
-		return blocksnderr
-	}
-
-	if bd.mtu == 0 {
-		return blocksndmtuerr
-	}
-
-	round,err := bd.continuesend()
-	if err != nil{
-		return err
-	}
-
-	if bd.totalreadlen > 0 {
-		if _, err := bd.r.Seek(int64(bd.totalreadlen), io.SeekStart); err != nil {
-			return blocksndreaderioerr
-		}
-	}
-
-	for {
-		bd.lastSendTime = time.Now().Unix()
-		if ret ==0 && atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
-			if r,err := bd.send(round); err==nil{
-				round++
-				ret = r
-			}else if err!=nil{
-				return err
-			}
-		}
-
-		if ret == 1{
-			fmt.Println("===Send Finish",bd.GetSerialNo())
-			return nil
-		}
-
-		wa:=<-bd.waitAck
-
-		if  wa == 1{
-			fmt.Println("=== receive a waitAck finish signal",bd.GetSerialNo())
-
-			return nil
-		}
-		fmt.Println("=== Get a wait Ack sinal",bd.GetSerialNo())
-
-	}
-
-}
+//func (bd *BlockData)Send() error {
+//
+//	ret := 0
+//
+//	if bd.r == nil || bd.w == nil{
+//		return blocksnderr
+//	}
+//
+//	if bd.mtu == 0 {
+//		return blocksndmtuerr
+//	}
+//
+//	round,err := bd.continuesend()
+//	if err != nil{
+//		return err
+//	}
+//
+//	if bd.totalreadlen > 0 {
+//		if _, err := bd.r.Seek(int64(bd.totalreadlen), io.SeekStart); err != nil {
+//			return blocksndreaderioerr
+//		}
+//	}
+//
+//	for {
+//		bd.lastSendTime = time.Now().Unix()
+//		if ret ==0 && atomic.LoadInt32(&bd.noacklen) < int32(bd.maxcache){
+//			if r,err := bd.send(round); err==nil{
+//				round++
+//				ret = r
+//			}else if err!=nil{
+//				return err
+//			}
+//		}
+//
+//		if ret == 1{
+//			fmt.Println("===Send Finish",bd.GetSerialNo())
+//			return nil
+//		}
+//
+//		wa:=<-bd.waitAck
+//
+//		if  wa == 1{
+//			fmt.Println("=== receive a waitAck finish signal",bd.GetSerialNo())
+//
+//			return nil
+//		}
+//		fmt.Println("=== Get a wait Ack sinal",bd.GetSerialNo())
+//
+//	}
+//
+//}
 
 func (bd *BlockData)sendFinish() error {
 	upd:=packet.NewUdpPacketData()
@@ -339,37 +345,33 @@ func (bd *BlockData)sendFinish() error {
 
 	bd.w.Write(bupd)
 
-	bd.Finished()
-
 	return nil
 }
 
-func (bd *BlockData)doresult(result interface{}) error {
+func (bd *BlockData)doresult(result interface{}) (error,int) {
 
 	switch v:=result.(type) {
 	case []byte:
 		r := packet.NewUdpResult(bd.GetSerialNo())
 		if err := r.DeSerialize(v); err!=nil{
-			bd.waitAck <- 0    // continue send
-			return err
+			return err,DO_RESULT_CONTINUE
 		}
 
 		if r.IsFinished() {
 			bd.sendFinish()
-			fmt.Println("===doresult get a Finish ack",bd.GetSerialNo())
-			return nil
+			return nil,DO_RESULT_FINISH
 		}
 		bd.rwlock.RLock()
-		fmt.Println("=== Get a ACK is: ",r.GetRcved(),r.GetSerialNo())
+
 		resend := r.GetReSend()
 		for _, id := range resend {
 			if upr, ok := bd.sndData[id]; ok {
 				bupr, _ := upr.Serialize()
-				nw, err := bd.w.Write(bupr)
+				_, err := bd.w.Write(bupr)
 
-				if len(bupr) != nw || err != nil {
+				if err != nil {
 					//need resend
-					continue
+					return err,DO_RESULT_ERROR
 				}
 				upr.SetTryCnt(upr.GetTryCnt() + 1)
 				atomic.AddUint32(&bd.totalSndCnt, 1)
@@ -384,38 +386,37 @@ func (bd *BlockData)doresult(result interface{}) error {
 			delete(bd.sndData, r.GetRcved())
 		}
 		bd.rwlock.Unlock()
-		fmt.Println("=== send 0 to wait ack channel",bd.GetSerialNo())
-		bd.waitAck <- 0    // continue send
+
 	}
 
-	return nil
+	return nil,DO_RESULT_CONTINUE
 }
 
 func (bd *BlockData)PushResult(result interface{})  {
 	bd.chResult <- result
 }
 
-func (bd *BlockData)doACK() {
-	for {
-		fmt.Println("--------------begin do ACK")
-		select {
-		case result := <-bd.chResult:
-			fmt.Println("=== doACK get a result",bd.GetSerialNo())
-			bd.doresult(result)
-		case <-bd.cmd:
-			bd.finished = true
-			fmt.Println("=== doACK Get a finish cmd",bd.GetSerialNo())
-			return
-		}
-	}
-}
+//func (bd *BlockData)doACK() {
+//	for {
+//		fmt.Println("--------------begin do ACK")
+//		select {
+//		case result := <-bd.chResult:
+//			fmt.Println("=== doACK get a result",bd.GetSerialNo())
+//			bd.doresult(result)
+//		case <-bd.cmd:
+//			bd.finished = true
+//			fmt.Println("=== doACK Get a finish cmd",bd.GetSerialNo())
+//			return
+//		}
+//	}
+//}
 
-func (bd *BlockData)TimeOut()  {
-	if time.Now().Unix() - bd.lastSendTime > 3 {
-		bd.Notify()
-	}
-
-}
+//func (bd *BlockData)TimeOut()  {
+//	if time.Now().Unix() - bd.lastSendTime > 3 {
+//		bd.Notify()
+//	}
+//
+//}
 
 
 func (bd *BlockData)encache(pos uint32, data packet.UdpPacketDataer)  {
@@ -533,22 +534,24 @@ func (bd *BlockData)GetDataTyp() uint16  {
 	return bd.dataType
 }
 
-func (bd *BlockData)Finished()  {
-	bd.cmd <- 1
+//
+//func (bd *BlockData)IsFinished() bool {
+//	return bd.finished
+//}
+
+
+func (bd* BlockData)TimeOut(){
+	tv := int64(0)
+	if bd.timeoutInterval >0 {
+		tv = int64(bd.timeoutInterval) *1e6
+	}else {
+		tv = int64(SEND_DEFAULT_TIMEOUT) * 1e9
+	}
+
+	if (time.Now().UnixNano() - bd.lastSendTime) > (tv) {
+			bd.timeOutChan <- SEND_TIME_OUT
+    }
 }
 
-func (bd *BlockData)IsFinished() bool {
-	return bd.finished
-}
 
-func (bd *BlockData)Notify()  {
-	bd.waitAck <- 1
-	bd.cmd <- 1
-}
-
-func (bd *BlockData)Destroy()  {
-	close(bd.waitAck)
-	close(bd.chResult)
-	close(bd.cmd)
-}
 

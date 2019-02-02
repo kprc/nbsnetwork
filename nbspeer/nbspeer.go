@@ -54,10 +54,13 @@ func (p *peer)sendbd(bd send.BlockDataer) error {
 	bs:=send.GetBSInstance()
 	bs.AddBlockDataer(bd.GetSerialNo(),sd)
 	sd = bs.GetBlockDataer(bd.GetSerialNo())
-	defer bs.PutBlockDataer(bd.GetSerialNo())
+	err:= bd.Send()
 
-	return bd.Send2Peer()
+	bs.PutBlockDataer(bd.GetSerialNo())
 
+	bs.DelBlockDataer(bd.GetSerialNo())
+
+	return err
 }
 
 func (p *peer)Run()  {
@@ -93,9 +96,6 @@ func (p *peer) Sendbd() error{
 			break
 		}
 	}
-
-
-
 
 	return err
 }
@@ -197,12 +197,13 @@ func (p *peer)recv() error{
 	}
 	p.runningLock.Unlock()
 
-	buf := make([]byte,1024)
+	gbuf := make([]byte,1024)
 	var n int
 	var remoteAddr *net.UDPAddr
 	var err error
 
 	for{
+		buf := gbuf[:]
 		n,remoteAddr,err=p.net.ReadUdp(buf)
 		if err!=nil{
 			break
@@ -251,8 +252,6 @@ func (p *peer)recv() error{
 		rmr.PutMsg(fk)
 	}
 
-	p.runningRecv =false
-
 	return err
 
 }
@@ -262,6 +261,7 @@ func (p *peer)Close()  {
 	//try to close socket
 
 	p.runningSend = false
+	p.runningRecv =false
 
 }
 
@@ -300,7 +300,7 @@ func (p *peer)newBDAsync(msgid int32,headinfo []byte,rs io.ReadSeeker,rcvSn uint
 	bd:=send.NewBlockData(rs)
 	bd.SetRcvSn(rcvSn)
 	bd.SetWriter(p.net)
-	bd.SetDeadTime(ms)
+	bd.SetTV(ms)
 
 	inn:=nbsid.GetLocalId()
 	bd.SetTransInfoOrigin(inn.String(),msgid,headinfo)
