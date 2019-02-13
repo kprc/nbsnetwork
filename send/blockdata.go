@@ -249,9 +249,11 @@ func (bd *BlockData)Send() error {
 			}
 
 			if err!=nil && finish != DO_RESULT_CONTINUE{
+				if bd.sendResult != nil {
+					*bd.sendResult <- SEND_WRITE_ERR
+				}
 				return err
 			}
-
 
 		case <-bd.timeOutChan:
 			if bd.sendResult != nil {
