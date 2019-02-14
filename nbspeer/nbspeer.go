@@ -39,9 +39,9 @@ type NbsPeer interface {
 	SendLargeDataAsync(msgid int32,headinfo []byte,rs io.ReadSeeker, rcvSn uint64)(*chan int,uint64, error)
 	SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) (uint64,error)
 	SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) (uint64,error)
-	//WaitResult(sn uint64) (interface{},error)
 	Wait(ch *chan int) error
 	Run()
+	Close()
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
@@ -92,12 +92,16 @@ func (p *peer) Sendbd() error{
 
 	for{
 		bd:=<-p.data2Send
+		if bd == nil {
+			break
+		}
 		if err =p.sendbd(bd); err!=nil{
 			break
 		}
 	}
 
-	return err
+
+	return nil
 }
 
 func toPkt(buf []byte)packet.UdpPacketDataer  {
@@ -258,7 +262,8 @@ func (p *peer)recv() error{
 
 
 func (p *peer)Close()  {
-	//try to close socket
+
+
 
 	p.runningSend = false
 	p.runningRecv =false
@@ -356,20 +361,29 @@ func (p *peer)SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uin
 	return sn,p.Wait(pch)
 }
 
+func (p *peer)clean()  {
+	// nothing to do ...
+
+}
+
 func (p *peer)Wait(ch *chan int) error  {
 	code:=<-*ch
 
 	var err error
 
 	switch code {
-	case 1:
+	case send.SEND_TIME_OUT:
 		err=nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"TimeOut"}
-	case 2:
+	case send.SEND_WRITE_ERR:
 		err=nbserr.NbsErr{ErrId:nbserr.UDP_SND_WRITER_IO_ERR,Errmsg:"Write Error"}
-	case 0,3:
+	case send.SEND_DEFAULT_RESULT,send.SEND_FINISH:
 		err = nil
 		//nothing todo...
+	case send.CLIENT_CLOSED:
+		p.clean()
+		err = nbserr.NbsErr{ErrId:nbserr.UDP_SND_CLOSED}
 	}
+
 
 	return err
 }

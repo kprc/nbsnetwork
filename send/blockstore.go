@@ -45,12 +45,12 @@ func (bs *bstore)TimeOut()  {
 				bd:=v.GetBlockData()
 				v.ReferCntInc()
 
-				if bd.IsFinished() {
-					bd.Destroy()
-					delarr = append(delarr, key)
-				}else {
+				//if bd.IsFinished() {
+				//	bd.Destroy()
+				//	delarr = append(delarr, key)
+				//}else {
 					bd.TimeOut()
-				}
+				//}
 
 				v.ReferCntDec()
 			}

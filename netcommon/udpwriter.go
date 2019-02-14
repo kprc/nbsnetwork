@@ -31,12 +31,17 @@ type UdpReaderWriterer interface {
 	ReadUdp(p []byte)(int,*net.UDPAddr,error)
 	io.Writer
 	io.Reader
+	Close() error
 }
 
 func NewReaderWriter(addr *net.UDPAddr, sock *net.UDPConn,need bool) UdpReaderWriterer {
 	uw:=&udpReaderWriter{addr:addr,sock:sock,needRemoteAddress:need}
 
 	return uw
+}
+
+func (uw *udpReaderWriter)Close()  error{
+	return uw.sock.Close()
 }
 
 func (uw *udpReaderWriter)SetSockNull()  {

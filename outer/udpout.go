@@ -87,7 +87,7 @@ func (uo *udpOut)Send(headinfo []byte,msgid int32,r io.ReadSeeker) error  {
 	}
 
 
-	bd.SendAll()
+	//bd.SendAll()
 
 	fmt.Println("===begin destroy")
 
