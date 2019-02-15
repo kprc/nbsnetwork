@@ -5,6 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsdht/nbserr"
+	"github.com/kprc/nbsnetwork/client"
 	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/common/flowkey"
@@ -22,6 +23,7 @@ import (
 type peer struct {
 	addrs address.UdpAddresser
 	net netcommon.UdpReaderWriterer
+	client client.UdpClient
 	stationId string
 	runningLock sync.Mutex
 	runningSend bool
@@ -33,6 +35,7 @@ type peer struct {
 type NbsPeer interface {
 	AddIPAddr(ip string,port uint16)
 	DelIpAddr(ip string,port uint16)
+	Dial() netcommon.UdpReaderWriterer
 	GetNet() netcommon.UdpReaderWriterer
 	SetNet(net netcommon.UdpReaderWriterer)
 	SendAsync(msgid int32,headinfo []byte,data []byte, rcvSn uint64) (*chan int, uint64,  error)
@@ -47,6 +50,8 @@ type NbsPeer interface {
 func NewNbsPeer(sid string) NbsPeer  {
 	return &peer{stationId:sid,data2Send:make(chan send.BlockDataer,32)}
 }
+
+
 
 func (p *peer)sendbd(bd send.BlockDataer) error {
 
@@ -77,12 +82,12 @@ func (p *peer)Run()  {
 func (p *peer) Sendbd() error{
 
 	if p.runningSend {
-		return nbserr.NbsErr{ErrId:nbserr.UDP_SND_RUNNING,Errmsg:"udp Send is running at "+p.net.AddrString()}
+		return nbserr.NbsErr{ErrId:nbserr.UDP_SND_RUNNING,Errmsg:"UDP Client for send is running at "+p.net.AddrString()}
 	}
 	p.runningLock.Lock()
 	if p.runningSend {
 		p.runningLock.Unlock()
-		return nbserr.NbsErr{ErrId:nbserr.UDP_SND_RUNNING,Errmsg:"udp Send is running at "+p.net.AddrString()}
+		return nbserr.NbsErr{ErrId:nbserr.UDP_SND_RUNNING,Errmsg:"UDP Client for send is running at "+p.net.AddrString()}
 	}else {
 		p.runningSend = true
 	}
@@ -270,8 +275,8 @@ func (p *peer)Close()  {
 
 }
 
-func (p *peer)Dial()  {
-
+func (p *peer)Dial() netcommon.UdpReaderWriterer  {
+	return nil
 }
 
 
@@ -380,7 +385,7 @@ func (p *peer)Wait(ch *chan int) error  {
 		err = nil
 		//nothing todo...
 	case send.CLIENT_CLOSED:
-		p.clean()
+		//p.clean()
 		err = nbserr.NbsErr{ErrId:nbserr.UDP_SND_CLOSED}
 	}
 

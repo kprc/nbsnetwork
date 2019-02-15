@@ -93,6 +93,7 @@ func (pq *priorityQueue) DeQueueValue() interface{} {
 func (pq *priorityQueue) Traverse(arg interface{},fDo func(arg interface{},data interface{})) {
 	for i:=0;i<len(pq.pq); i++{
 		q:=pq.pq[i]
+		//fmt.Println(q.Count())
 		q.Traverse(arg,fDo)
 	}
 }

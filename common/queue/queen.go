@@ -3,10 +3,12 @@ package queue
 import (
 	"fmt"
 	"github.com/kprc/nbsdht/nbslink"
+	"sync/atomic"
 )
 
 type queue struct {
 	root *nbslink.LinkNode
+	cnt int32
 }
 
 
@@ -16,6 +18,7 @@ type Queue interface {
 	DeQueue() *nbslink.LinkNode
 	EnQueueValue(v interface{})
 	DeQueueValue() interface{}
+	Count() int32
 	Traverse(arg interface{},fDo func(arg interface{},data interface{}))
 }
 
@@ -30,6 +33,15 @@ func Print(arg interface{},data interface{})  {
 	fmt.Println(s,sdata)
 }
 
+func (q *queue)incCnt()  {
+	atomic.AddInt32(&q.cnt,1)
+}
+
+func (q *queue)decCnt()  {
+	atomic.AddInt32(&q.cnt,-1)
+}
+
+
 func (q *queue) EnQueue(node *nbslink.LinkNode) {
 	if node == nil{
 		return
@@ -38,9 +50,11 @@ func (q *queue) EnQueue(node *nbslink.LinkNode) {
 	if q.root == nil {
 		node.Init()
 		q.root = node
+		q.incCnt()
 		return
 	}
 
+	q.incCnt()
 	q.root.Insert(node)
 }
 
@@ -58,6 +72,7 @@ func (q *queue)DeQueue() *nbslink.LinkNode  {
 	}else {
 		node.Remove()
 	}
+	q.decCnt()
 	return node
 }
 
@@ -71,6 +86,10 @@ func (q *queue)DeQueueValue() interface{}{
 		return nil
 	}
 	return node.Value
+}
+
+func (q *queue)Count() int32 {
+	return atomic.LoadInt32(&q.cnt)
 }
 
 func (q *queue)Traverse(arg interface{},fDo func(arg interface{},data interface{}))  {
