@@ -28,6 +28,7 @@ type peer struct {
 	runningLock sync.Mutex
 	runningSend bool
 	runningRecv bool
+	selfAddr bool
 	data2Send chan send.BlockDataer
 }
 
@@ -45,6 +46,7 @@ type NbsPeer interface {
 	Wait(ch *chan int) error
 	Run()
 	Close()
+
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
@@ -97,16 +99,17 @@ func (p *peer) Sendbd() error{
 
 	for{
 		bd:=<-p.data2Send
-		if bd == nil {
+		if bd == nil {		//if channel closed
 			break
 		}
-		if err =p.sendbd(bd); err!=nil{
+		if err =p.sendbd(bd); err!=nil{   //send error
 			break
 		}
 	}
 
+	p.runningSend = false
 
-	return nil
+	return err
 }
 
 func toPkt(buf []byte)packet.UdpPacketDataer  {
@@ -267,8 +270,6 @@ func (p *peer)recv() error{
 
 
 func (p *peer)Close()  {
-
-
 
 	p.runningSend = false
 	p.runningRecv =false

@@ -3,6 +3,11 @@ syntax = "proto3";
 package packet;
 
 
+message SelfAddr{
+    bytes ip4addr = 1;
+    uint32 port = 2;
+}
+
 message UDPPacketData{
     uint64 serialNo = 1;
     uint64 rcvSn = 2;
@@ -14,5 +19,6 @@ message UDPPacketData{
     bytes transInfo = 18;
     bool finished = 19;
     bytes data = 6;
+    repeated SelfAddr sa=20;
 }
 
