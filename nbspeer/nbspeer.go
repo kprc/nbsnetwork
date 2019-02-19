@@ -20,7 +20,96 @@ import (
 	"sync"
 )
 
+
+/*
+
+A client to Dial
+
+     |
+     |
+     |
+     |start
+     |
+     |
+_____V______                           ______________
+|          |                           |             |
+|   Init   |                           |   Dead      |
+|          |                           |             |
+------------                           ------^--------
+     |                                       |
+     |                                       |
+     |                                       |
+     |                                       |
+     |Dial                                   |After attempt dial 3 times
+     |                                       |
+     |                                       |
+     |                                       |
+     |                                       |
+     |                                       |
+     |                                       |
+     |                                       |
+_____V______                            _____|________
+|          |  Ping Error/Send Error     |             |
+|Connected |--------------------------->|Disconnected |
+|          |<---------------------------|             |
+------------    Redial 3 times          ---------------
+
+
+A client from server listen
+				____________                           ______________
+				|          |                           |             |
+				|   Init   |                           |   Dead      |
+				|          |                           |             |
+				---------r--                           ------^--------
+					 |    \                                  |
+					 |     \                                 |
+					 |      \                                |
+					 |       \                               |
+					 |        \                              |
+					 |         \                             |
+					 |          \                            |
+					 |           \                           |
+					 |            \                          |
+					 |             \if not dial,             |
+					 |              \  then init and dial it |
+					 |               \                       |
+					 |                \                      |
+					 |                 \                     |
+					 |                  \                    |
+					 |                   \                   |
+					 |                    \                  |
+					 |                     \                 |
+					 |                      \                |
+					 |                       \               |
+					 |Dial                    \              |After attempt dial 3 times
+					 |                         \             |
+					 |                          \            |
+					 |                           \           |
+					 |                            \          |
+					 |                             \         |
+					 |                              \        |
+					 |                               \       |
+				_____V______                          \ _____|_________
+	start		|          |  Ping Error/Send Error    \|             |
+---------------->Connected |--------------------------->|Disconnected |
+				|          |<---------------------------|             |
+				------------    Redial 3 times          ---------------
+
+
+*/
+
+
+var (
+	PEER_INIT int=1
+	PEER_CONNECTED int=2
+	PEER_DISCONNECTED int = 3
+	PEER_DEAD int =4
+)
+
+
 type peer struct {
+	status int
+	dialtimes int //
 	addrs address.UdpAddresser
 	net netcommon.UdpReaderWriterer
 	client client.UdpClient
