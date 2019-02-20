@@ -18,6 +18,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 )
 
 
@@ -54,6 +55,7 @@ _____V______                            _____|________
 |          |<---------------------------|             |
 ------------    Redial 3 times          ---------------
 
+=================================================================================
 
 A client from server listen
 				____________                           ______________
@@ -104,19 +106,28 @@ var (
 	PEER_CONNECTED int=2
 	PEER_DISCONNECTED int = 3
 	PEER_DEAD int =4
+
+
+	PEER_IDLE int32 = 0
+	PEER_RUNNING int32 = 1
+
 )
 
 
 type peer struct {
 	status int
 	dialtimes int //
+	isdialconn bool
+	runningflag int32
+	runningLock sync.Mutex
 	addrs address.UdpAddresser
 	net netcommon.UdpReaderWriterer
 	client client.UdpClient
 	stationId string
-	runningLock sync.Mutex
+
 	runningSend bool
 	runningRecv bool
+
 	selfAddr bool
 	data2Send chan send.BlockDataer
 }
@@ -133,13 +144,16 @@ type NbsPeer interface {
 	SendSync(msgid int32, headinfo []byte,data []byte, rcvSn uint64) (uint64,error)
 	SendSyncTimeOut(msgid int32,headinfo []byte,data []byte, rcvSn uint64, ms int) (uint64,error)
 	Wait(ch *chan int) error
-	Run()
+	Run() error
 	Close()
 
 }
 
 func NewNbsPeer(sid string) NbsPeer  {
-	return &peer{stationId:sid,data2Send:make(chan send.BlockDataer,32)}
+	p:= &peer{stationId:sid,data2Send:make(chan send.BlockDataer,32)}
+	atomic.StoreInt32(&p.runningflag,PEER_IDLE)
+
+	return p
 }
 
 
@@ -159,30 +173,92 @@ func (p *peer)sendbd(bd send.BlockDataer) error {
 	return err
 }
 
-func (p *peer)Run()  {
-	if !p.runningSend  {
-		go p.Sendbd()
+var errPeerIsRunning = nbserr.NbsErr{ErrId:nbserr.PEER_RUNNING,Errmsg:"Peer is running"}
+var errPeerIsDead = nbserr.NbsErr{ErrId:nbserr.PEER_DEAD,Errmsg:"Peer is dead"}
+
+func (p *peer)isRunning() bool  {
+	if atomic.LoadInt32(&p.runningflag) == PEER_RUNNING{
+		return true
+	}
+	return false
+}
+
+func (p *peer)peerSetFlag(flag int32)  {
+	atomic.StoreInt32(&p.runningflag,flag)
+}
+
+func (p *peer)Run() error {
+
+	if p.isRunning() {
+		return errPeerIsRunning
 	}
 
-	if !p.runningRecv && !p.net.IsNeedRemoteAddress(){
-		go p.recv()
+	p.runningLock.Lock()
+	if p.isRunning() {
+		p.runningLock.Unlock()
+		return errPeerIsRunning
 	}
+
+	p.peerSetFlag(PEER_RUNNING)
+
+	p.runningLock.Unlock()
+
+	var wg sync.WaitGroup
+	var err error
+	var sendresultchan chan int
+	var rcvresultchan chan int
+
+	if p.status == PEER_DEAD {
+		err = errPeerIsDead
+	}
+
+	if p.status == PEER_INIT {
+		p.Dial()
+	}
+
+	if p.status == PEER_DISCONNECTED {
+		//p.ReDial()
+	}
+
+	if p.status == PEER_CONNECTED {
+		if p.isdialconn {
+			wg.Add(1)
+			rcvresultchan = make(chan int,0)
+			go p.recv(&wg, &rcvresultchan)
+		}
+		sendresultchan = make(chan int,0)
+		wg.Add(1)
+		go p.Sendbd(&wg,&sendresultchan)
+	}
+
+
+	wg.Wait()
+
+	if sendresultchan != nil {
+		code := <-sendresultchan
+		if code >0 {
+
+		}
+	}
+
+	if rcvresultchan != nil{
+		code := <-rcvresultchan
+		if code > 0{
+			
+		}
+
+	}
+
+	p.peerSetFlag(PEER_IDLE)
+
+	return err
+
 }
 
 
-func (p *peer) Sendbd() error{
+func (p *peer) Sendbd(wg *sync.WaitGroup, r *chan int) error{
 
-	if p.runningSend {
-		return nbserr.NbsErr{ErrId:nbserr.UDP_SND_RUNNING,Errmsg:"UDP Client for send is running at "+p.net.AddrString()}
-	}
-	p.runningLock.Lock()
-	if p.runningSend {
-		p.runningLock.Unlock()
-		return nbserr.NbsErr{ErrId:nbserr.UDP_SND_RUNNING,Errmsg:"UDP Client for send is running at "+p.net.AddrString()}
-	}else {
-		p.runningSend = true
-	}
-	p.runningLock.Unlock()
+	defer (*wg).Done()
 
 	var err error
 
@@ -281,7 +357,10 @@ func handleMsg(msgid int32,hi []byte,rcv recv.RcvDataer)  {
 	fdo(hi,rcv.GetWs(),rcv.GetUdpReadWriter())
 }
 
-func (p *peer)recv() error{
+func (p *peer)recv(wg *sync.WaitGroup, r *chan int) error{
+
+	defer (*wg).Done()
+
 	if p.net.IsNeedRemoteAddress(){
 		return nil
 	}
