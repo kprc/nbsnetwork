@@ -102,10 +102,12 @@ A client from server listen
 
 
 var (
-	PEER_INIT int=1
-	PEER_CONNECTED int=2
-	PEER_DISCONNECTED int = 3
-	PEER_DEAD int =4
+	PEER_INIT int32=1
+	PEER_CONNECTED int32=2
+	PEER_DISCONNECTED int32 = 3
+	PEER_DEAD int32 =4
+	PEER_INVALID int32=5
+	PEER_WORKING int32=6
 
 
 	PEER_IDLE int32 = 0
@@ -115,7 +117,7 @@ var (
 
 
 type peer struct {
-	status int
+	status int32
 	dialtimes int //
 	isdialconn bool
 	runningflag int32
@@ -187,6 +189,67 @@ func (p *peer)peerSetFlag(flag int32)  {
 	atomic.StoreInt32(&p.runningflag,flag)
 }
 
+func (p *peer)peerStatus()  int32{
+	return atomic.LoadInt32(&p.status)
+}
+
+func (p *peer)peerSetStatus(status int32) {
+	atomic.StoreInt32(&p.status,status)
+}
+
+
+
+func (p *peer)Start() error{
+
+	var err error
+
+	status := p.peerStatus()
+
+	if status == PEER_DEAD{
+		 return errPeerIsDead
+	}
+
+	if status == PEER_WORKING {
+		return nil
+	}
+
+	if status == PEER_INIT{
+		var conn netcommon.UdpReaderWriterer
+		conn,err = p.Dial()
+		if err == nil{
+			p.peerSetStatus(PEER_CONNECTED)
+			p.SetNet(conn)
+		}else{
+			p.peerSetStatus(PEER_INVALID)
+			return err
+		}
+	}
+
+	if status == PEER_DISCONNECTED{
+		//reconnect
+	}
+
+	status = p.peerStatus()
+	if status == PEER_CONNECTED {
+		p.peerSetStatus(PEER_WORKING)
+
+		//Begin to running send and receive
+
+
+
+	}
+
+	//send error, need to reconnect
+	p.peerSetStatus(PEER_DISCONNECTED)
+
+	//if reconnect more than three times
+	p.peerSetStatus(PEER_DEAD)
+
+	return err
+}
+
+
+
 func (p *peer)Run() error {
 
 	if p.isRunning() {
@@ -244,7 +307,7 @@ func (p *peer)Run() error {
 	if rcvresultchan != nil{
 		code := <-rcvresultchan
 		if code > 0{
-			
+
 		}
 
 	}
@@ -444,8 +507,8 @@ func (p *peer)Close()  {
 
 }
 
-func (p *peer)Dial() netcommon.UdpReaderWriterer  {
-	return nil
+func (p *peer)Dial() (netcommon.UdpReaderWriterer,error)  {
+	return nil,nil
 }
 
 
