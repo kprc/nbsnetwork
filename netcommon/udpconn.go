@@ -78,7 +78,7 @@ func (uc *udpconn)Connect() error{
 		return baderr
 	}
 
-	if uc.isconn == false {
+	if uc.isconn {
 		wg := &sync.WaitGroup{}
 		//start send and recv
 		wg.Add(1)
@@ -107,6 +107,9 @@ func (uc *udpconn)Connect() error{
 	}
 }
 
+func getNowMsTime() int64 {
+	return time.Now().UnixNano() / 1e6
+}
 
 func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 	defer wg.Done()
@@ -123,7 +126,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 			return err
 		}
 
-		uc.lastrcvtime = time.Now().UnixNano() / 1e6    //ms
+		uc.lastrcvtime =  getNowMsTime()
 
 		cp:=NewConnPacket()
 		if err=cp.UnSerilize(buf[0:nr]);err!=nil{
@@ -151,6 +154,32 @@ func (uc *udpconn)stop() {
 }
 
 func (uc *udpconn)sendpacket(v interface{})  error{
+	data:=v.([]byte)
+
+	cp:=NewConnPacket()
+
+	cp.SetTyp(CONN_PACKET_TYP_DATA)
+	cp.SetData(data)
+
+	var d []byte
+	var err error
+
+	if d,err=cp.Serialize();err!=nil{
+		return nil
+	}
+
+	//send d
+	if uc.isconn {
+		if _,err1:=uc.sock.Write(d);err1!=nil{
+			return err
+		}
+	}else {
+		if _,err1:=uc.sock.WriteToUDP(d,uc.addr);err1!=nil{
+			return err1
+		}
+	}
+
+	return nil
 
 }
 
