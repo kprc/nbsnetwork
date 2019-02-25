@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+
+package packet;
+
+
+message UdpConnMsg{
+    uint32 typ = 1;
+    bytes data =2;
+}
+
+
+
+
+
+
