@@ -12,10 +12,7 @@ var (
 	STOP_CONNECTION int32 = 1
 	BAD_CONNECTION int32 = 2
 	CONNECTION_RUNNING int32 = 3
-
-
 )
-
 
 type udpconn struct {
 	addr *net.UDPAddr
