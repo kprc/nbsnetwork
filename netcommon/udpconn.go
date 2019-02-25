@@ -5,7 +5,8 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"net"
 	"sync"
-	)
+	"time"
+)
 
 var (
 	CONNECTION_INIT int32 = 0
@@ -37,6 +38,7 @@ type UdpConn interface {
 	Connect() error
 	Send(data [] byte) error
 	Read() ([]byte, error)
+	ReadyASyc() ([]byte,error)
 	SetTimeout(tv int)
 	Status() bool
 }
@@ -121,7 +123,18 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 			return err
 		}
 
-		uc.recvFromConn <- buf[0:nr]
+		uc.lastrcvtime = time.Now().UnixNano() / 1e6    //ms
+
+		cp:=NewConnPacket()
+		if err=cp.UnSerilize(buf[0:nr]);err!=nil{
+			continue
+		}
+
+		if cp.GetTyp() == CONN_PACKET_TYP_ACK{
+			continue
+		}
+
+		uc.recvFromConn <- cp.GetData()
 	}
 
 	return nil
@@ -162,7 +175,7 @@ func (uc *udpconn)Read() ([]byte,error)  {
 	return ret.([]byte),nil
 }
 
-func (uc *udpconn)ReadyAnSyc() ([]byte,error)  {
+func (uc *udpconn)ReadyASyc() ([]byte,error)  {
 	if uc.status != CONNECTION_RUNNING {
 		return nil,notreadyerr
 	}
