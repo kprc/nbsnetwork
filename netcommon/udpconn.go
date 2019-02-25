@@ -25,7 +25,7 @@ type udpconn struct {
 	statuslock sync.Mutex
 	status int32 //0 not set, 1 stopped, 2 bad connection, 3 connecting
 
-	stopsign chan int
+	stopsendsign chan int
 
 	lastrcvtime int64
 
@@ -53,7 +53,7 @@ func NewUdpConn(addr *net.UDPAddr,sock *net.UDPConn,isconn bool) UdpConn {
 	uc.ready2send = make(chan interface{},1024)
 	uc.recvFromConn = make(chan interface{},1024)
 	uc.tick = make(chan int64,8)
-	uc.stopsign = make(chan int)
+	uc.stopsendsign = make(chan int)
 
 	uc.addr = addr
 	uc.sock = sock
@@ -97,7 +97,7 @@ func (uc *udpconn)Connect() error{
 				if err := uc.sendkapacket();err!=nil{
 					return err
 				}
-			case <-uc.stopsign:
+			case <-uc.stopsendsign:
 				uc.stop()
 				return nil
 
@@ -120,6 +120,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 		if  nr,err = uc.sock.Read(buf); err!=nil{
 			return err
 		}
+
 		uc.recvFromConn <- buf[0:nr]
 	}
 

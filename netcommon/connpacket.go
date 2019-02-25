@@ -15,6 +15,21 @@ type connpacket struct {
 	data []byte
 }
 
+type ConnPacket interface {
+	SetTyp(typ uint32)
+	GetTyp() uint32
+	SetData(data []byte)
+	GetData() []byte
+	Serialize() ([]byte,error)
+	UnSerilize(data []byte) error
+}
+
+func NewConnPacket() ConnPacket {
+	return &connpacket{}
+}
+
+
+
 func (cp *connpacket)SetTyp(typ uint32)  {
 	cp.typ = typ
 }
