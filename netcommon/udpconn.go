@@ -2,6 +2,7 @@ package netcommon
 
 import (
 	"github.com/kprc/nbsdht/nbserr"
+	"github.com/kprc/nbsnetwork/common/address"
 	"github.com/kprc/nbsnetwork/tools"
 	"net"
 	"sync"
@@ -10,6 +11,9 @@ import (
 
 
 type udpconn struct {
+	dialAddr address.UdpAddresser
+	localAddr address.UdpAddresser
+	realAddr address.UdpAddresser
 	addr *net.UDPAddr
 	sock *net.UDPConn
 	isconn bool     //if conn from listen, isconn is false
@@ -25,11 +29,12 @@ type udpconn struct {
 }
 
 type UdpConn interface {
+	Dial() error
 	Connect() error
 	Send(data [] byte) error
 	Read() ([]byte, error)
 	SendAsyc(data [] byte) error  //unblocking
-	ReadyASyc() ([]byte,error)   //unblocking
+	ReadASyc() ([]byte,error)     //unblocking
 	SetTimeout(tv int)
 	Status() bool
 	Close()
@@ -44,13 +49,15 @@ var (
 )
 
 var (
+	dialerr  = nbserr.NbsErr{ErrId:nbserr.UDP_DIAL_ERR,Errmsg:"Dial UDP Connection Error"}
 	baderr = nbserr.NbsErr{ErrId:nbserr.UDP_BAD_CONN,Errmsg:"Bad Connection"}
 	notreadyerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_NOTREADY,Errmsg:"Connection not ready!"}
 	nodataerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_NODATA,Errmsg:"Connection have no data arrived"}
-	bufferoverflowerr = nbserr.NbsErr{ErrId:nbserr.UDP_BUFFOVERFLOW,Errmsg:"buffer overflow"}
+	bufferoverflowerr = nbserr.NbsErr{ErrId:nbserr.UDP_BUFFOVERFLOW,Errmsg:"Buffer overflow"}
+	listenconnerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_LISTEN,Errmsg:"Connection is received"}
 )
 
-func NewUdpConn(addr *net.UDPAddr,sock *net.UDPConn,isconn bool) UdpConn {
+func NewUdpConnListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 	uc:= &udpconn{}
 
 	uc.ready2send = make(chan interface{},1024)
@@ -61,13 +68,79 @@ func NewUdpConn(addr *net.UDPAddr,sock *net.UDPConn,isconn bool) UdpConn {
 
 	uc.addr = addr
 	uc.sock = sock
-	uc.isconn = isconn
+	uc.isconn = false
+
+	//nt := tools.GetNbsTickerInstance()
+	//nt.Reg(&uc.tick)
+	//uc.timeouttv = 1000   //ms
+
+	return uc
+
+}
+
+func NewUdpConnection(rip,lip string,rport,lport uint16) UdpConn  {
+	if rip == ""{
+		return nil
+	}
+	uc:= &udpconn{}
+	uc.dialAddr = address.NewUdpAddress()
+	uc.dialAddr.AddIP4(rip,rport)
+	if lip != "" {
+		uc.localAddr = address.NewUdpAddress()
+		uc.localAddr.AddIP4(lip,lport)
+	}else if lport != 0{
+		uc.localAddr.AddIP4("0.0.0.0",lport)
+	}
+
+	uc.ready2send = make(chan interface{},1024)
+	uc.recvFromConn = make(chan interface{},1024)
+	uc.tick = make(chan int64,8)
+	uc.stopsendsign = make(chan int)
+	uc.closesign = make(chan int)
+	uc.isconn = true
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
 	uc.timeouttv = 1000   //ms
 
+
 	return uc
+}
+
+
+func assembleUdpAddr(addr address.UdpAddresser) *net.UDPAddr  {
+	if addr == nil {
+		return nil
+	}
+	ipstr,port := addr.FirstS()
+	if ipstr == "" {
+		return nil
+	}
+	return &net.UDPAddr{IP:net.ParseIP(ipstr),Port:int(port)}
+}
+
+func (uc *udpconn)Dial() error  {
+	if uc.isconn == false{
+		return listenconnerr
+	}
+	la := assembleUdpAddr(uc.localAddr)
+	ra := assembleUdpAddr(uc.dialAddr)
+
+	conn,err:=net.DialUDP("udp4",la,ra)
+	if err!=nil{
+		return dialerr
+	}
+
+	if la != nil{
+		uc.realAddr = address.NewUdpAddress()
+		uc.realAddr.AddIP4Str(la.String())
+	}
+
+	uc.sock = conn
+	uc.addr = ra
+
+	return nil
+
 
 }
 
@@ -150,7 +223,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 		var err error
 		var nr int
 		if  nr,err = uc.sock.Read(buf); err!=nil{
-			return err
+			return baderr
 		}
 
 		uc.lastrcvtime =  getNowMsTime()
@@ -182,14 +255,21 @@ func (uc *udpconn)Close() {
 	}
 
 	if uc.sock != nil{
-		uc.sock.Close()
+		if uc.isconn == true {
+			uc.sock.Close()
+		}
 		uc.sock = nil
 	}
 }
 
 func (uc *udpconn)sendKAPacket() error {
-	if getNowMsTime() - uc.lastrcvtime > int64(uc.timeouttv)/3 {
-		return uc.send([]byte("ka message"),CONN_PACKET_TYP_DATA)
+	tv:=getNowMsTime() - uc.lastrcvtime
+	if  tv> int64(uc.timeouttv)/3 {
+		if tv < int64(uc.timeouttv) {
+			return uc.send([]byte("ka message"), CONN_PACKET_TYP_DATA)
+		}else{
+			return baderr
+		}
 	}
 
 	return nil
@@ -214,11 +294,11 @@ func (uc *udpconn)send(v interface{}, typ uint32) error {
 	//send d
 	if uc.isconn {
 		if _,err1:=uc.sock.Write(d);err1!=nil{
-			return err
+			return baderr
 		}
 	}else {
 		if _,err1:=uc.sock.WriteToUDP(d,uc.addr);err1!=nil{
-			return err1
+			return baderr
 		}
 	}
 
@@ -280,7 +360,7 @@ func (uc *udpconn)Read() ([]byte,error)  {
 	return ret.([]byte),nil
 }
 
-func (uc *udpconn)ReadyASyc() ([]byte,error)  {
+func (uc *udpconn)ReadASyc() ([]byte,error)  {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return nil,notreadyerr
 	}
