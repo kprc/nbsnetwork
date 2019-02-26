@@ -1,6 +1,9 @@
 package netcommon
 
-import "sync"
+import (
+	"net"
+	"sync"
+)
 
 type connblock struct {
 	conn UdpConn
@@ -14,6 +17,7 @@ type connstore struct {
 
 type ConnStore interface {
 	Add(uid string,conn UdpConn)
+	Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)
 	Del(uid string)
 	GetConn(uid string) UdpConn
 }
@@ -74,12 +78,41 @@ func (cs *connstore)Add(uid string,conn UdpConn)  {
 	cs.store[uid] = &connblock{conn:conn}
 }
 
-func (cs *connstore)Del(uid string)  {
+func NewConn(sock *net.UDPConn,addr *net.UDPAddr) UdpConn {
+	uc:=NewUdpConnFromListen(addr,sock)
+	uc.Connect()
 
-	if _,ok:=cs.store[uid];!ok{
+	return uc
+}
+
+func (cs *connstore)Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)  {
+	v,ok:=cs.store[uid]
+	if ok{
+		cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
 		return
 	}
 
+	if !v.conn.Status(){
+		cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
+		return
+	}
+
+	if v.conn.IsConnectTo(addr){
+		return
+	}
+
+	v.conn.Close()
+
+	cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
+}
+
+
+func (cs *connstore)Del(uid string)  {
+	v,ok:=cs.store[uid]
+	if !ok{
+		return
+	}
+	v.conn.Close()
 	delete(cs.store,uid)
 }
 

@@ -39,7 +39,8 @@ type UdpConn interface {
 	Status() bool
 	Close()
 	GetAddr() address.UdpAddresser
-	IsConnectTo(ip string,port uint16) bool
+	IsConnectTo(addr *net.UDPAddr) bool
+	Push(v interface{})
 }
 
 
@@ -244,7 +245,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 		uc.lastrcvtime =  getNowMsTime()
 
 		cp:=NewConnPacket()
-		if err=cp.UnSerialize(buf[0:nr]);err!=nil{
+		if err=cp.DeSerialize(buf[0:nr]);err!=nil{
 			continue
 		}
 
@@ -252,7 +253,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 			continue
 		}
 
-		uc.recvFromConn <- cp.GetData()
+		uc.Push(cp.GetData())
 	}
 
 	return nil
@@ -401,10 +402,10 @@ func (uc *udpconn)GetAddr() address.UdpAddresser  {
 	return addr
 }
 
-func (uc *udpconn)IsConnectTo(ip string,port uint16) bool {
+func (uc *udpconn)IsConnectTo(addr *net.UDPAddr) bool {
 	ipstr := uc.addr.String()
 
-	ipstr2 := ip+":"+string(port)
+	ipstr2 := addr.String()
 
 
 	if ipstr == ipstr2{
@@ -413,4 +414,11 @@ func (uc *udpconn)IsConnectTo(ip string,port uint16) bool {
 
 	return false
 
+}
+
+func (uc *udpconn)Push(v interface{})  {
+	select {
+	case uc.recvFromConn<-v:
+	default:
+	}
 }
