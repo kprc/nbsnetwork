@@ -16,25 +16,23 @@ type udpconn struct {
 	ready2send chan interface{}
 	recvFromConn chan interface{}
 	tick chan int64
-
 	statuslock sync.Mutex
 	status int32 //0 not set, 1 stopped, 2 bad connection, 3 connecting
-
 	stopsendsign chan int
-
+	closesign chan int
 	lastrcvtime int64
-
 	timeouttv int
-
 }
 
 type UdpConn interface {
 	Connect() error
 	Send(data [] byte) error
 	Read() ([]byte, error)
-	ReadyASyc() ([]byte,error)
+	SendAsyc(data [] byte) error  //unblocking
+	ReadyASyc() ([]byte,error)   //unblocking
 	SetTimeout(tv int)
 	Status() bool
+	Close()
 }
 
 
@@ -59,6 +57,7 @@ func NewUdpConn(addr *net.UDPAddr,sock *net.UDPConn,isconn bool) UdpConn {
 	uc.recvFromConn = make(chan interface{},1024)
 	uc.tick = make(chan int64,8)
 	uc.stopsendsign = make(chan int)
+	uc.closesign = make(chan int)
 
 	uc.addr = addr
 	uc.sock = sock
@@ -77,9 +76,25 @@ func (uc *udpconn)SetTimeout(tv int)  {
 }
 
 func (uc *udpconn)Connect() error{
-	if uc.status == 2{
+
+	var closesign int = 0
+
+	uc.statuslock.Lock()
+
+
+	if uc.status == BAD_CONNECTION{
+		uc.statuslock.Unlock()
 		return baderr
 	}
+
+	if uc.status == CONNECTION_RUNNING {
+		uc.statuslock.Unlock()
+		return nil
+	}
+
+	uc.status = CONNECTION_RUNNING
+
+	uc.statuslock.Unlock()
 
 	if uc.isconn {
 		wg := &sync.WaitGroup{}
@@ -88,21 +103,31 @@ func (uc *udpconn)Connect() error{
 
 		go uc.recv(wg)
 
-		defer wg.Wait()
+		defer func() {
+			wg.Wait()
+			if closesign == 1 {
+				uc.closesign <- 1
+			}
+
+		}()
 	}
 
 	for{
 		select {
 			case data2send:=<-uc.ready2send:
 				if err := uc.send(data2send,CONN_PACKET_TYP_DATA);err!=nil{
+					uc.status = BAD_CONNECTION
 					return err
 				}
 
 			case <-uc.tick:
 				if err := uc.sendKAPacket();err!=nil{
+					uc.status = BAD_CONNECTION
 					return err
 				}
 			case <-uc.stopsendsign:
+				uc.status = STOP_CONNECTION
+				closesign = 1
 				return nil
 
 		}
@@ -147,8 +172,19 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 }
 
 
-func (uc *udpconn)stop() {
+func (uc *udpconn)Close() {
+	if uc.status == BAD_CONNECTION || uc.status == STOP_CONNECTION{
+		return
+	}
+	if uc.status == CONNECTION_RUNNING {
+		uc.stopsendsign <- 0
+		<-uc.closesign
+	}
 
+	if uc.sock != nil{
+		uc.sock.Close()
+		uc.sock = nil
+	}
 }
 
 func (uc *udpconn)sendKAPacket() error {
@@ -189,8 +225,21 @@ func (uc *udpconn)send(v interface{}, typ uint32) error {
 	return nil
 }
 
-
 func (uc *udpconn)Send(data []byte) error  {
+	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
+		return notreadyerr
+	}
+
+	if uc.status == BAD_CONNECTION {
+		return baderr
+	}
+
+	uc.ready2send <- data
+
+	return nil
+}
+
+func (uc *udpconn)SendAsyc(data []byte) error  {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return notreadyerr
 	}
