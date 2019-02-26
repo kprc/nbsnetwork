@@ -12,10 +12,13 @@ var (
 
 type connpacket struct {
 	typ uint32
+	uid []byte
 	data []byte
 }
 
 type ConnPacket interface {
+	SetUid(uid []byte)
+	GetUid() []byte
 	SetTyp(typ uint32)
 	GetTyp() uint32
 	SetData(data []byte)
@@ -28,7 +31,13 @@ func NewConnPacket() ConnPacket {
 	return &connpacket{}
 }
 
+func (cp *connpacket)SetUid(uid []byte)  {
+	cp.uid = uid
+}
 
+func (cp *connpacket)GetUid() []byte  {
+	return cp.uid
+}
 
 func (cp *connpacket)SetTyp(typ uint32)  {
 	cp.typ = typ
@@ -51,6 +60,7 @@ func (cp *connpacket)Serialize() ([]byte,error)  {
 
 	p.Typ = cp.typ
 	p.Data = cp.data
+	p.Uid = cp.uid
 
 	return  proto.Marshal(p)
 }
@@ -64,6 +74,7 @@ func (cp *connpacket)UnSerialize(data []byte) error {
 
 	cp.typ = p.Typ
 	cp.data = p.Data
+	cp.uid = p.Uid
 
 	return nil
 
