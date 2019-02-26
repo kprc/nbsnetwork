@@ -25,6 +25,7 @@ type UdpAddresser interface {
 	PrintAll()
 	Clone() UdpAddresser
 	Len() int
+	Equals(ua UdpAddresser) bool
 }
 
 
@@ -295,6 +296,24 @@ func (uaddr *udpAddress)AddIP4Str(ipstr string) error  {
 
 	return uaddr.AddIP4(ipstrport[0],uint16(port))
 
+}
+
+func (uaddr *udpAddress)Equals(ua UdpAddresser) bool  {
+	addr,port := ua.First()
+	if addr== nil{
+		return false
+	}
+
+	addr1,port1:=uaddr.First()
+	if addr1 == nil{
+		return false
+	}
+
+	if bytes.Compare(addr,addr1) == 0 && port == port1{
+		return true
+	}
+
+	return false
 }
 
 //not support in this version
