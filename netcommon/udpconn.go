@@ -189,13 +189,22 @@ func (uc *udpconn)Connect() error{
 		select {
 			case data2send:=<-uc.ready2send:
 				if err := uc.send(data2send,CONN_PACKET_TYP_DATA);err!=nil{
+
 					uc.status = BAD_CONNECTION
+					if uc.isconn == true {
+						uc.sock.Close()
+						uc.sock = nil
+					}
 					return err
 				}
 
 			case <-uc.tick:
 				if err := uc.sendKAPacket();err!=nil{
 					uc.status = BAD_CONNECTION
+					if uc.isconn == true {
+						uc.sock.Close()
+						uc.sock = nil
+					}
 					return err
 				}
 			case <-uc.stopsendsign:
@@ -223,6 +232,8 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 		var err error
 		var nr int
 		if  nr,err = uc.sock.Read(buf); err!=nil{
+			uc.sock.Close()
+			uc.sock = nil
 			return baderr
 		}
 
