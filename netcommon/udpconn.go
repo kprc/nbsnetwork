@@ -33,8 +33,8 @@ type UdpConn interface {
 	Connect() error
 	Send(data [] byte) error
 	Read() ([]byte, error)
-	SendAsyc(data [] byte) error  //unblocking
-	ReadASyc() ([]byte,error)     //unblocking
+	SendAsync(data [] byte) error  //unblocking
+	ReadAsync() ([]byte,error)     //unblocking
 	SetTimeout(tv int)
 	Status() bool
 	Close()
@@ -70,9 +70,9 @@ func NewUdpConnListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 	uc.sock = sock
 	uc.isconn = false
 
-	//nt := tools.GetNbsTickerInstance()
-	//nt.Reg(&uc.tick)
-	//uc.timeouttv = 1000   //ms
+	nt := tools.GetNbsTickerInstance()
+	nt.Reg(&uc.tick)
+	uc.timeouttv = 1000   //ms
 
 	return uc
 
@@ -193,8 +193,8 @@ func (uc *udpconn)Connect() error{
 					uc.status = BAD_CONNECTION
 					if uc.isconn == true {
 						uc.sock.Close()
-						uc.sock = nil
 					}
+					uc.sock = nil
 					return err
 				}
 
@@ -202,9 +202,11 @@ func (uc *udpconn)Connect() error{
 				if err := uc.sendKAPacket();err!=nil{
 					uc.status = BAD_CONNECTION
 					if uc.isconn == true {
-						uc.sock.Close()
-						uc.sock = nil
+						if uc.sock != nil{
+							uc.sock.Close()
+						}
 					}
+					uc.sock = nil
 					return err
 				}
 			case <-uc.stopsendsign:
@@ -257,6 +259,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 
 
 func (uc *udpconn)Close() {
+
 	if uc.status == BAD_CONNECTION || uc.status == STOP_CONNECTION{
 		return
 	}
@@ -276,7 +279,7 @@ func (uc *udpconn)Close() {
 func (uc *udpconn)sendKAPacket() error {
 	tv:=getNowMsTime() - uc.lastrcvtime
 	if  tv> int64(uc.timeouttv)/3 {
-		if tv < int64(uc.timeouttv) {
+		if tv < int64(uc.timeouttv) &&uc.isconn{
 			return uc.send([]byte("ka message"), CONN_PACKET_TYP_DATA)
 		}else{
 			return baderr
@@ -324,13 +327,13 @@ func (uc *udpconn)Send(data []byte) error  {
 	if uc.status == BAD_CONNECTION {
 		return baderr
 	}
-
+	//copy?
 	uc.ready2send <- data
 
 	return nil
 }
 
-func (uc *udpconn)SendAsyc(data []byte) error  {
+func (uc *udpconn)SendAsync(data []byte) error  {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return notreadyerr
 	}
@@ -371,7 +374,7 @@ func (uc *udpconn)Read() ([]byte,error)  {
 	return ret.([]byte),nil
 }
 
-func (uc *udpconn)ReadASyc() ([]byte,error)  {
+func (uc *udpconn)ReadAsync() ([]byte,error)  {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return nil,notreadyerr
 	}

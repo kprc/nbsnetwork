@@ -6,7 +6,8 @@ package packet;
 
 message UdpConnMsg{
     uint32 typ = 1;
-    bytes data =2;
+    bytes uid = 2;
+    bytes data =3;
 }
 
 

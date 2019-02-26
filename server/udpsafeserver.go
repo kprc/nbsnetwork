@@ -53,8 +53,6 @@ func newUdpServer() UdpServerer {
 	//us.rcvBuf = make(map[address.UdpAddresser][]bytes.Buffer)
 	us.processWait = make(chan int,0)
 
-
-
 	return us
 }
 
