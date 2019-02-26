@@ -3,6 +3,7 @@ package netcommon
 import (
 	"net"
 	"sync"
+	"reflect"
 )
 
 type connblock struct {
@@ -20,6 +21,7 @@ type ConnStore interface {
 	Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)
 	Del(uid string)
 	GetConn(uid string) UdpConn
+	First() UdpConn
 }
 
 
@@ -123,6 +125,16 @@ func (cs *connstore)GetConn(uid string) UdpConn {
 		return v.conn
 	}
 
+	return nil
+}
+
+func (cs *connstore)First() UdpConn  {
+	keys:=reflect.ValueOf(cs.store).MapKeys()
+
+	for _,k:=range keys{
+		v,_:=cs.store[k.Interface().(string)]
+		return v.conn
+	}
 	return nil
 }
 

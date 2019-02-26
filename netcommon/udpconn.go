@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"github.com/kprc/nbsdht/dht/nbsid"
 )
 
 
@@ -75,7 +76,7 @@ func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	uc.timeouttv = 1000   //ms
+	uc.timeouttv = 100000   //ms
 
 	return uc
 
@@ -300,6 +301,8 @@ func (uc *udpconn)send(v interface{}, typ uint32) error {
 
 	cp.SetTyp(typ)
 	cp.SetData(data)
+	id:=nbsid.GetLocalId()
+	cp.SetUid(id.Bytes())
 
 	var d []byte
 	var err error
