@@ -21,7 +21,7 @@ type ConnPacket interface {
 	SetData(data []byte)
 	GetData() []byte
 	Serialize() ([]byte,error)
-	UnSerilize(data []byte) error
+	UnSerialize(data []byte) error
 }
 
 func NewConnPacket() ConnPacket {
@@ -55,7 +55,7 @@ func (cp *connpacket)Serialize() ([]byte,error)  {
 	return  proto.Marshal(p)
 }
 
-func (cp *connpacket)UnSerilize(data []byte) error {
+func (cp *connpacket)UnSerialize(data []byte) error {
 	p := &packet.UdpConnMsg{}
 
 	if err:=proto.Unmarshal(data,p); err!=nil{

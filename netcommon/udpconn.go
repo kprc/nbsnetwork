@@ -8,12 +8,6 @@ import (
 	"time"
 )
 
-var (
-	CONNECTION_INIT int32 = 0
-	STOP_CONNECTION int32 = 1
-	BAD_CONNECTION int32 = 2
-	CONNECTION_RUNNING int32 = 3
-)
 
 type udpconn struct {
 	addr *net.UDPAddr
@@ -43,10 +37,19 @@ type UdpConn interface {
 	Status() bool
 }
 
+
+var (
+	CONNECTION_INIT int32 = 0
+	STOP_CONNECTION int32 = 1
+	BAD_CONNECTION int32 = 2
+	CONNECTION_RUNNING int32 = 3
+)
+
 var (
 	baderr = nbserr.NbsErr{ErrId:nbserr.UDP_BAD_CONN,Errmsg:"Bad Connection"}
 	notreadyerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_NOTREADY,Errmsg:"Connection not ready!"}
 	nodataerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_NODATA,Errmsg:"Connection have no data arrived"}
+	bufferoverflowerr = nbserr.NbsErr{ErrId:nbserr.UDP_BUFFOVERFLOW,Errmsg:"buffer overflow"}
 )
 
 func NewUdpConn(addr *net.UDPAddr,sock *net.UDPConn,isconn bool) UdpConn {
@@ -91,16 +94,15 @@ func (uc *udpconn)Connect() error{
 	for{
 		select {
 			case data2send:=<-uc.ready2send:
-				if err := uc.sendpacket(data2send);err!=nil{
+				if err := uc.send(data2send,CONN_PACKET_TYP_DATA);err!=nil{
 					return err
 				}
 
 			case <-uc.tick:
-				if err := uc.sendkapacket();err!=nil{
+				if err := uc.sendKAPacket();err!=nil{
 					return err
 				}
 			case <-uc.stopsendsign:
-				uc.stop()
 				return nil
 
 		}
@@ -129,7 +131,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 		uc.lastrcvtime =  getNowMsTime()
 
 		cp:=NewConnPacket()
-		if err=cp.UnSerilize(buf[0:nr]);err!=nil{
+		if err=cp.UnSerialize(buf[0:nr]);err!=nil{
 			continue
 		}
 
@@ -145,20 +147,25 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 }
 
 
-func (uc *udpconn)sendkapacket() error {
-
-}
-
 func (uc *udpconn)stop() {
 
 }
 
-func (uc *udpconn)sendpacket(v interface{})  error{
+func (uc *udpconn)sendKAPacket() error {
+	if getNowMsTime() - uc.lastrcvtime > int64(uc.timeouttv)/3 {
+		return uc.send([]byte("ka message"),CONN_PACKET_TYP_DATA)
+	}
+
+	return nil
+}
+
+
+func (uc *udpconn)send(v interface{}, typ uint32) error {
 	data:=v.([]byte)
 
 	cp:=NewConnPacket()
 
-	cp.SetTyp(CONN_PACKET_TYP_DATA)
+	cp.SetTyp(typ)
 	cp.SetData(data)
 
 	var d []byte
@@ -180,24 +187,44 @@ func (uc *udpconn)sendpacket(v interface{})  error{
 	}
 
 	return nil
-
 }
 
 
 func (uc *udpconn)Send(data []byte) error  {
+	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
+		return notreadyerr
+	}
 
-	return nil
+	if uc.status == BAD_CONNECTION {
+		return baderr
+	}
+
+	select {
+	case uc.ready2send <- data:
+		return nil
+	default:
+		return bufferoverflowerr
+	}
 }
 
 func (uc *udpconn)Status() bool  {
+	if uc.status == CONNECTION_RUNNING {
+		return true
+	}
 
+	return false
 }
 
 func (uc *udpconn)Read() ([]byte,error)  {
 
-	if uc.status != CONNECTION_RUNNING {
+	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return nil,notreadyerr
 	}
+
+	if uc.status == BAD_CONNECTION {
+		return nil,baderr
+	}
+
 
 	ret := <-uc.recvFromConn
 
@@ -205,8 +232,12 @@ func (uc *udpconn)Read() ([]byte,error)  {
 }
 
 func (uc *udpconn)ReadyASyc() ([]byte,error)  {
-	if uc.status != CONNECTION_RUNNING {
+	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return nil,notreadyerr
+	}
+
+	if uc.status == BAD_CONNECTION {
+		return nil,baderr
 	}
 
 	select {
