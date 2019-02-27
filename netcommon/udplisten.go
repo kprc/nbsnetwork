@@ -114,10 +114,10 @@ func (ul *udplisten)sockRecv(conn *net.UDPConn)  {
 		buf:=make([]byte,1024)
 		nr,addr,err:=conn.ReadFromUDP(buf)
 		if err!=nil{
-			fmt.Println("err",err.Error())
+			//fmt.Println("err",err.Error())
 			return
 		}
-		fmt.Println(addr.String())
+		//fmt.Println(addr.String())
 		cp := NewConnPacket()
 		if err=cp.DeSerialize(buf[0:nr]);err!=nil{
 			continue
@@ -128,7 +128,7 @@ func (ul *udplisten)sockRecv(conn *net.UDPConn)  {
 		if c==nil{
 			continue
 		}
-		c.Push(cp.GetData())
+		c.Push(cp)
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
 	"sync"
-	"time"
 )
 
 func main()  {
@@ -18,21 +17,11 @@ func main()  {
 
 	cs:=netcommon.GetConnStoreInstance()
 
-	var conn netcommon.UdpConn
-
-	for  {
-		conn=cs.First()
-		time.Sleep(time.Second*1)
-		if conn !=nil {
-			break
-		}
+	for {
+		rb := cs.Read()
+		fmt.Println(string(rb.GetConnPacket().GetData()))
+		rb.GetUdpConn().Send([]byte("good world"))
 	}
-
-
-
-	rcv,_:=conn.Read()
-	fmt.Println(string(rcv))
-	conn.Send([]byte("good world"))
 
 	wg.Wait()
 

@@ -13,21 +13,28 @@ func main()  {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go tick.Run(&wg)
-	uc:=netcommon.NewUdpCreateConnection("192.168.103.66","",22113,0)
+	uc:=netcommon.NewUdpCreateConnection("127.0.0.1","",22113,0)
 	uc.Dial()
 	go uc.Connect()
 
 	time.Sleep(time.Second*2)
 	uc.Send([]byte("hello world"))
 
-	rcv,err:=uc.Read()
+	cs:=netcommon.GetConnStoreInstance()
 
-	if err!=nil{
-		return
+	icnt:=0
+
+	for {
+		c := cs.Read()
+		fmt.Println(string(c.GetConnPacket().GetData()))
+		uc.Send([]byte("client send time:"+time.Now().String()))
+		icnt++
+		if icnt>10{
+			break
+		}
 	}
-
-	fmt.Println(string(rcv))
 	uc.Close()
+	tick.Stop()
 	wg.Wait()
 
 }
