@@ -89,7 +89,7 @@ func NewConn(sock *net.UDPConn,addr *net.UDPAddr) UdpConn {
 
 func (cs *connstore)Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)  {
 	v,ok:=cs.store[uid]
-	if ok{
+	if !ok{
 		cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
 		return
 	}
