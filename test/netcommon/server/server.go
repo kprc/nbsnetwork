@@ -8,7 +8,6 @@ import (
 
 func main()  {
 	tick:=tools.GetNbsTickerInstance()
-
 	go tick.Run()
 	server:=netcommon.GetUpdListenInstance()
 	go server.Run("0.0.0.0",22113)

@@ -177,9 +177,7 @@ func (uc *udpconn)Connect() error{
 	uc.status = CONNECTION_RUNNING
 
 	uc.statuslock.Unlock()
-	if uc.wg !=nil {
-		uc.wg.Done()
-	}
+
 
 	if uc.isconn {
 		wg := &sync.WaitGroup{}
@@ -198,6 +196,10 @@ func (uc *udpconn)Connect() error{
 			}
 
 		}()
+	}
+
+	if uc.wg !=nil {
+		uc.wg.Done()
 	}
 
 	for{
@@ -247,6 +249,10 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 
 	n:=1024
 	roundbuf := make([]byte,n)
+
+	if uc.wg !=nil{
+		uc.wg.Done()
+	}
 
 	for {
 		buf := roundbuf[0:n]
@@ -463,7 +469,11 @@ func (uc *udpconn)Push(v interface{})  {
 
 func (uc *udpconn)Hello()  {
 	uc.wg = &sync.WaitGroup{}
-	uc.wg.Add(1)
+	if uc.isconn {
+		uc.wg.Add(2)
+	}else {
+		uc.wg.Add(1)
+	}
 }
 
 func (uc *udpconn)WaitHello()  {
