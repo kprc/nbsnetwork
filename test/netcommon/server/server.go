@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
 	"sync"
-	"github.com/kprc/nbsnetwork/netcommon"
 	"time"
-	"fmt"
 )
 
 func main()  {
@@ -15,10 +15,20 @@ func main()  {
 	go tick.Run(&wg)
 	server:=netcommon.GetUpdListenInstance()
 	go server.Run("0.0.0.0",22113)
-	time.Sleep(time.Second*10)
+
 	cs:=netcommon.GetConnStoreInstance()
 
-	conn:=cs.First()
+	var conn netcommon.UdpConn
+
+	for  {
+		conn=cs.First()
+		time.Sleep(time.Second*1)
+		if conn !=nil {
+			break
+		}
+	}
+
+
 
 	rcv,_:=conn.Read()
 	fmt.Println(string(rcv))

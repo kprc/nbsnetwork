@@ -13,7 +13,7 @@ func main()  {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go tick.Run(&wg)
-	uc:=netcommon.NewUdpCreateConnection("127.0.0.1","",22113,0)
+	uc:=netcommon.NewUdpCreateConnection("192.168.103.66","",22113,0)
 	uc.Dial()
 	go uc.Connect()
 

@@ -112,9 +112,9 @@ func (nt *nbsticker)Run(wg *sync.WaitGroup){
 							c.cnt = 0
 					    default:
 					    	c.cnt ++
-					    	if c.cnt > 8{
-					    		arr = append(arr,c)
-							}
+					    	//if c.cnt > 8{
+					    	//	arr = append(arr,c)
+							//}
 					}
 
 				})

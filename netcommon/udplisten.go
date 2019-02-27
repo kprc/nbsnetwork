@@ -84,7 +84,11 @@ func (ul *udplisten)Run(ipstr string,port uint16)  {
 			return
 		}
 
+
+
 		usua.AddIP4Str(sock.LocalAddr().String())
+
+
 		ul.sockarr = append(ul.sockarr,sock)
 		ul.wg.Add(1)
 		go ul.sockRecv(sock)
@@ -110,8 +114,10 @@ func (ul *udplisten)sockRecv(conn *net.UDPConn)  {
 		buf:=make([]byte,1024)
 		nr,addr,err:=conn.ReadFromUDP(buf)
 		if err!=nil{
+			fmt.Println("err",err.Error())
 			return
 		}
+		fmt.Println(addr.String())
 		cp := NewConnPacket()
 		if err=cp.DeSerialize(buf[0:nr]);err!=nil{
 			continue
