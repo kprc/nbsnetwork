@@ -124,6 +124,9 @@ func (ul *udplisten)sockRecv(conn *net.UDPConn)  {
 		}
 		cs:=GetConnStoreInstance()
 		cs.Update(string(cp.GetUid()),conn,addr)
+		if cp.GetTyp() == CONN_PACKET_TYP_KA{
+			continue
+		}
 		c := cs.GetConn(string(cp.GetUid()))
 		if c==nil{
 			continue

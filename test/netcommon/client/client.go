@@ -1,23 +1,22 @@
 package main
 
 import (
-	"github.com/kprc/nbsnetwork/tools"
-	"sync"
-	"github.com/kprc/nbsnetwork/netcommon"
 	"fmt"
+	"github.com/kprc/nbsnetwork/netcommon"
+	"github.com/kprc/nbsnetwork/tools"
 	"time"
 )
 
 func main()  {
 	tick:=tools.GetNbsTickerInstance()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go tick.Run(&wg)
+
+	go tick.Run()
 	uc:=netcommon.NewUdpCreateConnection("127.0.0.1","",22113,0)
 	uc.Dial()
+	uc.Hello()
 	go uc.Connect()
+	uc.WaitHello()
 
-	time.Sleep(time.Second*2)
 	uc.Send([]byte("hello world"))
 
 	cs:=netcommon.GetConnStoreInstance()
@@ -27,7 +26,7 @@ func main()  {
 	for {
 		c := cs.Read()
 		fmt.Println(string(c.GetConnPacket().GetData()))
-		uc.Send([]byte("client send time:"+time.Now().String()))
+		c.GetUdpConn().Send([]byte("client send time:"+time.Now().String()))
 		icnt++
 		if icnt>10{
 			break
@@ -35,6 +34,5 @@ func main()  {
 	}
 	uc.Close()
 	tick.Stop()
-	wg.Wait()
 
 }

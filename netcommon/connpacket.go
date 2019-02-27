@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	CONN_PACKET_TYP_ACK uint32 = 1
+	CONN_PACKET_TYP_KA uint32 = 1
 	CONN_PACKET_TYP_DATA uint32 = 2
 )
 

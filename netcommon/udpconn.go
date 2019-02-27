@@ -27,10 +27,12 @@ type udpconn struct {
 	closesign chan int
 	lastrcvtime int64
 	timeouttv int
+	wg *sync.WaitGroup
 }
 
 type UdpConn interface {
 	Dial() error
+	Hello()
 	Connect() error
 	Send(data [] byte) error
 	//Read() ([]byte, error)
@@ -42,6 +44,7 @@ type UdpConn interface {
 	GetAddr() address.UdpAddresser
 	IsConnectTo(addr *net.UDPAddr) bool
 	Push(v interface{})
+	WaitHello()
 }
 
 
@@ -76,7 +79,9 @@ func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	uc.timeouttv = 100000   //ms
+	uc.timeouttv = 10000   //ms
+
+
 
 	return uc
 
@@ -105,7 +110,7 @@ func NewUdpCreateConnection(rip,lip string,rport,lport uint16) UdpConn  {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	uc.timeouttv = 1000   //ms
+	uc.timeouttv = 10000   //ms
 
 
 	return uc
@@ -172,6 +177,9 @@ func (uc *udpconn)Connect() error{
 	uc.status = CONNECTION_RUNNING
 
 	uc.statuslock.Unlock()
+	if uc.wg !=nil {
+		uc.wg.Done()
+	}
 
 	if uc.isconn {
 		wg := &sync.WaitGroup{}
@@ -259,7 +267,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 			continue
 		}
 
-		if cp.GetTyp() == CONN_PACKET_TYP_ACK{
+		if cp.GetTyp() == CONN_PACKET_TYP_KA{
 			continue
 		}
 
@@ -302,13 +310,13 @@ func (uc *udpconn)Close() {
 }
 
 func (uc *udpconn)sendKAPacket() error {
-	if uc.isconn == false{
-		return nil
-	}
+	//if uc.isconn == false{
+	//	return nil
+	//}
 	tv:=getNowMsTime() - uc.lastrcvtime
-	if  tv> int64(uc.timeouttv)/3 {
+	if  tv> int64(uc.timeouttv)/10 {
 		if tv < int64(uc.timeouttv) || uc.lastrcvtime == 0{
-			return uc.send([]byte("ka message"), CONN_PACKET_TYP_DATA)
+			return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA)
 		}else{
 			return baderr
 		}
@@ -451,4 +459,14 @@ func (uc *udpconn)Push(v interface{})  {
 	rb:=NewRcvBlock(v.(ConnPacket),uc)
 
 	cs.Push(rb)
+}
+
+func (uc *udpconn)Hello()  {
+	uc.wg = &sync.WaitGroup{}
+	uc.wg.Add(1)
+}
+
+func (uc *udpconn)WaitHello()  {
+	uc.wg.Wait()
+	uc.wg = nil
 }

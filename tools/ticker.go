@@ -12,13 +12,14 @@ type nbsticker struct {
 	llock sync.Mutex
 	l list.List
 	stop chan int
+	wg *sync.WaitGroup
 }
 
 
 type NbsTicker interface {
 	Reg(c *chan int64)
 	UnReg(c *chan int64)
-	Run(wg *sync.WaitGroup)
+	Run()
 	Stop()
 }
 
@@ -49,7 +50,10 @@ func newNbsTicker() NbsTicker {
 
 	})
 
-	return &nbsticker{tc:t,l:l,stop:make(chan int)}
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	return &nbsticker{tc:t,l:l,stop:make(chan int),wg:wg}
 }
 
 func GetNbsTickerInstance() NbsTicker  {
@@ -86,6 +90,7 @@ func (nt *nbsticker)UnReg(c *chan int64)  {
 
 func (nt *nbsticker)Stop()  {
 	nt.stop <- 0
+	(*nt.wg).Wait()
 }
 
 func (nt *nbsticker)delTicker(arr []*tickV)  {
@@ -94,9 +99,9 @@ func (nt *nbsticker)delTicker(arr []*tickV)  {
 	}
 }
 
-func (nt *nbsticker)Run(wg *sync.WaitGroup){
-	if wg !=nil{
-		defer (*wg).Done()
+func (nt *nbsticker)Run(){
+	if nt.wg !=nil{
+		defer (*nt.wg).Done()
 	}
 	for {
 		select {

@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
-	"sync"
 )
 
 func main()  {
 	tick:=tools.GetNbsTickerInstance()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go tick.Run(&wg)
+
+	go tick.Run()
 	server:=netcommon.GetUpdListenInstance()
 	go server.Run("0.0.0.0",22113)
 
@@ -23,6 +21,6 @@ func main()  {
 		rb.GetUdpConn().Send([]byte("good world"))
 	}
 
-	wg.Wait()
+	tick.Stop()
 
 }
