@@ -90,7 +90,9 @@ func (nt *nbsticker)UnReg(c *chan int64)  {
 
 func (nt *nbsticker)Stop()  {
 	nt.stop <- 0
-	(*nt.wg).Wait()
+	if nt.wg !=nil {
+		(*nt.wg).Wait()
+	}
 }
 
 func (nt *nbsticker)delTicker(arr []*tickV)  {

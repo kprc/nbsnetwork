@@ -8,7 +8,6 @@ import (
 
 type connblock struct {
 	conn UdpConn
-	//configure
 }
 
 type connstore struct {
