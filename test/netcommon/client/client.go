@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/kprc/nbsdht/dht/nbsid"
+	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
 	"time"
@@ -11,7 +12,7 @@ import (
 func main()  {
 	tick:=tools.GetNbsTickerInstance()
 	go tick.Run()
-	uc:=netcommon.NewUdpCreateConnection("192.168.107.242","",64099,0)
+	uc:=netcommon.NewUdpCreateConnection("192.168.107.242","",22113,0)
 	uc.Dial()
 	uc.Hello()
 	go uc.Connect()
@@ -25,11 +26,18 @@ func main()  {
 	icnt:=0
 
 	for {
-		c := cs.Read()
-		fmt.Println(string(c.GetConnPacket().GetData()))
-		c.GetUdpConn().Send([]byte("client send time:"+time.Now().String()))
+		c, err := cs.ReadAsync()
+		if c != nil && err==nil {
+			fmt.Println(string(c.GetConnPacket().GetData()))
+		}
+		err = uc.Send([]byte("client send time:" + time.Now().String()))
+		if err != nil {
+			fmt.Println(err.(nbserr.NbsErr).Errmsg)
+			break
+		}
+		time.Sleep(time.Second*1)
 		icnt++
-		if icnt>10{
+		if icnt>15{
 			break
 		}
 	}

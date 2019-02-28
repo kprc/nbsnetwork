@@ -329,6 +329,11 @@ func (uc *udpconn)sendKAPacket() error {
 
 
 func (uc *udpconn)send(v interface{}, typ uint32) error {
+
+	if uc.lastrcvtime ==0 {
+		uc.lastrcvtime = getNowMsTime()
+	}
+
 	data:=v.([]byte)
 
 	cp:=NewConnPacket()
