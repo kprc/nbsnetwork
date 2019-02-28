@@ -19,7 +19,6 @@ type udpconn struct {
 	sock *net.UDPConn
 	isconn bool     //if conn from listen, isconn is false
 	ready2send chan interface{}
-	//recvFromConn chan interface{}
 	tick chan int64
 	statuslock sync.Mutex
 	status int32 //0 not set, 1 stopped, 2 bad connection, 3 connecting
@@ -36,9 +35,7 @@ type UdpConn interface {
 	Hello()
 	Connect() error
 	Send(data [] byte) error
-	//Read() ([]byte, error)
 	SendAsync(data [] byte) error  //unblocking
-	//ReadAsync() ([]byte,error)     //unblocking
 	SetTimeout(tv int)
 	Status() bool
 	Close()

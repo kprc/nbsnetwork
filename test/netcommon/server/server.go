@@ -21,5 +21,4 @@ func main()  {
 	}
 
 	tick.Stop()
-
 }
