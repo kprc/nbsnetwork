@@ -2,7 +2,6 @@ package netcommon
 
 import (
 	"net"
-	"reflect"
 	"sync"
 )
 
@@ -86,7 +85,9 @@ func (cs *connstore)Add(uid string,conn UdpConn)  {
 
 func NewConn(sock *net.UDPConn,addr *net.UDPAddr) UdpConn {
 	uc:=NewUdpConnFromListen(addr,sock)
+	uc.Hello()
 	go uc.Connect()
+	uc.WaitHello()
 
 	return uc
 }
@@ -95,22 +96,16 @@ func (cs *connstore)Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)  {
 	v,ok:=cs.store[uid]
 	if !ok{
 		cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
-		//fmt.Println("add new conn",addr.String())
 		return
 	}
 
 	if !v.conn.Status(){
 		cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
-		//fmt.Println("status wrong, update it")
-		//v.conn.GetAddr().PrintAll()
 		return
 	}
 
 	if v.conn.IsConnectTo(addr){
-		//fmt.Println("equals begin")
-		//v.conn.GetAddr().PrintAll()
-		//fmt.Println(addr.String())
-		//fmt.Println("equals end")
+		v.conn.UpdateLastAccessTime()
 		return
 	}
 
@@ -119,7 +114,6 @@ func (cs *connstore)Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)  {
 
 	cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
 
-	//fmt.Println("not equals, update it")
 
 }
 
@@ -143,17 +137,6 @@ func (cs *connstore)GetConn(uid string) UdpConn {
 	return nil
 }
 
-func (cs *connstore)First() UdpConn  {
-	keys:=reflect.ValueOf(cs.store).MapKeys()
-
-	//fmt.Println("keys length",len(keys))
-
-	for _,k:=range keys{
-		v,_:=cs.store[k.Interface().(string)]
-		return v.conn
-	}
-	return nil
-}
 
 
 func (cs *connstore)Push(v interface{}) error{

@@ -26,6 +26,7 @@ type udpconn struct {
 	stopsendsign chan int
 	closesign chan int
 	lastrcvtime int64
+	lastSendKaTime int64
 	timeouttv int
 	wg *sync.WaitGroup
 }
@@ -45,6 +46,7 @@ type UdpConn interface {
 	IsConnectTo(addr *net.UDPAddr) bool
 	Push(v interface{})
 	WaitHello()
+	UpdateLastAccessTime()
 }
 
 
@@ -80,8 +82,6 @@ func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
 	uc.timeouttv = 10000   //ms
-
-
 
 	return uc
 
@@ -216,9 +216,7 @@ func (uc *udpconn)Connect() error{
 				}
 
 			case <-uc.tick:
-				//fmt.Println("get tick",t)
 				if err := uc.sendKAPacket();err!=nil{
-					//fmt.Println("get ka send err")
 					uc.status = BAD_CONNECTION
 					if uc.isconn == true {
 						if uc.sock != nil{
@@ -229,7 +227,6 @@ func (uc *udpconn)Connect() error{
 					return err
 				}
 			case <-uc.stopsendsign:
-				//fmt.Println("Receive stop sign in connect func")
 				uc.status = STOP_CONNECTION
 				closesign = 1
 				return nil
@@ -245,8 +242,6 @@ func getNowMsTime() int64 {
 func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 	defer wg.Done()
 
-	//fmt.Println("start recv")
-
 	n:=1024
 	roundbuf := make([]byte,n)
 
@@ -260,13 +255,10 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 		var err error
 		var nr int
 		if  nr,err = uc.sock.Read(buf); err!=nil{
-			//uc.sock.Close()
-			//uc.sock = nil
-			//fmt.Println("recv sock read err")
 			return baderr
 		}
 
-		uc.lastrcvtime =  getNowMsTime()
+		uc.UpdateLastAccessTime()
 
 		cp:=NewConnPacket()
 		if err=cp.DeSerialize(buf[0:nr]);err!=nil{
@@ -279,10 +271,13 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 
 		uc.Push(cp)
 	}
-	//fmt.Println("recv quit")
 
 	return nil
 
+}
+
+func (uc *udpconn)UpdateLastAccessTime()  {
+	uc.lastrcvtime = getNowMsTime()
 }
 
 
@@ -298,7 +293,6 @@ func (uc *udpconn)Close() {
 				uc.sock.Close()
 			}
 		}
-		//fmt.Println("send stop send sign done")
 		if uc.isconn == true {
 			<-uc.closesign
 		}
@@ -316,17 +310,22 @@ func (uc *udpconn)Close() {
 }
 
 func (uc *udpconn)sendKAPacket() error {
-	//if uc.isconn == false{
-	//	return nil
-	//}
+
+
 	tv:=getNowMsTime() - uc.lastrcvtime
-	if  tv> int64(uc.timeouttv)/10 {
-		if tv < int64(uc.timeouttv) || uc.lastrcvtime == 0{
-			return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA)
-		}else{
-			return baderr
-		}
+
+	if tv > int64(uc.timeouttv) && uc.lastrcvtime != 0{
+		return baderr
 	}
+
+	tv=getNowMsTime() - uc.lastSendKaTime
+
+	if  tv> int64(uc.timeouttv)/10 {
+			uc.lastSendKaTime = getNowMsTime()
+			return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA)
+
+	}
+
 
 	return nil
 }
@@ -334,8 +333,6 @@ func (uc *udpconn)sendKAPacket() error {
 
 func (uc *udpconn)send(v interface{}, typ uint32) error {
 	data:=v.([]byte)
-
-	//fmt.Println("udp conn send msg:",string(data))
 
 	cp:=NewConnPacket()
 
@@ -404,39 +401,6 @@ func (uc *udpconn)Status() bool  {
 	return false
 }
 
-//func (uc *udpconn)Read() ([]byte,error)  {
-//
-//	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
-//		return nil,notreadyerr
-//	}
-//
-//	if uc.status == BAD_CONNECTION {
-//		return nil,baderr
-//	}
-//
-//
-//	ret := <-uc.recvFromConn
-//
-//	return ret.([]byte),nil
-//}
-//
-//func (uc *udpconn)ReadAsync() ([]byte,error)  {
-//	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
-//		return nil,notreadyerr
-//	}
-//
-//	if uc.status == BAD_CONNECTION {
-//		return nil,baderr
-//	}
-//
-//	select {
-//	case ret:=<-uc.recvFromConn:
-//		return ret.([]byte),nil
-//	default:
-//		return nil,nodataerr
-//	}
-//}
-
 func (uc *udpconn)GetAddr() address.UdpAddresser  {
 	addr:=address.NewUdpAddress()
 
@@ -480,3 +444,4 @@ func (uc *udpconn)WaitHello()  {
 	uc.wg.Wait()
 	uc.wg = nil
 }
+

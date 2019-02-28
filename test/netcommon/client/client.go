@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
 	"time"
@@ -10,7 +11,7 @@ import (
 func main()  {
 	tick:=tools.GetNbsTickerInstance()
 	go tick.Run()
-	uc:=netcommon.NewUdpCreateConnection("127.0.0.1","",22113,0)
+	uc:=netcommon.NewUdpCreateConnection("192.168.107.242","",64099,0)
 	uc.Dial()
 	uc.Hello()
 	go uc.Connect()
@@ -19,6 +20,7 @@ func main()  {
 	uc.Send([]byte("hello world"))
 
 	cs:=netcommon.GetConnStoreInstance()
+	cs.Add(nbsid.GetLocalId().String(),uc)
 
 	icnt:=0
 

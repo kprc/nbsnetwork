@@ -10,8 +10,8 @@ func main()  {
 	tick:=tools.GetNbsTickerInstance()
 	go tick.Run()
 	server:=netcommon.GetUpdListenInstance()
-	go server.Run("0.0.0.0",22113)
-
+	//go server.Run("0.0.0.0",22113)
+	go server.Run("localaddress",0)
 	cs:=netcommon.GetConnStoreInstance()
 
 	for {

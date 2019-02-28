@@ -36,7 +36,7 @@ var (
 
 
 func newNbsTicker() NbsTicker {
-	t:=time.NewTicker(time.Millisecond*300)
+	t:=time.NewTicker(time.Millisecond*500)
 
 	l:=list.NewList(func(v1 interface{}, v2 interface{}) int {
 		pc1 := v1.(*tickV)
