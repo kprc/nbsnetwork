@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+
+package message;
+
+message udpmsg{
+    uint64 sn = 1;
+    int32 msgtyp = 2;
+    bytes data =3;
+}
+
+
+
