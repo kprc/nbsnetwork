@@ -12,7 +12,7 @@ import (
 func main()  {
 	tick:=tools.GetNbsTickerInstance()
 	go tick.Run()
-	uc:=netcommon.NewUdpCreateConnection("192.168.107.242","",22113,0)
+	uc:=netcommon.NewUdpCreateConnection("192.168.103.66","",22113,0)
 	uc.Dial()
 	uc.Hello()
 	go uc.Connect()
