@@ -1,9 +1,5 @@
 package store
 
-import (
-	"github.com/kprc/nbsnetwork/common/list"
-	"sync"
-)
 
 type block struct {
 	blk interface{}

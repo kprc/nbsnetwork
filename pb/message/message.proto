@@ -5,8 +5,9 @@ package message;
 
 message udpmsg{
     uint64 sn = 1;
-    int32 msgtyp = 2;
-    bytes data =3;
+    uint64 pos = 2;
+    int32 msgtyp = 3;
+    bytes data =4;
 }
 
 
