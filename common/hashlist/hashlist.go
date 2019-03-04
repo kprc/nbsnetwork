@@ -16,8 +16,10 @@ type hashlist struct {
 type HashList interface {
 	Add(v interface{})
 	Del(v interface{})
-	FindDo(v interface{},arg interface{}, fDo func(arg interface{},v interface{}))
+	FindDo(v interface{},arg interface{}, do fDo) (ret interface{},err error)
 }
+
+type fDo func(arg interface{}, v interface{}) (ret interface{},err error)
 
 func NewHashList(fhash func(key interface{}) uint,fequals func(v1 interface{},v2 interface{}) int) HashList  {
 	hl := &hashlist{}
@@ -57,7 +59,7 @@ func (hl *hashlist)Del(v interface{})  {
 
 }
 
-func (hl *hashlist)FindDo(v interface{},arg interface{}, fDo func(arg interface{}, v interface{}))  {
+func (hl *hashlist)FindDo(v interface{},arg interface{},do  fDo ) (ret interface{},err error)  {
 	hash:=hl.fhash(v)
 
 	hl.bucketlock[hash].Lock()
@@ -70,5 +72,5 @@ func (hl *hashlist)FindDo(v interface{},arg interface{}, fDo func(arg interface{
 		return
 	}
 
-	fDo(arg,node.Value)
+	return do(arg,node.Value)
 }
