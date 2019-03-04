@@ -6,8 +6,9 @@ import (
 )
 
 type hashlist struct {
-	bucket [1024]list.List
-	bucketlock [1024]*sync.Mutex
+	hashcnt uint
+	bucket []list.List
+	bucketlock []*sync.Mutex
 	fhash func(v interface{}) uint
 	fequals func(v1 interface{},v2 interface{}) int
 	gcnt int64
@@ -16,13 +17,15 @@ type hashlist struct {
 type HashList interface {
 	Add(v interface{})
 	Del(v interface{})
-	FindDo(v interface{},arg interface{}, do fDo) (ret interface{},err error)
+	FindDo(v interface{},arg interface{}, do FDo) (ret interface{},err error)
 }
 
-type fDo func(arg interface{}, v interface{}) (ret interface{},err error)
+type FDo func(arg interface{}, v interface{}) (ret interface{},err error)
 
-func NewHashList(fhash func(key interface{}) uint,fequals func(v1 interface{},v2 interface{}) int) HashList  {
+func NewHashList(hashcnt uint,fhash func(key interface{}) uint,fequals func(v1 interface{},v2 interface{}) int) HashList  {
 	hl := &hashlist{}
+
+
 
 	for i,_:=range hl.bucket{
 		hl.bucket[i] = list.NewList(fequals)
@@ -46,6 +49,8 @@ func (hl *hashlist)Add(v interface{})  {
 
 
 	hl.bucket[hash].AddValue(v)
+	hl.gcnt ++
+
 }
 
 func (hl *hashlist)Del(v interface{})  {
@@ -56,10 +61,13 @@ func (hl *hashlist)Del(v interface{})  {
 
 
 	hl.bucket[hash].DelValue(v)
+	cnt :=hl.bucket[hash].Count()
+	cnt = cnt - hl.bucket[hash].Count()
 
+	hl.gcnt = hl.gcnt - int64(cnt)
 }
 
-func (hl *hashlist)FindDo(v interface{},arg interface{},do  fDo ) (ret interface{},err error)  {
+func (hl *hashlist)FindDo(v interface{},arg interface{},do  FDo ) (ret interface{},err error)  {
 	hash:=hl.fhash(v)
 
 	hl.bucketlock[hash].Lock()
