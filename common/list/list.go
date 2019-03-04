@@ -15,6 +15,7 @@ type list struct {
 type List interface {
 	Add(node *nbslink.LinkNode)
 	Del(node *nbslink.LinkNode)
+	Find(v interface{}) *nbslink.LinkNode
 	AddValue(v interface{})
 	DelValue(v interface{})
 	Count() int32
@@ -154,4 +155,30 @@ func (l *list)Traverse(arg interface{},fDo func(arg interface{},data interface{}
 			break
 		}
 	}
+}
+
+func (l *list)Find(v interface{}) *nbslink.LinkNode  {
+	if l.root == nil{
+		return nil
+	}
+
+	root:=l.root
+	n:=l.root
+
+
+	for {
+		if 0 == l.cmp(v,n.Value){
+			return n
+		}
+		n = n.Next()
+		if n == root {
+			break
+		}
+
+	}
+
+
+
+
+
 }
