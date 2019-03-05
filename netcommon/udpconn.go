@@ -7,7 +7,6 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"net"
 	"sync"
-	"time"
 )
 
 
@@ -232,9 +231,7 @@ func (uc *udpconn)Connect() error{
 	}
 }
 
-func getNowMsTime() int64 {
-	return time.Now().UnixNano() / 1e6
-}
+
 
 func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 	defer wg.Done()
@@ -274,7 +271,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 }
 
 func (uc *udpconn)UpdateLastAccessTime()  {
-	uc.lastrcvtime = getNowMsTime()
+	uc.lastrcvtime = tools.GetNowMsTime()
 }
 
 
@@ -309,16 +306,16 @@ func (uc *udpconn)Close() {
 func (uc *udpconn)sendKAPacket() error {
 
 
-	tv:=getNowMsTime() - uc.lastrcvtime
+	tv:=tools.GetNowMsTime() - uc.lastrcvtime
 
 	if tv > int64(uc.timeouttv) && uc.lastrcvtime != 0{
 		return baderr
 	}
 
-	tv=getNowMsTime() - uc.lastSendKaTime
+	tv=tools.GetNowMsTime() - uc.lastSendKaTime
 
 	if  tv> int64(uc.timeouttv)/10 {
-			uc.lastSendKaTime = getNowMsTime()
+			uc.lastSendKaTime = tools.GetNowMsTime()
 			return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA)
 
 	}
@@ -331,7 +328,7 @@ func (uc *udpconn)sendKAPacket() error {
 func (uc *udpconn)send(v interface{}, typ uint32) error {
 
 	if uc.lastrcvtime ==0 {
-		uc.lastrcvtime = getNowMsTime()
+		uc.lastrcvtime = tools.GetNowMsTime()
 	}
 
 	data:=v.([]byte)

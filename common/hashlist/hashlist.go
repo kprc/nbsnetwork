@@ -9,6 +9,7 @@ import (
 
 type FHash func(v interface{}) uint
 type Fequals func(v1 interface{},v2 interface{}) int
+type FDo func(arg interface{}, v interface{}) (ret interface{},err error)
 
 
 type hashlist struct {
@@ -25,9 +26,10 @@ type HashList interface {
 	Add(v interface{})
 	Del(v interface{})
 	FindDo(v interface{},arg interface{}, do FDo) (ret interface{},err error)
+	TraversDel(arg interface{}, del list.FDel)
 }
 
-type FDo func(arg interface{}, v interface{}) (ret interface{},err error)
+
 
 func NewHashList(bucketsize uint,fhash FHash,fequals Fequals) HashList  {
 	hl := &hashlist{bucketsize:bucketsize,fhash:fhash,fequals:fequals}
@@ -99,3 +101,14 @@ func (hl *hashlist)FindDo(v interface{},arg interface{},do  FDo ) (ret interface
 
 	return do(arg,node.Value)
 }
+
+
+func (hl *hashlist)TraversDel(arg interface{}, del list.FDel){
+	var i uint
+	for ; i<hl.realbucketsize; i++{
+		hl.bucketlock[i].Lock()
+		hl.bucket[i].TraverseDel(arg,del)
+		hl.bucketlock[i].Unlock()
+	}
+}
+

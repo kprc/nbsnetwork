@@ -12,6 +12,8 @@ type list struct {
 	cmp func(v1 interface{},v2 interface{}) int   //return 0 is equal
 }
 
+type FDel func(arg interface{}, v interface{}) bool  // if true, delete the node
+
 type List interface {
 	Add(node *nbslink.LinkNode)
 	Del(node *nbslink.LinkNode)
@@ -20,6 +22,7 @@ type List interface {
 	DelValue(v interface{})
 	Count() int32
 	Traverse(arg interface{},fDo func(arg interface{},data interface{}))
+	TraverseDel(arg interface{},fDel FDel)
 }
 
 func NewList(cmp func(v1 interface{},v2 interface{}) int) List  {
@@ -113,8 +116,9 @@ func (l *list)DelValue(v interface{})  {
 	n:=l.root
 
 	for {
+		nxt:=n.Next()
 		if 0 == l.cmp(v,n.Value) {
-			nxt := n.Next()
+
 			if n == root{
 				l.root =nxt
 				if nxt == n{
@@ -128,7 +132,7 @@ func (l *list)DelValue(v interface{})  {
 			l.decCnt()
 			break
 		}
-		n = n.Next()
+		n = nxt
 		if n == root {
 			break
 		}
@@ -176,9 +180,33 @@ func (l *list)Find(v interface{}) *nbslink.LinkNode  {
 		}
 
 	}
+	return nil
+}
 
+func (l *list)TraverseDel(arg interface{},fDel FDel)  {
+	root:=l.root
+	n:=l.root
 
+	for {
+		nxt:=n.Next()
+		if fDel(arg,n.Value) {
 
+			if n == root{
+				l.root =nxt
+				if nxt == n{
+					l.root = nil
+					l.decCnt()
+					return
+				}
+			}
 
+			n.Remove()
+			l.decCnt()
+		}
+		n = nxt
+		if n == root {
+			break
+		}
 
+	}
 }
