@@ -2,15 +2,21 @@ package hashlist
 
 import (
 	"github.com/kprc/nbsnetwork/common/list"
+	"github.com/kprc/nbsnetwork/tools"
 	"sync"
 )
 
+type FHash func(v interface{}) uint
+type Fequals func(v1 interface{},v2 interface{}) int
+
+
 type hashlist struct {
-	hashcnt uint
+	bucketsize uint
+	realbucketsize uint
 	bucket []list.List
 	bucketlock []*sync.Mutex
-	fhash func(v interface{}) uint
-	fequals func(v1 interface{},v2 interface{}) int
+	fhash FHash
+	fequals Fequals
 	gcnt int64
 }
 
@@ -22,20 +28,27 @@ type HashList interface {
 
 type FDo func(arg interface{}, v interface{}) (ret interface{},err error)
 
-func NewHashList(hashcnt uint,fhash func(key interface{}) uint,fequals func(v1 interface{},v2 interface{}) int) HashList  {
-	hl := &hashlist{}
+func NewHashList(bucketsize uint,fhash FHash,fequals Fequals) HashList  {
+	hl := &hashlist{bucketsize:bucketsize,fhash:fhash,fequals:fequals}
 
+	rbz:= tools.ResizeHash(bucketsize)
+	hl.realbucketsize = rbz
 
+	listbucket := make([]list.List,rbz)
 
-	for i,_:=range hl.bucket{
-		hl.bucket[i] = list.NewList(fequals)
+	for i,_:=range listbucket{
+		listbucket[i] = list.NewList(fequals)
 	}
-	for i,_:=range hl.bucketlock{
-		hl.bucketlock[i] = &sync.Mutex{}
+
+	hl.bucket = listbucket
+
+	lockbucket:=make([]*sync.Mutex,rbz)
+
+	for i,_:=range lockbucket{
+		lockbucket[i] = &sync.Mutex{}
 	}
 
-	hl.fequals = fequals
-	hl.fhash =fhash
+	hl.bucketlock = lockbucket
 
 	return hl
 
@@ -43,6 +56,7 @@ func NewHashList(hashcnt uint,fhash func(key interface{}) uint,fequals func(v1 i
 
 func (hl *hashlist)Add(v interface{})  {
 	hash:=hl.fhash(v)
+	hash = hash & (hl.realbucketsize - 1)
 
 	hl.bucketlock[hash].Lock()
 	defer hl.bucketlock[hash].Unlock()
@@ -55,13 +69,14 @@ func (hl *hashlist)Add(v interface{})  {
 
 func (hl *hashlist)Del(v interface{})  {
 	hash:=hl.fhash(v)
+	hash = hash & (hl.realbucketsize - 1)
 
 	hl.bucketlock[hash].Lock()
 	defer hl.bucketlock[hash].Unlock()
 
-
-	hl.bucket[hash].DelValue(v)
 	cnt :=hl.bucket[hash].Count()
+	hl.bucket[hash].DelValue(v)
+
 	cnt = cnt - hl.bucket[hash].Count()
 
 	hl.gcnt = hl.gcnt - int64(cnt)
@@ -69,6 +84,7 @@ func (hl *hashlist)Del(v interface{})  {
 
 func (hl *hashlist)FindDo(v interface{},arg interface{},do  FDo ) (ret interface{},err error)  {
 	hash:=hl.fhash(v)
+	hash = hash & (hl.realbucketsize - 1)
 
 	hl.bucketlock[hash].Lock()
 	defer hl.bucketlock[hash].Unlock()
