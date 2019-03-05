@@ -1,6 +1,7 @@
 package hashlist
 
 import (
+	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/list"
 	"github.com/kprc/nbsnetwork/tools"
 	"sync"
@@ -93,7 +94,7 @@ func (hl *hashlist)FindDo(v interface{},arg interface{},do  FDo ) (ret interface
 	node := root.Find(v)
 
 	if node == nil {
-		return
+		return nil,nbserr.NbsErr{ErrId:nbserr.HASHLIST_NO_NODE_ERR,Errmsg:"Node not found"}
 	}
 
 	return do(arg,node.Value)
