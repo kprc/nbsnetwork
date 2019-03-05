@@ -25,6 +25,8 @@ type NbsTicker interface {
 
 type tickV struct {
 	c *chan int64
+	timeouttv int64 //ms
+	lastaccesstime int64
 	cnt int
 }
 
@@ -81,6 +83,16 @@ func (nt *nbsticker)Reg(c *chan int64)  {
 	nt.llock.Unlock()
 }
 
+func (nt *nbsticker)RegWithTimeOut(c *chan int64,timeouttv int64)  {
+	nt.llock.Lock()
+	tv:=&tickV{c:c,timeouttv:timeouttv}
+	tv.lastaccesstime = GetNowMsTime()
+	nt.l.AddValue(tv)
+	nt.llock.Unlock()
+}
+
+
+
 func (nt *nbsticker)UnReg(c *chan int64)  {
 	nt.llock.Lock()
 	tv := &tickV{c:c}
@@ -114,6 +126,13 @@ func (nt *nbsticker)Run(){
 				nt.l.Traverse(gcnt, func(arg interface{}, data interface{}) {
 					cnt := arg.(int64)
 					c:= data.(*tickV)
+					if c.timeouttv > 0 {
+						if  (GetNowMsTime() - c.lastaccesstime) >c.timeouttv {
+							c.lastaccesstime = GetNowMsTime()
+						}else {
+							return
+						}
+					}
 					select {
 						case *c.c <- cnt:
 							c.cnt = 0

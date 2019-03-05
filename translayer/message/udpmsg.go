@@ -3,7 +3,11 @@ package message
 import (
 	"github.com/gogo/protobuf/proto"
 	pbmsg "github.com/kprc/nbsnetwork/pb/message"
+	"sync/atomic"
 )
+
+var gSerialNumber uint64
+
 
 type udpmsg struct {
 	sn uint64
@@ -23,7 +27,29 @@ type UdpMsg interface {
 	GetData() []byte
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
+	NxtPos(data []byte) UdpMsg
 }
+
+func getNextSerialNum() uint64 {
+	return atomic.AddUint64(&gSerialNumber,1)
+}
+
+func NeUdpMsg(msgTyp int32,data []byte) UdpMsg  {
+	um:=&udpmsg{sn:getNextSerialNum(),msgtyp:msgTyp,data:data}
+
+	return um
+}
+
+func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
+	um1 := &udpmsg{}
+	um1.sn = um.sn
+	um1.data = data
+	um1.msgtyp = um.msgtyp
+	um1.pos ++
+
+	return um1
+}
+
 
 func (um *udpmsg)SetSn(sn uint64)  {
 	um.sn = sn
