@@ -69,7 +69,7 @@ func (ul *udplisten)Run(ipstr string,port uint16)  {
 	ua.Iterator()
 
 	for {
-		strip, p := ua.NextS()
+		strip, p,_ := ua.NextS()
 
 		if strip == "" {
 			break

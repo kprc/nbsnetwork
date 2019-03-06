@@ -16,7 +16,13 @@ func main()  {
 	uc.Dial()
 	uc.Hello()
 	go uc.Connect()
-	uc.WaitHello()
+	r:=uc.WaitHello()
+
+	if !r{
+		uc.Close()
+		fmt.Println("Can't Connect to peer")
+		return
+	}
 
 	uc.Send([]byte("hello world"))
 

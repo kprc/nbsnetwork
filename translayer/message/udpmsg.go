@@ -34,7 +34,7 @@ func getNextSerialNum() uint64 {
 	return atomic.AddUint64(&gSerialNumber,1)
 }
 
-func NeUdpMsg(msgTyp int32,data []byte) UdpMsg  {
+func NewUdpMsg(msgTyp int32,data []byte) UdpMsg  {
 	um:=&udpmsg{sn:getNextSerialNum(),msgtyp:msgTyp,data:data}
 
 	return um

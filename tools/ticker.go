@@ -18,6 +18,7 @@ type nbsticker struct {
 
 type NbsTicker interface {
 	Reg(c *chan int64)
+	RegWithTimeOut(c *chan int64,timeouttv int64)
 	UnReg(c *chan int64)
 	Run()
 	Stop()

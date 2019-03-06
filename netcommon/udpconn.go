@@ -27,6 +27,8 @@ type udpconn struct {
 	lastSendKaTime int64
 	timeouttv int
 	wg *sync.WaitGroup
+	tickrcv chan int64
+	rcv chan int
 }
 
 type UdpConn interface {
@@ -41,7 +43,7 @@ type UdpConn interface {
 	GetAddr() address.UdpAddresser
 	IsConnectTo(addr *net.UDPAddr) bool
 	Push(v interface{})
-	WaitHello()
+	WaitHello() bool
 	UpdateLastAccessTime()
 }
 
@@ -102,10 +104,13 @@ func NewUdpCreateConnection(rip,lip string,rport,lport uint16) UdpConn  {
 	uc.tick = make(chan int64,8)
 	uc.stopsendsign = make(chan int)
 	uc.closesign = make(chan int)
+	uc.rcv = make(chan int)
+	uc.tickrcv = make(chan int64)
 	uc.isconn = true
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
+	nt.RegWithTimeOut(&uc.tickrcv,2500)
 	uc.timeouttv = 10000   //ms
 
 
@@ -271,6 +276,13 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 }
 
 func (uc *udpconn)UpdateLastAccessTime()  {
+
+	if uc.isconn {
+		if uc.lastrcvtime == 0 {
+			uc.rcv <- 0
+		}
+	}
+
 	uc.lastrcvtime = tools.GetNowMsTime()
 }
 
@@ -315,9 +327,7 @@ func (uc *udpconn)sendKAPacket() error {
 	tv=tools.GetNowMsTime() - uc.lastSendKaTime
 
 	if  tv> int64(uc.timeouttv)/10 {
-			uc.lastSendKaTime = tools.GetNowMsTime()
-			return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA)
-
+		return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA)
 	}
 
 
@@ -327,9 +337,6 @@ func (uc *udpconn)sendKAPacket() error {
 
 func (uc *udpconn)send(v interface{}, typ uint32) error {
 
-	if uc.lastrcvtime ==0 {
-		uc.lastrcvtime = tools.GetNowMsTime()
-	}
 
 	data:=v.([]byte)
 
@@ -357,6 +364,8 @@ func (uc *udpconn)send(v interface{}, typ uint32) error {
 			return baderr
 		}
 	}
+
+	uc.lastSendKaTime = tools.GetNowMsTime()
 
 	return nil
 }
@@ -430,17 +439,33 @@ func (uc *udpconn)Push(v interface{})  {
 	cs.Push(rb)
 }
 
-func (uc *udpconn)Hello()  {
+func (uc *udpconn)Hello() {
 	uc.wg = &sync.WaitGroup{}
 	if uc.isconn {
 		uc.wg.Add(2)
-	}else {
+	} else {
 		uc.wg.Add(1)
 	}
+
 }
 
-func (uc *udpconn)WaitHello()  {
+func (uc *udpconn)WaitHello() bool {
 	uc.wg.Wait()
 	uc.wg = nil
+
+	if uc.isconn {
+		defer func() {
+			nt:=tools.GetNbsTickerInstance()
+			nt.UnReg(&uc.tickrcv)
+		}()
+		select {
+		case <-uc.rcv:
+			return true
+		case <-uc.tickrcv:
+			return false
+		}
+	}
+
+	return true
 }
 

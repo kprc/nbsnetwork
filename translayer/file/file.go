@@ -24,9 +24,9 @@ type UdpTransFile interface {
 }
 
 func (utf *udptransfile)SendFileDesc(conn netcommon.UdpConn) error{
-	
+	return nil
 }
 
 func (utf *udptransfile)SendFile() error{
-
+	return nil
 }

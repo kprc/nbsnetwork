@@ -18,9 +18,11 @@ type UdpAddresser interface {
 	AddIP4Str(ipstr string) error
 	DelIP4(ipstr string,port uint16)
 	Iterator()
-	Next() (addr []byte,port uint16)
+	GetAddr(idx int)  (addr []byte,port uint16)
+	Next() (addr []byte,port uint16, idx int)
 	First()(addr []byte,port uint16)
-	NextS() (saddr string,port uint16)
+	GetAddrS(idx int) (saddr string,port uint16)
+	NextS() (saddr string,port uint16, idx int)
 	FirstS()(saddr string,port uint16)
 	PrintAll()
 	Clone() UdpAddresser
@@ -47,6 +49,8 @@ func NewUdpAddress() UdpAddresser  {
 
 	return &addrs
 }
+
+
 
 func NewUdpAddressP(addr []byte, port uint16) UdpAddresser  {
 	var addrs udpAddress
@@ -117,17 +121,29 @@ func (uaddr *udpAddress)Iterator()  {
 	uaddr.pos = 0
 }
 
-func (uaddr *udpAddress)Next() (addr []byte,port uint16){
+func (uaddr *udpAddress)Next() (addr []byte,port uint16,idx int){
 	if len(uaddr.addrs) > uaddr.pos{
 		addr = uaddr.addrs[uaddr.pos].addr
 		port = uaddr.addrs[uaddr.pos].port
+		idx = uaddr.pos
 		uaddr.pos ++
 
 		return
 	}
 
+	return nil,0,0
+}
+
+func (uaddr *udpAddress)GetAddr(idx int)  (addr []byte,port uint16){
+	if len(uaddr.addrs) > idx{
+		addr = uaddr.addrs[idx].addr
+		port = uaddr.addrs[idx].port
+		return
+	}
+
 	return nil,0
 }
+
 
 func stringIP(addr []byte) (error,string){
 	if len(addr)!=4 {
@@ -144,10 +160,27 @@ func stringIP(addr []byte) (error,string){
 	return nil,strings.Join(saddr,".")
 }
 
-func (uaddr *udpAddress)NextS() (saddr string,port uint16){
+func (uaddr *udpAddress)GetAddrS(idx int) (saddr string,port uint16)  {
+	if len(uaddr.addrs) > idx {
+		addr := uaddr.addrs[idx].addr
+		port = uaddr.addrs[idx].port
+
+		var err error
+		if err,saddr = stringIP(addr) ; err==nil{
+			return
+		}
+	}
+
+	return "",0
+}
+
+
+func (uaddr *udpAddress)NextS() (saddr string,port uint16,idx int){
 	if len(uaddr.addrs) > uaddr.pos{
 		addr := uaddr.addrs[uaddr.pos].addr
 		port = uaddr.addrs[uaddr.pos].port
+
+		idx=uaddr.pos
 
 		uaddr.pos ++
 
@@ -159,7 +192,7 @@ func (uaddr *udpAddress)NextS() (saddr string,port uint16){
 
 	}
 
-	return "",0
+	return "",0,0
 }
 
 func (uaddr *udpAddress)First()(addr []byte,port uint16)  {
@@ -276,7 +309,7 @@ func GetAllLocalIPAddr(port uint16) UdpAddresser  {
 func (uaddr *udpAddress)PrintAll(){
 	uaddr.Iterator()
 	for{
-		addr,port := uaddr.NextS()
+		addr,port,_ := uaddr.NextS()
 		if addr == "" {
 			break
 		}
