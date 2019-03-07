@@ -5,6 +5,7 @@ import (
 	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/netcommon"
+	tm "github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/tools"
 	"time"
 )
@@ -49,4 +50,23 @@ func main()  {
 	}
 	uc.Close()
 	tick.Stop()
+}
+
+func read(cs netcommon.ConnStore,quit *chan int)  {
+	for {
+		c := cs.Read()
+
+		um:=tm.NewUdpMsg(0,nil)
+		if err:=um.DeSerialize(c.GetConnPacket().GetData());err!=nil{
+			continue
+		}
+		fmt.Println("um data:",string(um.GetData()))
+
+		select {
+		    case <-*quit:
+				return
+		    default:
+		}
+	}
+
 }

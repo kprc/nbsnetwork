@@ -13,6 +13,7 @@ type udpmsg struct {
 	sn uint64
 	pos uint64
 	msgtyp int32
+	tickrcv *chan int64
 	data []byte
 }
 
@@ -28,6 +29,8 @@ type UdpMsg interface {
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
 	NxtPos(data []byte) UdpMsg
+	SetInformChan(c *chan int64)
+	Inform()
 }
 
 func getNextSerialNum() uint64 {
@@ -50,6 +53,15 @@ func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
 	return um1
 }
 
+func (um *udpmsg)SetInformChan(c *chan int64)  {
+	um.tickrcv = c
+}
+
+func (um *udpmsg)Inform()  {
+	if um.tickrcv != nil{
+		*um.tickrcv <- 0
+	}
+}
 
 func (um *udpmsg)SetSn(sn uint64)  {
 	um.sn = sn

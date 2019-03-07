@@ -11,7 +11,7 @@ var (
 )
 
 type connpacket struct {
-	typ uint32
+	typ uint32    //ka packet or data packet
 	uid []byte
 	data []byte
 }
