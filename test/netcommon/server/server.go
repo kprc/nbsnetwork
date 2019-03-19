@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
+	"strconv"
 )
 
 func main()  {
@@ -17,7 +18,8 @@ func main()  {
 	for {
 		rb := cs.Read()
 		fmt.Println(string(rb.GetConnPacket().GetData()))
-		rb.GetUdpConn().Send([]byte("good world"))
+		s,p:=rb.GetUdpConn().GetAddr().FirstS()
+		rb.GetUdpConn().Send([]byte("rcv ip: "+s+" port: "+strconv.Itoa(int(p))))
 	}
 
 	tick.Stop()
