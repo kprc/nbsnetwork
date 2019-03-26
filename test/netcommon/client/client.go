@@ -8,13 +8,26 @@ import (
 	tm "github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/tools"
 	"time"
+	"os"
+	"strconv"
 )
 
 func main()  {
 	tick:=tools.GetNbsTickerInstance()
 	go tick.Run()
-	//uc:=netcommon.NewUdpCreateConnection("127.0.0.1","",22113,0)
-	uc:=netcommon.NewUdpCreateConnection("127.0.0.1","",0,0)
+
+	ips:="127.0.0.1"
+	port:=22113
+	if len(os.Args) > 1 {
+		ips = os.Args[1]
+		if len(os.Args) > 2 {
+			port,_ = strconv.Atoi(os.Args[2])
+		}
+	}
+	fmt.Println("Connectting to IP:",ips," Port:",port)
+
+	uc:=netcommon.NewUdpCreateConnection(ips,"",uint16(port),0)
+
 	uc.Dial()
 	uc.Hello()
 	go uc.Connect()
