@@ -6,8 +6,9 @@ package udpmessage;
 message udpmsg{
     uint64 sn = 1;
     uint64 pos = 2;
-    int32 msgtyp = 3;      //0 is message, 1 is stream and pos will be used
-    bytes data =4;
+    uint64 rsn = 3;       //last message sn
+    int32 msgtyp = 4;     //0 is message, 1 is stream and pos will be used
+    bytes data =5;
 }
 
 

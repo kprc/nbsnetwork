@@ -1,4 +1,4 @@
-package message
+package store
 
 import (
 	"github.com/gogo/protobuf/proto"
