@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+
+package udpmessage;
+
+message udpmsg{
+    uint64 sn = 1;
+    uint64 pos = 2;
+    int32 msgtyp = 3;      //0 is message, 1 is stream and pos will be used
+    bytes data =4;
+}
+
+
+message udpmsgack{
+    uint64 sn=1;
+    uint64 pos=2;
+    repeated uint64 arrpos=3;
+}
+
+

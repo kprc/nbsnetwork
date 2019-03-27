@@ -2,7 +2,7 @@ package message
 
 import (
 	"github.com/gogo/protobuf/proto"
-	pbmsg "github.com/kprc/nbsnetwork/pb/message"
+	"github.com/kprc/nbsnetwork/pb/udpmessage"
 	"sync/atomic"
 )
 
@@ -90,7 +90,7 @@ func (um *udpmsg)GetData() []byte{
 	return um.data
 }
 func (um *udpmsg)Serialize() ([]byte,error){
-	pbum := &pbmsg.Udpmsg{}
+	pbum := &udpmessage.Udpmsg{}
 
 	pbum.Data= um.data
 	pbum.Msgtyp = um.msgtyp
@@ -106,7 +106,7 @@ func (um *udpmsg)Serialize() ([]byte,error){
 }
 
 func (um *udpmsg)DeSerialize(data []byte) error{
-	pbum:=&pbmsg.Udpmsg{}
+	pbum:=&udpmessage.Udpmsg{}
 
 	if err:=proto.UnmarshalMerge(data,pbum); err!=nil{
 		return err
