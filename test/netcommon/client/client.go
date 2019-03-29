@@ -5,7 +5,6 @@ import (
 	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/netcommon"
-	tm "github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/tools"
 	"time"
 	"os"
@@ -28,7 +27,10 @@ func main()  {
 
 	uc:=netcommon.NewUdpCreateConnection(ips,"",uint16(port),0)
 
-	uc.Dial()
+	if err:=uc.Dial();err!=nil{
+		fmt.Print("Dial Error",err.Error())
+		return
+	}
 	uc.Hello()
 	go uc.Connect()
 	r:=uc.WaitHello()
@@ -66,21 +68,21 @@ func main()  {
 	tick.Stop()
 }
 
-func read(cs netcommon.ConnStore,quit *chan int)  {
-	for {
-		c := cs.Read()
-
-		um:=tm.NewUdpMsg(0,nil)
-		if err:=um.DeSerialize(c.GetConnPacket().GetData());err!=nil{
-			continue
-		}
-		fmt.Println("um data:",string(um.GetData()))
-
-		select {
-		    case <-*quit:
-				return
-		    default:
-		}
-	}
-
-}
+//func read(cs netcommon.ConnStore,quit *chan int)  {
+//	for {
+//		c := cs.Read()
+//
+//		um:=tm.NewUdpMsg(0,nil)
+//		if err:=um.DeSerialize(c.GetConnPacket().GetData());err!=nil{
+//			continue
+//		}
+//		fmt.Println("um data:",string(um.GetData()))
+//
+//		select {
+//		    case <-*quit:
+//				return
+//		    default:
+//		}
+//	}
+//
+//}

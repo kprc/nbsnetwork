@@ -21,6 +21,8 @@ type ConnPacket interface {
 	GetUid() []byte
 	SetTyp(typ uint32)
 	GetTyp() uint32
+	SetMsgTyp(typ uint32)
+	GetMsgTyp() uint32
 	SetData(data []byte)
 	GetData() []byte
 	Serialize() ([]byte,error)
@@ -40,12 +42,33 @@ func (cp *connpacket)GetUid() []byte  {
 }
 
 func (cp *connpacket)SetTyp(typ uint32)  {
-	cp.typ = typ
+	var typ1,typ2 uint32
+	typ1 = cp.typ & 0x00FFFFFF
+	typ2 = ((typ << 24) & 0xFF000000) | typ1
+	cp.typ = typ2
 }
 
 func (cp *connpacket)GetTyp() uint32  {
-	return cp.typ
+	var typ1 uint32 = cp.typ
+
+	typ1 = (typ1 >> 24) & 0x000000FF
+
+	return typ1
 }
+
+func (cp *connpacket)SetMsgTyp(typ uint32)  {
+	var typ1,typ2 uint32
+	typ1 = cp.typ & 0xFF000000
+	typ2 = typ1 | typ
+
+	cp.typ = typ2
+}
+
+func (cp *connpacket)GetMsgTyp() uint32  {
+	return cp.typ & 0x00FFFFFF
+}
+
+
 
 func (cp *connpacket)SetData(data []byte)  {
 	cp.data = data

@@ -35,8 +35,8 @@ type UdpConn interface {
 	Dial() error
 	Hello()
 	Connect() error
-	Send(data [] byte) error
-	SendAsync(data [] byte) error  //unblocking
+	Send(data [] byte,typ uint32) error
+	SendAsync(data [] byte, typ uint32) error  //unblocking
 	SetTimeout(tv int)
 	Status() bool
 	Close()
@@ -47,6 +47,15 @@ type UdpConn interface {
 	UpdateLastAccessTime()
 }
 
+
+//======= For Send Buffer Define Begin ======
+
+type senddata struct {
+	data []byte
+	msgtyp uint32
+}
+
+//=======For Send Buffer Define End  =====
 
 var (
 	CONNECTION_INIT int32 = 0
@@ -206,7 +215,8 @@ func (uc *udpconn)Connect() error{
 	for{
 		select {
 			case data2send:=<-uc.ready2send:
-				if err := uc.send(data2send,CONN_PACKET_TYP_DATA);err!=nil{
+				d2s := data2send.(senddata)
+				if err := uc.send(d2s.data,CONN_PACKET_TYP_DATA,d2s.msgtyp);err!=nil{
 
 					uc.status = BAD_CONNECTION
 					if uc.isconn == true {
@@ -327,7 +337,7 @@ func (uc *udpconn)sendKAPacket() error {
 	tv=tools.GetNowMsTime() - uc.lastSendKaTime
 
 	if  tv> int64(uc.timeouttv)/10 {
-		return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA)
+		return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA,0)
 	}
 
 
@@ -335,14 +345,14 @@ func (uc *udpconn)sendKAPacket() error {
 }
 
 
-func (uc *udpconn)send(v interface{}, typ uint32) error {
-
+func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 
 	data:=v.([]byte)
 
 	cp:=NewConnPacket()
 
 	cp.SetTyp(typ)
+	cp.SetMsgTyp(msgtyp)
 	cp.SetData(data)
 	id:=nbsid.GetLocalId()
 	cp.SetUid(id.Bytes())
@@ -370,7 +380,7 @@ func (uc *udpconn)send(v interface{}, typ uint32) error {
 	return nil
 }
 
-func (uc *udpconn)Send(data []byte) error  {
+func (uc *udpconn)Send(data []byte,typ uint32) error  {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return notreadyerr
 	}
@@ -379,12 +389,14 @@ func (uc *udpconn)Send(data []byte) error  {
 		return baderr
 	}
 	//copy?
-	uc.ready2send <- data
+	snddata:=senddata{data,typ}
+
+	uc.ready2send <- snddata
 
 	return nil
 }
 
-func (uc *udpconn)SendAsync(data []byte) error  {
+func (uc *udpconn)SendAsync(data []byte,typ uint32) error  {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return notreadyerr
 	}
@@ -393,8 +405,10 @@ func (uc *udpconn)SendAsync(data []byte) error  {
 		return baderr
 	}
 
+	snddata := senddata{data,typ}
+
 	select {
-	case uc.ready2send <- data:
+	case uc.ready2send <- snddata:
 		return nil
 	default:
 		return bufferoverflowerr

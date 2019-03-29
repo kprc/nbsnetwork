@@ -11,8 +11,6 @@ type queue struct {
 	cnt int32
 }
 
-
-
 type Queue interface {
 	EnQueue(node *nbslink.LinkNode)
 	DeQueue() *nbslink.LinkNode

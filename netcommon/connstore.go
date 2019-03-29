@@ -154,6 +154,7 @@ func (cs *connstore)Read() RcvBlock{
 
 	return cp.(RcvBlock)
 }
+
 func (cs *connstore)ReadAsync() (RcvBlock,error){
 	select {
 		case cp:=<-cs.rcvpacket:

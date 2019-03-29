@@ -9,10 +9,18 @@ import (
 
 type block struct {
 	blk interface{}
-	timeout int
+	timeout int32
+	step int32
 	lastsendtime int64
+	resendtimes int32
 	sn uint64     // one message one code, one message include many packet
 }
+
+
+type BlockInter interface {
+	GetSn() uint64
+}
+
 
 type blockstore struct {
 	hashlist.HashList
@@ -21,6 +29,7 @@ type blockstore struct {
 
 type BlockStore interface {
 	AddBlock(blk interface{})
+	AddBlockWithParam(data interface{},tv int32,resndtimes int32,step int32)
 	DelBlock(blk interface{})
 	FindBlockDo(v interface{},arg interface{},do hashlist.FDo) (r interface{},err error)
 	TimeOut(arg interface{},del list.FDel)
@@ -32,7 +41,7 @@ var (
 	instancelock sync.Mutex
 	instance BlockStore
 	lasttimeout int64
-	timeouttv int64 = 5000 //ms
+	timeouttv int64 = 1000 //ms
 )
 
 var fhash = func(v interface{}) uint {
@@ -56,7 +65,7 @@ var fdel = func(arg interface{},v interface{}) bool{
 	return false
 }
 
-func NewBlockStoreInstance()  BlockStore {
+func GetBlockStoreInstance()  BlockStore {
 
 	if instance == nil{
 		instancelock.Lock()
@@ -87,11 +96,42 @@ func newBlockStore() BlockStore {
 }
 
 
-func (bs *blockstore)AddBlock(blk interface{}) {
+func (bs *blockstore)AddBlock(data interface{}) {
+	blk:=&block{blk:data}
+	blk.sn = data.(BlockInter).GetSn()
+	blk.timeout = 5000  //ms
+	blk.resendtimes = 2
+	blk.step = 1
+	blk.lastsendtime = tools.GetNowMsTime()
+
 	bs.Add(blk)
 }
 
+func (bs *blockstore)AddBlockWithParam(data interface{},tv int32,resndtimes int32,step int32){
+	blk:=block{blk:data}
+	blk.sn = data.(BlockInter).GetSn()
+	blk.timeout = 5000  //ms
+	blk.resendtimes = 3
+	blk.step = 1
+	if tv > 0 {
+		blk.timeout = tv
+	}
+	if resndtimes > 0 {
+		blk.resendtimes = resndtimes
+	}
+	if step>0{
+		blk.step = step
+	}
+	blk.lastsendtime = tools.GetNowMsTime()
+
+
+	bs.Add(blk)
+}
+
+//TODO...
+
 func (bs *blockstore)DelBlock(blk interface{}) {
+
 	bs.Del(blk)
 }
 
@@ -103,6 +143,19 @@ func (bs *blockstore)TimeOut(arg interface{},del list.FDel)  {
 	bs.TraversDel(arg,del)
 }
 
+func (blk *block)Resend()  {
+	
+}
+
+func (blk *block)TimeOut()  {
+	if tools.GetNowMsTime() - blk.lastsendtime > int64(blk.timeout){
+		if blk.resendtimes > 0{
+			blk.Resend()
+			blk.resendtimes --
+		}
+		blk.lastsendtime = tools.GetNowMsTime()
+	}
+}
 
 func (bs *blockstore)Run()  {
 	select {

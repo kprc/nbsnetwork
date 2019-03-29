@@ -8,13 +8,22 @@ import (
 
 var gSerialNumber uint64
 
+const(
+	UDP_MESSAGE uint32=0
+	UDP_STREAM uint32=1
+	UDP_ACK uint32 = 2
+
+	UDP_INFORM_ACK int64 = 0
+	UDP_INFORM_TIMEOUT int64 = 1
+)
 
 type udpmsg struct {
+	mpos map[uint64]UdpMsg
+	parent UdpMsg
 	sn uint64
 	pos uint64
-	msgtyp int32
-	tickrcv *chan int64
 	data []byte
+	inform *chan int64
 }
 
 type UdpMsg interface {
@@ -22,46 +31,71 @@ type UdpMsg interface {
 	GetSn() uint64
 	SetPos(pos uint64)
 	GetPos() uint64
-	SetMsgTyp(msgtyp int32)
-	GetMsgTyp() int32
+
 	SetData(data []byte)
 	GetData() []byte
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
 	NxtPos(data []byte) UdpMsg
-	SetInformChan(c *chan int64)
-	Inform()
+	GetParent() UdpMsg
+	AddPos(um UdpMsg)
+	SetInform(c *chan int64)
+	Inform(typ int64)
+	//Reply(ack ackmessage.AckMessage) ackmessage.AckMessage
 }
 
 func getNextSerialNum() uint64 {
 	return atomic.AddUint64(&gSerialNumber,1)
 }
 
-func NewUdpMsg(msgTyp int32,data []byte) UdpMsg  {
-	um:=&udpmsg{sn:getNextSerialNum(),msgtyp:msgTyp,data:data}
+func NewUdpMsg(data []byte) UdpMsg  {
+	um:=&udpmsg{sn:getNextSerialNum(),data:data}
+	um.mpos=make(map[uint64]UdpMsg)
 
 	return um
 }
+
+
+
+func (um *udpmsg)SetInform(c *chan int64) {
+	um.inform = c
+}
+
+func (um *udpmsg)Inform(typ int64)  {
+	if um.inform != nil {
+		select {
+		case *um.inform <- typ:
+		default:
+			//nothing to do
+		}
+	}
+}
+
+
 
 func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
 	um1 := &udpmsg{}
 	um1.sn = um.sn
 	um1.data = data
-	um1.msgtyp = um.msgtyp
 	um1.pos ++
+	um1.parent = um
 
 	return um1
 }
 
-func (um *udpmsg)SetInformChan(c *chan int64)  {
-	um.tickrcv = c
+func (um *udpmsg)GetParent() UdpMsg  {
+	return um.parent
 }
 
-func (um *udpmsg)Inform()  {
-	if um.tickrcv != nil{
-		*um.tickrcv <- 0
+func (um *udpmsg)AddPos(u UdpMsg)  {
+	if _,ok:=um.mpos[u.GetPos()];!ok{
+		um.mpos[u.GetPos()] = u
+	}else {
+		panic("Pos duplicated")
 	}
 }
+
+
 
 func (um *udpmsg)SetSn(sn uint64)  {
 	um.sn = sn
@@ -77,12 +111,6 @@ func (um *udpmsg)GetPos() uint64{
 	return um.pos
 }
 
-func (um *udpmsg)SetMsgTyp(msgtyp int32){
-	um.msgtyp = msgtyp
-}
-func (um *udpmsg)GetMsgTyp() int32{
-	return um.msgtyp
-}
 func (um *udpmsg)SetData(data []byte){
 	um.data = data
 }
@@ -93,7 +121,6 @@ func (um *udpmsg)Serialize() ([]byte,error){
 	pbum := &udpmessage.Udpmsg{}
 
 	pbum.Data= um.data
-	pbum.Msgtyp = um.msgtyp
 	pbum.Sn = um.sn
 	pbum.Pos = um.pos
 	d,err:=proto.Marshal(pbum);
@@ -115,7 +142,6 @@ func (um *udpmsg)DeSerialize(data []byte) error{
 	um.sn = pbum.Sn
 	um.pos = pbum.Pos
 	um.data = pbum.Data
-	um.msgtyp = pbum.Msgtyp
 
 	return nil
 }
