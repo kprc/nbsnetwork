@@ -8,6 +8,7 @@ import (
 
 type reliablemsg struct {
 	conn netcommon.UdpConn
+	uid string
 	timeout int32
 	resendtimes int32
 	step int32
@@ -19,6 +20,7 @@ type ReliableMsg interface {
 	SetTimeOut(timeout int32)
 	SetReSendTimes(resendtimes int32)
 	SetStep(step int32)
+	GetUid() string
 	//WaitAnswer()
 }
 
@@ -27,9 +29,22 @@ var(
 	udpsenddefaulterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send Error"}
 )
 
-func NewReliableMsg() ReliableMsg {
-	return &reliablemsg{}
+func NewReliableMsg(conn netcommon.UdpConn,uid string) ReliableMsg {
+	return &reliablemsg{conn:conn,uid:uid}
 }
+
+func SendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
+	if d2snd,err:=um.Serialize();err!=nil{
+		return udpsenddefaulterr
+	}else{
+		if err:=conn.Send(d2snd,store.UDP_MESSAGE); err!=nil{
+			return err
+		}
+	}
+
+	return nil
+}
+
 
 func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
@@ -44,15 +59,11 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	ms:=store.GetBlockStoreInstance()
 
-	if d2snd,err:=um.Serialize();err!=nil{
-		return udpsenddefaulterr
-	}else{
-		if err:=rm.conn.Send(d2snd,store.UDP_MESSAGE); err!=nil{
-			return err
-		}
-	}
+	ms.AddBlockWithParam(um,rm.uid,rm.timeout,rm.resendtimes,rm.step)
 
-	ms.AddBlockWithParam(um,rm.timeout,rm.resendtimes,rm.step)
+	if err:=SendUm(um,rm.conn);err!=nil {
+		return err
+	}
 
 	r:=<-c
 
@@ -64,6 +75,10 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	return udpsenddefaulterr
 
+}
+
+func (rm *reliablemsg)GetUid() string  {
+	return rm.uid
 }
 
 func (rm *reliablemsg)SetTimeOut(timeout int32)  {

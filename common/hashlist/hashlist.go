@@ -9,7 +9,7 @@ import (
 
 type FHash func(v interface{}) uint
 type Fequals func(v1 interface{},v2 interface{}) int
-type FDo func(arg interface{}, v interface{}) (ret interface{},err error)
+
 
 
 type hashlist struct {
@@ -25,8 +25,9 @@ type hashlist struct {
 type HashList interface {
 	Add(v interface{})
 	Del(v interface{})
-	FindDo(v interface{},arg interface{}, do FDo) (ret interface{},err error)
-	TraversDel(arg interface{}, del list.FDel)
+	FindDo(v interface{},arg interface{}, do list.FDo) (ret interface{},err error)
+	TraversAll(arg interface{}, do list.FDo)
+	//TraversDel(arg interface{}, del list.FDel)
 }
 
 
@@ -85,7 +86,7 @@ func (hl *hashlist)Del(v interface{})  {
 	hl.gcnt = hl.gcnt - int64(cnt)
 }
 
-func (hl *hashlist)FindDo(v interface{},arg interface{},do  FDo ) (ret interface{},err error)  {
+func (hl *hashlist)FindDo(v interface{},arg interface{},do  list.FDo ) (ret interface{},err error)  {
 	hash:=hl.fhash(v)
 	hash = hash & (hl.realbucketsize - 1)
 
@@ -102,13 +103,24 @@ func (hl *hashlist)FindDo(v interface{},arg interface{},do  FDo ) (ret interface
 	return do(arg,node.Value)
 }
 
+func (hl *hashlist)TraversAll(arg interface{}, do list.FDo)  {
 
-func (hl *hashlist)TraversDel(arg interface{}, del list.FDel){
-	var i uint
-	for ; i<hl.realbucketsize; i++{
-		hl.bucketlock[i].Lock()
-		hl.bucket[i].TraverseDel(arg,del)
-		hl.bucketlock[i].Unlock()
+	var ui uint
+	for ;ui<hl.realbucketsize ;ui++  {
+		hl.bucketlock[ui].Lock()
+		hl.bucket[ui].Traverse(arg,do)
+		hl.bucketlock[ui].Unlock()
 	}
+
 }
+
+
+//func (hl *hashlist)TraversDel(arg interface{}, del list.FDel){
+//	var i uint
+//	for ; i<hl.realbucketsize; i++{
+//		hl.bucketlock[i].Lock()
+//		hl.bucket[i].TraverseDel(arg,del)
+//		hl.bucketlock[i].Unlock()
+//	}
+//}
 

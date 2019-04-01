@@ -13,6 +13,7 @@ type list struct {
 }
 
 type FDel func(arg interface{}, v interface{}) bool  // if true, delete the node
+type FDo func(arg interface{}, v interface{}) (ret interface{},err error)
 
 type List interface {
 	Add(node *nbslink.LinkNode)
@@ -21,7 +22,7 @@ type List interface {
 	AddValue(v interface{})
 	DelValue(v interface{})
 	Count() int32
-	Traverse(arg interface{},fDo func(arg interface{},data interface{}))
+	Traverse(arg interface{},fDo FDo)
 	TraverseDel(arg interface{},fDel FDel)
 }
 
@@ -144,7 +145,7 @@ func (l *list)Count() int32 {
 	return atomic.LoadInt32(&l.cnt)
 }
 
-func (l *list)Traverse(arg interface{},fDo func(arg interface{},data interface{}))  {
+func (l *list)Traverse(arg interface{},fDo FDo)  {
 	if l.root == nil{
 		return
 	}
