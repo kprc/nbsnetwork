@@ -162,13 +162,6 @@ func (bs *blockstore)FindBlockDo(v interface{},arg interface{},do list.FDo) (r i
 	return bs.FindDo(v,arg,do)
 }
 
-//func (bs *blockstore)TimeOut(arg interface{},del list.FDel)  {
-//	//bs.TraversDel(arg,del)
-//}
-
-func (blk *block)Resend()  {
-	
-}
 
 func (bs *blockstore)doTimeOut()  {
 
@@ -198,13 +191,11 @@ func (bs *blockstore)doTimeOut()  {
 		}
 
 		if curtime - blk.lastsendtime > int64(blk.step){
-			//resend
-			//message.SendUm(um,conn)
-			//find uid,and resend
+
 			cs:=netcommon.GetConnStoreInstance()
 			conn:=cs.GetConn(blk.uid)
 			if conn == nil || blk.blk == nil{
-				return nil,nil
+				return
 			}
 			message.SendUm(blk.blk.(UdpMsg),conn)
 
@@ -212,7 +203,7 @@ func (bs *blockstore)doTimeOut()  {
 			blk.cursendtimes ++
 		}
 
-		return nil,nil
+		return
 	}
 
 	bs.TraversAll(arr2del,fdo)
