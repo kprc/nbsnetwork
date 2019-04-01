@@ -15,6 +15,7 @@ const(
 
 	UDP_INFORM_ACK int64 = 0
 	UDP_INFORM_TIMEOUT int64 = 1
+	UDP_INFORM_OUTTIMES int64 = 2
 )
 
 type udpmsg struct {

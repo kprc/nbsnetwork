@@ -27,6 +27,7 @@ type ReliableMsg interface {
 var(
 	udpsendtimeouterr=nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"Udp Send Timeout"}
 	udpsenddefaulterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send Error"}
+	udpsendoutimeserr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_OUT_TIMES,Errmsg:"Udp Send too much times"}
 )
 
 func NewReliableMsg(conn netcommon.UdpConn,uid string) ReliableMsg {
@@ -71,6 +72,8 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 		return nil
 	}else if r == store.UDP_INFORM_TIMEOUT{
 		return udpsendtimeouterr
+	}else if r == store.UDP_INFORM_OUTTIMES{
+		return udpsendoutimeserr
 	}
 
 	return udpsenddefaulterr
