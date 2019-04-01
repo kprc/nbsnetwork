@@ -9,6 +9,7 @@ import (
 	"time"
 	"os"
 	"strconv"
+	"github.com/kprc/nbsnetwork/translayer/store"
 )
 
 func main()  {
@@ -41,7 +42,7 @@ func main()  {
 		return
 	}
 
-	uc.Send([]byte("hello world"))
+	uc.Send([]byte("hello world"),store.UDP_MESSAGE)
 
 	cs:=netcommon.GetConnStoreInstance()
 	cs.Add(nbsid.GetLocalId().String(),uc)
@@ -53,7 +54,7 @@ func main()  {
 		if c != nil && err==nil {
 			fmt.Println(string(c.GetConnPacket().GetData()))
 		}
-		err = uc.Send([]byte("client send time:" + time.Now().String()))
+		err = uc.Send([]byte("client send time:" + time.Now().String()),store.UDP_MESSAGE)
 		if err != nil {
 			fmt.Println(err.(nbserr.NbsErr).Errmsg)
 			break

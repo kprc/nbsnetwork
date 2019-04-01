@@ -59,9 +59,9 @@ func (cp *connpacket)GetTyp() uint32  {
 func (cp *connpacket)SetMsgTyp(typ uint32)  {
 	var typ1,typ2 uint32
 	typ1 = cp.typ & 0xFF000000
-	typ2 = typ1 | typ
+	typ2 = typ & 0x00FFFFFF
 
-	cp.typ = typ2
+	cp.typ = typ1 | typ2
 }
 
 func (cp *connpacket)GetMsgTyp() uint32  {

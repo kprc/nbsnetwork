@@ -13,6 +13,7 @@ type block struct {
 	step int32
 	lastsendtime int64
 	resendtimes int32
+	ackflag bool
 	sn uint64     // one message one code, one message include many packet
 }
 
@@ -45,16 +46,16 @@ var (
 )
 
 var fhash = func(v interface{}) uint {
-	blk:=v.(block)
+	blk:=v.(BlockInter)
 
-	return uint(blk.sn&0x3FF)
+	return uint(blk.GetSn()&0x3FF)
 }
 
 var fequals = func(v1 interface{},v2 interface{}) int{
-	blk1:=v1.(block)
-	blk2:=v2.(block)
+	blk1:=v1.(BlockInter)
+	blk2:=v2.(BlockInter)
 
-	if blk1.sn == blk2.sn {
+	if blk1.GetSn() == blk2.GetSn() {
 		return 0
 	}
 
@@ -64,6 +65,21 @@ var fequals = func(v1 interface{},v2 interface{}) int{
 var fdel = func(arg interface{},v interface{}) bool{
 	return false
 }
+
+func GetBlkAndRefresh(data interface{}) interface{}  {
+	if blk,ok:=data.(block); !ok{
+		return nil
+	}else{
+		blk.lastsendtime = tools.GetNowMsTime()
+		blk.ackflag = true
+		return blk.blk
+	}
+}
+
+func (blk *block)GetSn() uint64  {
+	return blk.sn
+}
+
 
 func GetBlockStoreInstance()  BlockStore {
 

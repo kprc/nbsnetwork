@@ -5,6 +5,7 @@ import (
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
 	"strconv"
+	"github.com/kprc/nbsnetwork/translayer/store"
 )
 
 func main()  {
@@ -19,7 +20,7 @@ func main()  {
 		rb := cs.Read()
 		fmt.Println(string(rb.GetConnPacket().GetData()))
 		s,p:=rb.GetUdpConn().GetAddr().FirstS()
-		rb.GetUdpConn().Send([]byte("rcv ip: "+s+" port: "+strconv.Itoa(int(p))))
+		rb.GetUdpConn().Send([]byte("rcv ip: "+s+" port: "+strconv.Itoa(int(p))),store.UDP_MESSAGE)
 	}
 
 	tick.Stop()

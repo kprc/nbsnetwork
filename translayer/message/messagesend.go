@@ -23,7 +23,7 @@ type ReliableMsg interface {
 }
 
 var(
-	udpsenderr=nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"Udp Send Timeout"}
+	udpsendtimeouterr=nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"Udp Send Timeout"}
 	udpsenddefaulterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send Error"}
 )
 
@@ -55,10 +55,11 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 	ms.AddBlockWithParam(um,rm.timeout,rm.resendtimes,rm.step)
 
 	r:=<-c
+
 	if r == store.UDP_INFORM_ACK{
 		return nil
 	}else if r == store.UDP_INFORM_TIMEOUT{
-		return udpsenderr
+		return udpsendtimeouterr
 	}
 
 	return udpsenddefaulterr
