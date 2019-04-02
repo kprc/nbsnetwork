@@ -59,9 +59,7 @@ var fequals = func(v1 interface{},v2 interface{}) int{
 	return 1
 }
 
-var fdel = func(arg interface{},v interface{}) bool{
-	return false
-}
+
 
 func SetAckFlag(data interface{}) interface{}  {
 	if blk,ok:=data.(*block); !ok{
@@ -147,9 +145,15 @@ func (bs *blockstore)doTimeOut()  {
 	arr2del := &blk2del{arrdel:make([]*block,0)}
 
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error){
-		blk:=v.(block)
+		blk:=v.(*block)
 
 		l:=arg.(*blk2del)
+
+		if blk.ackflag{
+			l.arrdel = append(l.arrdel,v.(*block))
+			return
+		}
+
 		curtime := tools.GetNowMsTime()
 		tv:=curtime-blk.lastAccessTime
 		if tv > int64(blk.timeoutInterval){
