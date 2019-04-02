@@ -20,7 +20,7 @@ type ReliableMsg interface {
 
 var(
 	udpsendtimeouterr=nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"Udp Send Timeout"}
-	udpsenddefaulterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send Error"}
+	udpsenddefaulterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_DEFAULT_ERR,Errmsg:"Send Message Error"}
 	udpsendoutimeserr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_OUT_TIMES,Errmsg:"Udp Send too much times"}
 )
 
@@ -49,7 +49,7 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	um:=store.NewUdpMsg(data)
 
-	c:=make(chan int64,0)
+	c:=make(chan interface{},1)
 	um.SetInform(&c)
 
 	ms:=store.GetBlockStoreInstance()
@@ -60,7 +60,8 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 		return err
 	}
 
-	r:=<-c
+	rc:=<-c
+	r:=rc.(int64)
 
 	if r == store.UDP_INFORM_ACK{
 		return nil

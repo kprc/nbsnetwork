@@ -18,12 +18,10 @@ const(
 )
 
 type udpmsg struct {
-	mpos map[uint64]UdpMsg
-	parent UdpMsg
 	sn uint64
 	pos uint64
 	data []byte
-	inform *chan int64
+	inform *chan interface{}
 }
 
 type UdpMsg interface {
@@ -31,17 +29,13 @@ type UdpMsg interface {
 	GetSn() uint64
 	SetPos(pos uint64)
 	GetPos() uint64
-
 	SetData(data []byte)
 	GetData() []byte
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte) error
 	NxtPos(data []byte) UdpMsg
-	GetParent() UdpMsg
-	AddPos(um UdpMsg)
-	SetInform(c *chan int64)
+	SetInform(c *chan interface{})
 	Inform(typ int64)
-	//Reply(ack ackmessage.AckMessage) ackmessage.AckMessage
 }
 
 func getNextSerialNum() uint64 {
@@ -50,14 +44,13 @@ func getNextSerialNum() uint64 {
 
 func NewUdpMsg(data []byte) UdpMsg  {
 	um:=&udpmsg{sn:getNextSerialNum(),data:data}
-	um.mpos=make(map[uint64]UdpMsg)
 
 	return um
 }
 
 
 
-func (um *udpmsg)SetInform(c *chan int64) {
+func (um *udpmsg)SetInform(c *chan interface{}) {
 	um.inform = c
 }
 
@@ -78,22 +71,11 @@ func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
 	um1.sn = um.sn
 	um1.data = data
 	um1.pos ++
-	um1.parent = um
 
 	return um1
 }
 
-func (um *udpmsg)GetParent() UdpMsg  {
-	return um.parent
-}
 
-func (um *udpmsg)AddPos(u UdpMsg)  {
-	if _,ok:=um.mpos[u.GetPos()];!ok{
-		um.mpos[u.GetPos()] = u
-	}else {
-		panic("Pos duplicated")
-	}
-}
 
 
 

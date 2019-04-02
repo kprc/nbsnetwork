@@ -12,14 +12,13 @@ type block struct {
 	timeoutInterval int32
 	lastAccessTime int64
 	ackflag bool
+	msgtype uint32
 	sn uint64
 }
-
 
 type BlockInter interface {
 	GetSn() uint64
 }
-
 
 type blockstore struct {
 	hashlist.HashList
@@ -27,7 +26,7 @@ type blockstore struct {
 }
 
 type BlockStore interface {
-	AddMessage(blk interface{},uid string)
+	AddMessage(blk interface{})
 	AddMessageWithParam(data interface{},timeInterval int32)
 	DelMessage(blk interface{})
 	FindMessageDo(v interface{},arg interface{},do list.FDo) (r interface{},err error)
@@ -85,7 +84,6 @@ func GetBlockStoreInstance()  BlockStore {
 		}
 	}
 
-
 	return instance
 }
 
@@ -105,26 +103,24 @@ func newBlockStore() BlockStore {
 }
 
 
-func (bs *blockstore)AddMessage(data interface{},uid string) {
-	blk:=&block{blk:data}
+func (bs *blockstore)AddMessage(data interface{}) {
+	bs.addBlk(data,5000,UDP_MESSAGE)
+}
+
+func (bs *blockstore)addBlk(data interface{},timeinterval int32,msgtyp uint32)  {
+	blk:=block{blk:data}
 	blk.sn = data.(BlockInter).GetSn()
-	blk.timeoutInterval = 5000  //ms
+	blk.timeoutInterval = timeinterval  //ms
+	blk.msgtype = msgtyp
+
 	blk.lastAccessTime = tools.GetNowMsTime()
 
 	bs.Add(blk)
 }
 
 func (bs *blockstore)AddMessageWithParam(data interface{},timeInterval int32){
-	blk:=block{blk:data}
-	blk.sn = data.(BlockInter).GetSn()
-	blk.timeoutInterval = timeInterval  //ms
-
-	blk.lastAccessTime = tools.GetNowMsTime()
-
-	bs.Add(blk)
+	bs.addBlk(data,timeInterval,UDP_MESSAGE)
 }
-
-//TODO...
 
 func (bs *blockstore)DelMessage(blk interface{}) {
 
@@ -173,7 +169,6 @@ func (bs *blockstore)doTimeOut()  {
 
 }
 
-
 func (bs *blockstore)Run()  {
 	select {
 	case <-bs.tick:
@@ -183,9 +178,4 @@ func (bs *blockstore)Run()  {
 		}
 	}
 }
-
-
-
-
-
 

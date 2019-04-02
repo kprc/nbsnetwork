@@ -51,7 +51,6 @@ func NewAckMessage(sn,pos uint64) AckMessage {
 }
 
 func (am *ackmessage)Append(pos uint64)  {
-	//aid:=&Ackid{sn,pos}
 
 	am.resendpos = append(am.resendpos,pos)
 }

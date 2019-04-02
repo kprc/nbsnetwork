@@ -49,7 +49,7 @@ func (cp *connpacket)SetTyp(typ uint32)  {
 }
 
 func (cp *connpacket)GetTyp() uint32  {
-	var typ1 uint32 = cp.typ
+	typ1 := cp.typ
 
 	typ1 = (typ1 >> 24) & 0x000000FF
 
