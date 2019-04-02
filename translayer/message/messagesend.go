@@ -8,20 +8,14 @@ import (
 
 type reliablemsg struct {
 	conn netcommon.UdpConn
-	uid string
 	timeout int32
-	resendtimes int32
-	step int32
 }
 
 
 type ReliableMsg interface {
 	ReliableSend(data []byte) (err error)
 	SetTimeOut(timeout int32)
-	SetReSendTimes(resendtimes int32)
-	SetStep(step int32)
-	GetUid() string
-	//WaitAnswer()
+
 }
 
 var(
@@ -30,8 +24,8 @@ var(
 	udpsendoutimeserr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_OUT_TIMES,Errmsg:"Udp Send too much times"}
 )
 
-func NewReliableMsg(conn netcommon.UdpConn,uid string) ReliableMsg {
-	return &reliablemsg{conn:conn,uid:uid}
+func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
+	return &reliablemsg{conn:conn}
 }
 
 func SendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
@@ -60,7 +54,7 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	ms:=store.GetBlockStoreInstance()
 
-	ms.AddBlockWithParam(um,rm.uid,rm.timeout,rm.resendtimes,rm.step)
+	ms.AddMessageWithParam(um,rm.timeout)
 
 	if err:=SendUm(um,rm.conn);err!=nil {
 		return err
@@ -72,26 +66,14 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 		return nil
 	}else if r == store.UDP_INFORM_TIMEOUT{
 		return udpsendtimeouterr
-	}else if r == store.UDP_INFORM_OUTTIMES{
-		return udpsendoutimeserr
 	}
 
 	return udpsenddefaulterr
 
 }
 
-func (rm *reliablemsg)GetUid() string  {
-	return rm.uid
-}
 
 func (rm *reliablemsg)SetTimeOut(timeout int32)  {
 	rm.timeout = timeout
 }
 
-func (rm *reliablemsg)SetReSendTimes(resendtimes int32)  {
-	rm.resendtimes = resendtimes
-}
-
-func (rm *reliablemsg)SetStep(step int32)  {
-	rm.step = step
-}

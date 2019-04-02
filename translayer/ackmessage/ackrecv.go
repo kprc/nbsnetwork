@@ -14,7 +14,7 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 	}
 
 	fdo:= func(arg interface{},blk interface{}) (v interface{},err error) {
-		data :=store.GetBlkAndRefresh(blk)
+		data :=store.SetAckFlag(blk)
 
 		um:=data.(store.UdpMsg)
 
@@ -24,11 +24,11 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 	}
 
 	ms:=store.GetBlockStoreInstance()
-	if v,err:=ms.FindBlockDo(ack,nil,fdo); err!=nil{
+	if v,err:=ms.FindMessageDo(ack,nil,fdo); err!=nil{
 		return err
 	}else {
 		if v!=nil {
-			ms.DelBlock(v)
+			ms.DelMessage(v)
 		}
 	}
 

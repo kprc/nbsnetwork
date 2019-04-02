@@ -5,21 +5,14 @@ import (
 	"github.com/kprc/nbsnetwork/common/list"
 	"github.com/kprc/nbsnetwork/tools"
 	"sync"
-	"github.com/kprc/nbsnetwork/netcommon"
-	"github.com/kprc/nbsnetwork/translayer/message"
 )
 
 type block struct {
 	blk interface{}
-	timeout int32
-	step int32
-	firstsendtime int64
-	lastsendtime int64
-	cursendtimes int32
-	resendtimes int32
+	timeoutInterval int32
+	lastAccessTime int64
 	ackflag bool
-	uid string
-	sn uint64     // one message one code, one message include many packet
+	sn uint64
 }
 
 
@@ -34,11 +27,10 @@ type blockstore struct {
 }
 
 type BlockStore interface {
-	AddBlock(blk interface{},uid string)
-	AddBlockWithParam(data interface{},uid string,tv int32,resndtimes int32,step int32)
-	DelBlock(blk interface{})
-	FindBlockDo(v interface{},arg interface{},do list.FDo) (r interface{},err error)
-	//TimeOut(arg interface{},del list.FDel)
+	AddMessage(blk interface{},uid string)
+	AddMessageWithParam(data interface{},timeInterval int32)
+	DelMessage(blk interface{})
+	FindMessageDo(v interface{},arg interface{},do list.FDo) (r interface{},err error)
 	Run()
 }
 
@@ -71,11 +63,10 @@ var fdel = func(arg interface{},v interface{}) bool{
 	return false
 }
 
-func GetBlkAndRefresh(data interface{}) interface{}  {
+func SetAckFlag(data interface{}) interface{}  {
 	if blk,ok:=data.(*block); !ok{
 		return nil
 	}else{
-		blk.lastsendtime = tools.GetNowMsTime()
 		blk.ackflag = true
 		return blk.blk
 	}
@@ -116,49 +107,33 @@ func newBlockStore() BlockStore {
 }
 
 
-func (bs *blockstore)AddBlock(data interface{},uid string) {
+func (bs *blockstore)AddMessage(data interface{},uid string) {
 	blk:=&block{blk:data}
 	blk.sn = data.(BlockInter).GetSn()
-	blk.timeout = 5000  //ms
-	blk.resendtimes = 2
-	blk.step = 1
-	blk.lastsendtime = tools.GetNowMsTime()
-	blk.firstsendtime = blk.lastsendtime
-	blk.cursendtimes = 1
+	blk.timeoutInterval = 5000  //ms
+	blk.lastAccessTime = tools.GetNowMsTime()
 
 	bs.Add(blk)
 }
 
-func (bs *blockstore)AddBlockWithParam(data interface{},uid string,tv int32,resndtimes int32,step int32){
+func (bs *blockstore)AddMessageWithParam(data interface{},timeInterval int32){
 	blk:=block{blk:data}
 	blk.sn = data.(BlockInter).GetSn()
-	blk.timeout = 5000  //ms
-	blk.resendtimes = 3
-	blk.step = 1
-	if tv > 0 {
-		blk.timeout = tv
-	}
-	if resndtimes > 0 {
-		blk.resendtimes = resndtimes
-	}
-	if step>0{
-		blk.step = step
-	}
-	blk.lastsendtime = tools.GetNowMsTime()
-	blk.firstsendtime = blk.lastsendtime
-	blk.cursendtimes = 1
+	blk.timeoutInterval = timeInterval  //ms
+
+	blk.lastAccessTime = tools.GetNowMsTime()
 
 	bs.Add(blk)
 }
 
 //TODO...
 
-func (bs *blockstore)DelBlock(blk interface{}) {
+func (bs *blockstore)DelMessage(blk interface{}) {
 
 	bs.Del(blk)
 }
 
-func (bs *blockstore)FindBlockDo(v interface{},arg interface{},do list.FDo) (r interface{},err error)  {
+func (bs *blockstore)FindMessageDo(v interface{},arg interface{},do list.FDo) (r interface{},err error)  {
 	return bs.FindDo(v,arg,do)
 }
 
@@ -173,34 +148,14 @@ func (bs *blockstore)doTimeOut()  {
 
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error){
 		blk:=v.(block)
-		if blk.ackflag {
-			return
-		}
 
 		l:=arg.(*blk2del)
 		curtime := tools.GetNowMsTime()
-		tv:=curtime-blk.firstsendtime
-		if tv > int64(blk.timeout){
+		tv:=curtime-blk.lastAccessTime
+		if tv > int64(blk.timeoutInterval){
+			um:=blk.blk.(UdpMsg)
+			um.Inform(UDP_INFORM_TIMEOUT)
 			l.arrdel = append(l.arrdel,v.(*block))
-			return
-		}
-
-		if blk.cursendtimes >= blk.resendtimes{
-			l.arrdel = append(l.arrdel,v.(*block))
-			return
-		}
-
-		if curtime - blk.lastsendtime > int64(blk.step){
-
-			cs:=netcommon.GetConnStoreInstance()
-			conn:=cs.GetConn(blk.uid)
-			if conn == nil || blk.blk == nil{
-				return
-			}
-			message.SendUm(blk.blk.(UdpMsg),conn)
-
-			blk.lastsendtime = curtime
-			blk.cursendtimes ++
 		}
 
 		return
@@ -209,7 +164,7 @@ func (bs *blockstore)doTimeOut()  {
 	bs.TraversAll(arr2del,fdo)
 
 	for _,blk:=range arr2del.arrdel{
-		bs.DelBlock(blk)
+		bs.DelMessage(blk)
 	}
 
 }
