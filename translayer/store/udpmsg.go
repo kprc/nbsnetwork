@@ -38,7 +38,7 @@ type UdpMsg interface {
 	DeSerialize(data []byte) error
 	NxtPos(data []byte) UdpMsg
 	SetInform(c *chan interface{})
-	Inform(typ int64)
+	Inform(v interface{})
 }
 
 func getNextSerialNum() uint64 {
@@ -57,10 +57,10 @@ func (um *udpmsg)SetInform(c *chan interface{}) {
 	um.inform = c
 }
 
-func (um *udpmsg)Inform(typ int64)  {
+func (um *udpmsg)Inform(v interface{})  {
 	if um.inform != nil {
 		select {
-		case *um.inform <- typ:
+		case *um.inform <- v:
 		default:
 			//nothing to do
 		}

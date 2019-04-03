@@ -64,6 +64,7 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 	r:=rc.(int64)
 
 	if r == store.UDP_INFORM_ACK{
+		ms.DelMessage(um)
 		return nil
 	}else if r == store.UDP_INFORM_TIMEOUT{
 		return udpsendtimeouterr

@@ -60,14 +60,23 @@ var fequals = func(v1 interface{},v2 interface{}) int{
 
 
 
-func SetAckFlag(data interface{}) interface{}  {
+func GetBlk(data interface{}, b bool) interface{}  {
 	if blk,ok:=data.(*block); !ok{
 		return nil
 	}else{
-		blk.ackflag = true
+		blk.ackflag = b
 		return blk.blk
 	}
 }
+
+func GetMsgTyp(data interface{}) uint32  {
+	if blk,ok:=data.(*block);!ok {
+		return UDP_MESSAGE
+	}else{
+		return blk.msgtype
+	}
+}
+
 
 func (blk *block)GetSn() uint64  {
 	return blk.sn

@@ -15,22 +15,33 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 
 	fdo:= func(arg interface{},blk interface{}) (v interface{},err error) {
 
-		data :=store.SetAckFlag(blk)
+		typ := store.GetMsgTyp(blk)
 
-		um:=data.(store.UdpMsg)
+		if typ == store.UDP_MESSAGE {
+			data :=store.GetBlk(blk,true)
 
-		um.Inform(store.UDP_INFORM_ACK)
+			um:=data.(store.UdpMsg)
 
+			um.Inform(store.UDP_INFORM_ACK)
+
+		}else if typ == store.UDP_STREAM{
+			data :=store.GetBlk(blk,false)
+
+			um:=data.(store.UdpMsg)
+
+			um.Inform(arg)
+		}
 		return blk,nil
 	}
 
 	ms:=store.GetBlockStoreInstance()
-	if v,err:=ms.FindMessageDo(ack,nil,fdo); err!=nil{
+	if _,err:=ms.FindMessageDo(ack,nil,fdo); err!=nil{
 		return err
 	}else {
-		if v!=nil {
-			ms.DelMessage(v)
-		}
+		//if v!=nil {
+		//	ms.DelMessage(v)
+		//}
+		//nothing todo...
 	}
 
 	return nil
