@@ -25,7 +25,7 @@ func Recv(rblk netcommon.RcvBlock)error  {
 	//send ack
 	ack:=ackmessage.GetAckMessage(um.GetSn(),um.GetPos())
 
-	if d2snd,err := ack.Serialize();err!=nil{
+	if d2snd,err := ack.Serialize();err==nil{
 		rblk.GetUdpConn().Send(d2snd,store.UDP_ACK)
 	}
 	//TO DO... for application
