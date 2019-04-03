@@ -67,6 +67,7 @@ var (
 	readfinish int = 2
 	readerr int = 3
 	senderr int = 4
+	sendfinish = 5
 )
 
 func (us *udpstream)sendBlk(reader io.Reader) int{
@@ -77,7 +78,7 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 		}
 		buf:=make([]byte,us.mtu)
 		n,err:=reader.Read(buf)
-		if n>0{
+		if n>0 || (n==0 && err!=nil && err==io.EOF){
 			var um store.UdpMsg
 			if us.parent == nil {
 				um=store.NewUdpMsg(buf[:n])
@@ -87,6 +88,9 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 				ms.AddMessageWithParam(um,us.timeout)
 			}else{
 				um = us.parent.NxtPos(buf[:n])
+			}
+			if err!=nil && err==io.EOF {
+				um.SetLastFlag(true)
 			}
 			if err:=message.SendUm(um,us.conn);err!=nil {
 				return senderr
@@ -153,9 +157,12 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 					return udpstreamtimeouterr
 				}
 			case ackmessage.AckMessage:
-				sndfinish:=us.doAck(ack.(ackmessage.AckMessage))
-				if sndfinish == senderr{
+				ret:=us.doAck(ack.(ackmessage.AckMessage))
+				if ret == senderr{
 					return udpstreamconnerr
+				}
+				if ret== sendfinish{
+					return nil
 				}
 			}
 		}else{
@@ -216,6 +223,11 @@ func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
 		delete(us.udpmsgcache,pos)
 		us.curcnt --
 	}
+
+	if len(us.udpmsgcache)==0{
+		return sendfinish
+	}
+
 	resendpos:=ack.GetResendPos()
 	for _,idx:=range resendpos{
 		if v,ok:=us.udpmsgcache[idx];ok{

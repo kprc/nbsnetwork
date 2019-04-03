@@ -20,6 +20,7 @@ const(
 type udpmsg struct {
 	sn uint64
 	pos uint64
+	last bool
 	data []byte
 	inform *chan interface{}
 }
@@ -29,6 +30,8 @@ type UdpMsg interface {
 	GetSn() uint64
 	SetPos(pos uint64)
 	GetPos() uint64
+	SetLastFlag(b bool)
+	GetLastFlag() bool
 	SetData(data []byte)
 	GetData() []byte
 	Serialize() ([]byte,error)
@@ -91,6 +94,14 @@ func (um *udpmsg)SetPos(pos uint64){
 }
 func (um *udpmsg)GetPos() uint64{
 	return um.pos
+}
+
+func (um *udpmsg)SetLastFlag(b bool){
+	um.last = b
+}
+
+func (um *udpmsg)GetLastFlag() bool  {
+	return um.last
 }
 
 func (um *udpmsg)SetData(data []byte){

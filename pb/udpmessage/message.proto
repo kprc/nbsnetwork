@@ -6,6 +6,7 @@ package udpmessage;
 message udpmsg{
     uint64 sn = 1;
     uint64 pos = 2;
+    bool last = 3;
     bytes data =5;
 }
 
