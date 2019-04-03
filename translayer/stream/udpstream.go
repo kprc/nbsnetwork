@@ -8,6 +8,7 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/tools"
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
+	"reflect"
 )
 
 
@@ -29,7 +30,6 @@ type udpstream struct {
 	lastAckPos uint64
 	lastsendtime int64
 	try2snd uint64
-	sndlength uint64
 	udpmsgcache map[uint64]*cacheblock
 	parent store.UdpMsg
 	ackchan chan interface{}
@@ -159,7 +159,10 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 				}
 			}
 		}else{
-			//timeout todo ...
+			if r:=us.doTimeOut();r==senderr{
+				return udpstreamconnerr
+			}
+
 		}
 		if !finishflag{
 			ret := us.sendBlk(reader)
@@ -171,13 +174,37 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 				finishflag = true
 			case readerr:
 				return udpstreamreadererr
-
 			}
 		}
 	}
 	return nil
 }
 
+func (us *udpstream)doTimeOut()  int {
+
+	if tools.GetNowMsTime() - us.lastsendtime < int64(us.resendtimetv){
+		return sendnoneerr
+	}
+
+	listkey:=reflect.ValueOf(us.udpmsgcache).MapKeys()
+
+	for _,key:=range listkey{
+		idx:=key.Uint()
+		v:=us.udpmsgcache[idx]
+		curtime:=tools.GetNowMsTime()
+		if curtime - v.lastSendTime > 1000 && v.cnt < 3{
+			v.lastSendTime = tools.GetNowMsTime()
+			v.cnt ++
+			um := *v
+			if err:=message.SendUm(um,us.conn);err!=nil {
+				return senderr
+			}
+			us.try2snd += uint64(len(um.GetData()))
+			us.lastsendtime = tools.GetNowMsTime()
+		}
+	}
+	return sendnoneerr
+}
 
 func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
 	pos:=ack.GetPos()
@@ -191,10 +218,12 @@ func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
 	}
 	resendpos:=ack.GetResendPos()
 	for _,idx:=range resendpos{
-		if um,ok:=us.udpmsgcache[idx];ok{
-			if err:=message.SendUm(*um,us.conn);err!=nil {
+		if v,ok:=us.udpmsgcache[idx];ok{
+			um := *v
+			if err:=message.SendUm(um,us.conn);err!=nil {
 				return senderr
 			}
+			us.try2snd += uint64(len(um.GetData()))
 		}
 	}
 
