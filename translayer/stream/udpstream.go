@@ -7,7 +7,16 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/tools"
+	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 )
+
+
+type cacheblock struct {
+	store.UdpMsg
+	cnt int
+	lastSendTime int64
+}
+
 
 type udpstream struct {
 	conn netcommon.UdpConn
@@ -21,7 +30,7 @@ type udpstream struct {
 	lastsendtime int64
 	try2snd uint64
 	sndlength uint64
-	udpmsgcache map[uint64]store.UdpMsg
+	udpmsgcache map[uint64]*cacheblock
 	parent store.UdpMsg
 	ackchan chan interface{}
 }
@@ -29,7 +38,7 @@ type udpstream struct {
 
 type UdpStream interface {
 	ReliableSend(reader io.Reader) error
-	SetMu(mtu int32)
+	SetMtu(mtu int32)
 	SetTimeOut(tv int32)
 	SetMaxCache(cache int32)
 	SetResendTimeOut(tv int32)
@@ -39,6 +48,7 @@ var (
 	udpsendstreamerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_STREAM_DEFAULT_ERR,Errmsg:"Send Stream Error"}
 	udpstreamreadererr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_STREAM_READER_ERR,Errmsg:"Send Stream reader Error"}
 	udpstreamconnerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_STREAM_CONN_ERR,Errmsg:"Send Stream connection Error"}
+	udpstreamtimeouterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"Send Stream Time Out Error"}
 )
 
 func NewUdpStream(conn netcommon.UdpConn) UdpStream  {
@@ -52,6 +62,7 @@ func NewUdpStream(conn netcommon.UdpConn) UdpStream  {
 }
 
 var (
+	sendnoneerr int = 0
 	overmaxcnt int = 1
 	readfinish int = 2
 	readerr int = 3
@@ -83,7 +94,8 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 			us.curcnt ++
 			us.try2snd += uint64(n)
 			us.lastsendtime = tools.GetNowMsTime()
-			us.udpmsgcache[um.GetPos()] = um
+
+			us.udpmsgcache[um.GetPos()] = &cacheblock{um,0,tools.GetNowMsTime()}
 
 		}
 		if err!=nil{
@@ -93,10 +105,7 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 				return readerr
 			}
 		}
-
-
 	}
-
 }
 
 func (us *udpstream)ReliableSend(reader io.Reader) error  {
@@ -130,18 +139,74 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 	ts:=tools.GetNbsTickerInstance()
 	ts.RegWithTimeOut(&ctick,500)
 
+	var ack interface{}
 	for {
+		ack = nil
 		select {
-		case ack := <-us.ackchan:
-			//todo...
+		case ack = <-us.ackchan:
 		case <-ctick:
-			//todo...
+		}
+		if ack!=nil {
+			switch ack.(type) {
+			case int64:
+				if ack == store.UDP_INFORM_TIMEOUT{
+					return udpstreamtimeouterr
+				}
+			case ackmessage.AckMessage:
+				sndfinish:=us.doAck(ack.(ackmessage.AckMessage))
+				if sndfinish == senderr{
+					return udpstreamconnerr
+				}
+			}
+		}else{
+			//timeout todo ...
+		}
+		if !finishflag{
+			ret := us.sendBlk(reader)
+			switch ret {
+			case senderr:
+				return 	udpstreamconnerr
+			case overmaxcnt:
+			case readfinish:
+				finishflag = true
+			case readerr:
+				return udpstreamreadererr
+
+			}
 		}
 	}
 	return nil
 }
 
-func (us *udpstream)SetMu(mtu int32)  {
+
+func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
+	pos:=ack.GetPos()
+
+	if us.lastAckPos < pos{
+		us.lastAckPos = pos
+	}
+	if _,ok:=us.udpmsgcache[pos];ok{
+		delete(us.udpmsgcache,pos)
+		us.curcnt --
+	}
+	resendpos:=ack.GetResendPos()
+	for _,idx:=range resendpos{
+		if um,ok:=us.udpmsgcache[idx];ok{
+			if err:=message.SendUm(*um,us.conn);err!=nil {
+				return senderr
+			}
+		}
+	}
+
+	if len(resendpos) > 0{
+		us.lastsendtime = tools.GetNowMsTime()
+	}
+
+	return sendnoneerr
+}
+
+
+func (us *udpstream)SetMtu(mtu int32)  {
 	us.mtu = mtu
 }
 
