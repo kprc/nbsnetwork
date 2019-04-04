@@ -99,8 +99,6 @@ var fsshash = func(v interface{}) uint {
 
 }
 
-
-
 var fssequals = func(v1 interface{}, v2 interface{}) int {
 	sk1:=v1.(StreamKeyInter)
 	sk2:=v2.(StreamKeyInter)
@@ -169,14 +167,46 @@ func (ss *streamstore)FindStreamDo(s interface{},arg interface{}, do list.FDo) (
 	return ss.FindDo(s,arg,do)
 }
 
-func (ss *streamstore)Run()  {
-	//todo...
+
+
+func (ss *streamstore)doTimeOut()  {
+	type s2del struct {
+		arrdel []*streamblk
+	}
+
+	arr2del := &s2del{arrdel:make([]*streamblk,0)}
+
+	fdo:=func(arg interface{}, v interface{})(r interface{},err error){
+		sb:=v.(*streamblk)
+		l:=arg.(*s2del)
+
+		curtime := tools.GetNowMsTime()
+		tv := curtime - sb.lastAccessTime
+		if tv > int64(sb.timeoutInterval) {
+			l.arrdel = append(l.arrdel,sb)
+		}
+		return
+	}
+
+	ss.TraversAll(arr2del,fdo)
+
+	for _,sb:=range arr2del.arrdel{
+		ss.DelStream(sb)
+	}
+
+
 }
 
 
-
-
-
+func (ss *streamstore)Run()  {
+	select {
+	case <-ss.tick:
+		if tools.GetNowMsTime() - ssLastAccessTime > ssTimeOutTV{
+			ssLastAccessTime = tools.GetNowMsTime()
+			ss.doTimeOut()
+		}
+	}
+}
 
 
 

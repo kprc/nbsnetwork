@@ -164,7 +164,7 @@ func (bs *blockstore)doTimeOut()  {
 		if tv > int64(blk.timeoutInterval){
 			um:=blk.blk.(UdpMsg)
 			um.Inform(UDP_INFORM_TIMEOUT)
-			l.arrdel = append(l.arrdel,v.(*block))
+			l.arrdel = append(l.arrdel,blk)
 		}
 
 		return
