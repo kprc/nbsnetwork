@@ -44,7 +44,7 @@ var (
 var fhash = func(v interface{}) uint {
 	blk:=v.(BlockInter)
 
-	return uint(blk.GetSn()&0x3FF)
+	return uint(blk.GetSn()&0x7F)
 }
 
 var fequals = func(v1 interface{},v2 interface{}) int{
