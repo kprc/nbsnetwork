@@ -124,7 +124,7 @@ func (nt *nbsticker)Run(){
 				arr := make([]*tickV,0)
 				nt.llock.Lock()
 
-				nt.l.Traverse(gcnt, func(arg interface{}, data interface{}) {
+				nt.l.Traverse(gcnt, func(arg interface{}, data interface{}) (v interface{},err error) {
 					cnt := arg.(int64)
 					c:= data.(*tickV)
 					if c.timeouttv > 0 {
@@ -143,6 +143,8 @@ func (nt *nbsticker)Run(){
 					    		arr = append(arr,c)
 							}
 					}
+
+					return
 
 				})
 				nt.llock.Unlock()

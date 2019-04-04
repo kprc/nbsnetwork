@@ -6,6 +6,7 @@ import (
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/pb/udpmessage"
 	"github.com/gogo/protobuf/proto"
+	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 )
 
 type streamrcv struct {
@@ -62,7 +63,13 @@ func (sr *streamrcv)Recv(rblk netcommon.RcvBlock)  error{
 	}
 
 	if r,_:=ss.FindStreamDo(key,nil,fdo); r==nil{
-			
+		sr:=NewStreamRcv(key)
+		ss.AddStream(sr)
+		ack:=ackmessage.GetAckMessage(sn,um.GetPos())
+	}else{
+		fadd := func(arg interface{}, v interface{}) (ret interface{},err error){
+			return v,nil
+		}
 	}
 
 	return nil
