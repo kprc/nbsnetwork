@@ -27,7 +27,6 @@ type HashList interface {
 	Del(v interface{})
 	FindDo(v interface{},arg interface{}, do list.FDo) (ret interface{},err error)
 	TraversAll(arg interface{}, do list.FDo)
-	//TraversDel(arg interface{}, del list.FDel)
 }
 
 
@@ -113,14 +112,3 @@ func (hl *hashlist)TraversAll(arg interface{}, do list.FDo)  {
 	}
 
 }
-
-
-//func (hl *hashlist)TraversDel(arg interface{}, del list.FDel){
-//	var i uint
-//	for ; i<hl.realbucketsize; i++{
-//		hl.bucketlock[i].Lock()
-//		hl.bucket[i].TraverseDel(arg,del)
-//		hl.bucketlock[i].Unlock()
-//	}
-//}
-

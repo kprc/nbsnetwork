@@ -23,6 +23,7 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 			um:=data.(store.UdpMsg)
 
 			um.Inform(store.UDP_INFORM_ACK)
+			return blk,nil
 
 		}else if typ == store.UDP_STREAM{
 			data :=store.GetBlk(blk,false)
@@ -30,17 +31,20 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 			um:=data.(store.UdpMsg)
 
 			um.Inform(arg)
+
 		}
-		return blk,nil
+
+		return nil,nil
+
 	}
 
 	ms:=store.GetBlockStoreInstance()
-	if _,err:=ms.FindMessageDo(ack,nil,fdo); err!=nil{
+	if v,err:=ms.FindMessageDo(ack,nil,fdo); err!=nil{
 		return err
 	}else {
-		//if v!=nil {
-		//	ms.DelMessage(v)
-		//}
+		if v!=nil {
+			ms.DelMessage(v)
+		}
 		//nothing todo...
 	}
 

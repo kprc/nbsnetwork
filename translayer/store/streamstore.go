@@ -18,6 +18,7 @@ type UdpStreamKey interface{
 	GetUid() string
 	SetSn(sn uint64)
 	GetSn() uint64
+	GetKey() UdpStreamKey
 	Equals(key UdpStreamKey) bool
 }
 
@@ -43,6 +44,10 @@ func (usk *udpstreamkey)SetSn(sn uint64)  {
 
 func (usk *udpstreamkey)GetSn() uint64  {
 	return usk.sn
+}
+
+func (usk *udpstreamkey)GetKey() UdpStreamKey  {
+	return usk
 }
 
 func (usk *udpstreamkey)Equals(key UdpStreamKey) bool  {
@@ -167,8 +172,6 @@ func (ss *streamstore)FindStreamDo(s interface{},arg interface{}, do list.FDo) (
 	return ss.FindDo(s,arg,do)
 }
 
-
-
 func (ss *streamstore)doTimeOut()  {
 	type s2del struct {
 		arrdel []*streamblk
@@ -194,9 +197,7 @@ func (ss *streamstore)doTimeOut()  {
 		ss.DelStream(sb)
 	}
 
-
 }
-
 
 func (ss *streamstore)Run()  {
 	select {
@@ -207,17 +208,5 @@ func (ss *streamstore)Run()  {
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 

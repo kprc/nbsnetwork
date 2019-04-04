@@ -119,7 +119,6 @@ func (l *list)DelValue(v interface{})  {
 	for {
 		nxt:=n.Next()
 		if 0 == l.cmp(v,n.Value) {
-
 			if n == root{
 				l.root =nxt
 				if nxt == n{
