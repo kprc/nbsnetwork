@@ -147,6 +147,12 @@ func newStreamStore() StreamStore  {
 	return ss
 }
 
+func GetStreamBlkAndRefresh(v interface{}) interface{}{
+	sb:=v.(streamblk)
+	sb.lastAccessTime = tools.GetNowMsTime()
+	return sb.blk
+}
+
 func (ss *streamstore)addStream(v interface{}, timeinterval int32)  {
 	sb:=&streamblk{blk:v}
 	sb.key = v.(StreamKeyInter).GetKey()
@@ -157,7 +163,7 @@ func (ss *streamstore)addStream(v interface{}, timeinterval int32)  {
 }
 
 func (ss *streamstore)AddStream(v interface{})  {
-	ss.addStream(v,5000)
+	ss.addStream(v,10000)
 }
 
 func (ss *streamstore)AddStreamWithParam(v interface{},timeInterval int32)  {

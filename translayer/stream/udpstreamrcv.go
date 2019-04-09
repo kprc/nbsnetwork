@@ -11,9 +11,9 @@ import (
 
 type streamrcv struct {
 	udpmsgcache map[uint64]store.UdpMsg
-	lastwritepos uint64
+	lastwritepos uint64   //
 	finishflag bool
-	toppos uint64
+	toppos uint64		//max pos
 	key store.UdpStreamKey
 	w io.Writer
 }
@@ -59,13 +59,17 @@ func (sr *streamrcv)Recv(rblk netcommon.RcvBlock)  error{
 	ss:=store.GetStreamStoreInstance()
 
 	fdo := func(arg interface{}, v interface{}) (ret interface{},err error){
+		blk:=store.GetStreamBlkAndRefresh(v).(streamrcv)
+
+
 		return v,nil
 	}
 
 	if r,_:=ss.FindStreamDo(key,nil,fdo); r==nil{
 		sr:=NewStreamRcv(key)
 		ss.AddStream(sr)
-		ack:=ackmessage.GetAckMessage(sn,um.GetPos())
+		r=ackmessage.GetAckMessage(sn,um.GetPos())
+
 	}else{
 		fadd := func(arg interface{}, v interface{}) (ret interface{},err error){
 			return v,nil
