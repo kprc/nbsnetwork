@@ -19,14 +19,13 @@ type streamrcv struct {
 }
 
 type StreamRcv interface {
-	Recv(rblk netcommon.RcvBlock) error
 	SetWriter(w io.Writer)
-	Read(buf []byte) (int,error)
-	Close() error
+	read(buf []byte) (int,error)
 	addData(um store.UdpMsg) error
 	constructResends(ack ackmessage.AckMessage)
 	setTopPos(pos uint64)
 	write() error
+	getFinishFlag() bool
 }
 
 func (sr *streamrcv)GetKey() store.UdpStreamKey {
@@ -45,6 +44,10 @@ func NewStreamRcvWithParam(uid string,sn uint64) StreamRcv{
 
 func NewStreamRcv(sk store.UdpStreamKey) StreamRcv{
 	return NewStreamRcvWithParam(sk.GetUid(),sk.GetSn())
+}
+
+func (sr *streamrcv)getFinishFlag() bool  {
+	return sr.finishflag
 }
 
 func (sr *streamrcv)addData(um store.UdpMsg) error {
@@ -92,7 +95,7 @@ func (sr *streamrcv)constructResends(ack ackmessage.AckMessage){
 }
 
 
-func (sr *streamrcv)Recv(rblk netcommon.RcvBlock)  error{
+func Recv(rblk netcommon.RcvBlock)  error{
 	data:=rblk.GetConnPacket().GetData()
 	um:=store.NewUdpMsg(nil)
 
@@ -139,7 +142,7 @@ func (sr *streamrcv)Recv(rblk netcommon.RcvBlock)  error{
 	fwrite := func(arg interface{},v interface{})(ret interface{},err error) {
 		blk:=store.GetStreamBlk(v).(StreamRcv)
 		blk.write()
-		if sr.finishflag {
+		if blk.getFinishFlag() {
 			return blk,nil
 		}
 		return
@@ -155,11 +158,8 @@ func (sr *streamrcv)SetWriter(w io.Writer)  {
 	sr.w = w
 }
 
-func (sr *streamrcv)Close() error  {
-	return nil
-}
 
-func (sr *streamrcv)Read(buf []byte) (int,error)  {
+func (sr *streamrcv)read(buf []byte) (int,error)  {
 	if sr.finishflag == true{
 		return 0,io.EOF
 	}

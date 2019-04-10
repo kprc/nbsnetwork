@@ -5,6 +5,7 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"github.com/kprc/nbsnetwork/translayer/message"
+	"github.com/kprc/nbsnetwork/translayer/stream"
 )
 
 func ReceiveFromUdpConn() error  {
@@ -21,7 +22,7 @@ func ReceiveFromUdpConn() error  {
 		case store.UDP_MESSAGE:
 			message.Recv(rcvblk)
 		case store.UDP_STREAM:
-			//TO DO...
+			stream.Recv(rcvblk)
 		}
 	}
 }
