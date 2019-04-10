@@ -82,7 +82,7 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 			var um store.UdpMsg
 			if us.parent == nil {
 				um=store.NewUdpMsg(buf[:n])
-				us.ackchan=make(chan interface{},1)
+				us.ackchan=make(chan interface{},8)
 				um.SetInform(&us.ackchan)
 				ms:=store.GetBlockStoreInstance()
 				ms.AddMessageWithParam(um,us.timeout)
@@ -169,7 +169,6 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 			if r:=us.doTimeOut();r==senderr{
 				return udpstreamconnerr
 			}
-
 		}
 		if !finishflag{
 			ret := us.sendBlk(reader)
@@ -177,6 +176,7 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 			case senderr:
 				return 	udpstreamconnerr
 			case overmaxcnt:
+				//nothing todo...
 			case readfinish:
 				finishflag = true
 			case readerr:

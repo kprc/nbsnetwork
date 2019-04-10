@@ -4,15 +4,16 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"io"
 	"github.com/kprc/nbsnetwork/netcommon"
-	"github.com/kprc/nbsnetwork/pb/udpmessage"
-	"github.com/gogo/protobuf/proto"
+
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
+	"github.com/kprc/nbsdht/nbserr"
+	"reflect"
 )
 
 type streamrcv struct {
 	udpmsgcache map[uint64]store.UdpMsg
 	lastwritepos uint64   //
-	finishflag bool
+	finishflag bool			//write finish flag
 	toppos uint64		//max pos
 	key store.UdpStreamKey
 	w io.Writer
@@ -22,6 +23,9 @@ type StreamRcv interface {
 	Recv(rblk netcommon.RcvBlock) error
 	SetWriter(w io.Writer)
 	Read(buf []byte) error
+	addData(um store.UdpMsg) error
+	constructResends(ack ackmessage.AckMessage)
+	setTopPos(pos uint64)
 }
 
 func (sr *streamrcv)GetKey() store.UdpStreamKey {
@@ -42,12 +46,57 @@ func NewStreamRcv(sk store.UdpStreamKey) StreamRcv{
 	return NewStreamRcvWithParam(sk.GetUid(),sk.GetSn())
 }
 
+func (sr *streamrcv)addData(um store.UdpMsg) error {
+	if _,ok:=sr.udpmsgcache[um.GetPos()];ok {
+		return nbserr.NbsErr{ErrId:nbserr.ERROR_DEFAULT,Errmsg:"Data exists"}
+	}
+
+	sr.udpmsgcache[um.GetPos()] = um
+
+	return nil
+}
+
+func (sr *streamrcv)setTopPos(pos uint64)  {
+	sr.toppos = pos
+}
+
+
+func (sr *streamrcv)constructResends(ack ackmessage.AckMessage){
+	listkeys:=reflect.ValueOf(sr.udpmsgcache).MapKeys()
+
+	if len(listkeys) == 0 {
+		return
+	}
+	minpos := sr.lastwritepos
+	maxpos := minpos
+	for _,k:=range listkeys{
+		keypos := k.Uint()
+		if maxpos < keypos{
+			maxpos = keypos
+		}
+	}
+
+	arrpos:= make([]uint64,0)
+
+	for i:=minpos;i<maxpos; i++{
+		if _,ok:=sr.udpmsgcache[i];!ok{
+			arrpos = append(arrpos,i)
+		}
+	}
+
+	if len(arrpos) > 0 {
+		ack.SetResendPos(arrpos)
+	}
+
+}
+
 
 func (sr *streamrcv)Recv(rblk netcommon.RcvBlock)  error{
 	data:=rblk.GetConnPacket().GetData()
-	um:=&udpmessage.Udpmsg{}
+	um:=store.NewUdpMsg(nil)
 
-	if err:=proto.Unmarshal(data,um);err!=nil{
+
+	if err:=um.DeSerialize(data);err!=nil{
 		return err
 	}
 
@@ -59,21 +108,31 @@ func (sr *streamrcv)Recv(rblk netcommon.RcvBlock)  error{
 	ss:=store.GetStreamStoreInstance()
 
 	fdo := func(arg interface{}, v interface{}) (ret interface{},err error){
-		blk:=store.GetStreamBlkAndRefresh(v).(streamrcv)
+		blk:=store.GetStreamBlkAndRefresh(v).(StreamRcv)
+		um:=arg.(store.UdpMsg)
+		blk.addData(um)
+		//write
+		if um.GetLastFlag(){
+			blk.setTopPos(um.GetPos())
+		}
+		//construct a ack message
+		ack:=ackmessage.GetAckMessage(um.GetSn(),um.GetPos())
+		blk.constructResends(ack)
 
-
-		return v,nil
+		return ack,nil
 	}
 
-	if r,_:=ss.FindStreamDo(key,nil,fdo); r==nil{
+	r,_:=ss.FindStreamDo(key,um,fdo)
+	if r == nil{
 		sr:=NewStreamRcv(key)
+		sr.addData(um)
 		ss.AddStream(sr)
 		r=ackmessage.GetAckMessage(sn,um.GetPos())
+	}
 
-	}else{
-		fadd := func(arg interface{}, v interface{}) (ret interface{},err error){
-			return v,nil
-		}
+	ackdata,_:=r.(ackmessage.AckMessage).Serialize()
+	if ackdata !=nil{
+		rblk.GetUdpConn().Send(ackdata,store.UDP_ACK)
 	}
 
 	return nil

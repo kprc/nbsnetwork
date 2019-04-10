@@ -72,6 +72,7 @@ func (um *udpmsg)Inform(v interface{})  {
 func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
 	um1 := &udpmsg{}
 	um1.sn = um.sn
+	um1.last = um.last
 	um1.data = data
 	um1.pos ++
 
@@ -116,6 +117,7 @@ func (um *udpmsg)Serialize() ([]byte,error){
 	pbum.Data= um.data
 	pbum.Sn = um.sn
 	pbum.Pos = um.pos
+	pbum.Last = um.last
 	d,err:=proto.Marshal(pbum);
 	if err!=nil{
 		return nil,err
@@ -135,6 +137,7 @@ func (um *udpmsg)DeSerialize(data []byte) error{
 	um.sn = pbum.Sn
 	um.pos = pbum.Pos
 	um.data = pbum.Data
+	um.last = pbum.Last
 
 	return nil
 }
