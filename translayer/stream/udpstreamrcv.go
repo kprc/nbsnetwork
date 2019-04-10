@@ -4,7 +4,6 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"io"
 	"github.com/kprc/nbsnetwork/netcommon"
-
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"github.com/kprc/nbsdht/nbserr"
 	"reflect"
@@ -22,10 +21,12 @@ type streamrcv struct {
 type StreamRcv interface {
 	Recv(rblk netcommon.RcvBlock) error
 	SetWriter(w io.Writer)
-	Read(buf []byte) error
+	Read(buf []byte) (int,error)
+	Close() error
 	addData(um store.UdpMsg) error
 	constructResends(ack ackmessage.AckMessage)
 	setTopPos(pos uint64)
+	write() error
 }
 
 func (sr *streamrcv)GetKey() store.UdpStreamKey {
@@ -135,6 +136,18 @@ func (sr *streamrcv)Recv(rblk netcommon.RcvBlock)  error{
 		rblk.GetUdpConn().Send(ackdata,store.UDP_ACK)
 	}
 
+	fwrite := func(arg interface{},v interface{})(ret interface{},err error) {
+		blk:=store.GetStreamBlk(v).(StreamRcv)
+		blk.write()
+		if sr.finishflag {
+			return blk,nil
+		}
+		return
+	}
+	if r,_=ss.FindStreamDo(key,nil,fwrite);r!=nil{
+		ss.DelStream(r)
+	}
+
 	return nil
 }
 
@@ -142,6 +155,110 @@ func (sr *streamrcv)SetWriter(w io.Writer)  {
 	sr.w = w
 }
 
-func (sr *streamrcv)Read(buf []byte) error  {
+func (sr *streamrcv)Close() error  {
 	return nil
+}
+
+func (sr *streamrcv)Read(buf []byte) (int,error)  {
+	if sr.finishflag == true{
+		return 0,io.EOF
+	}
+	pos :=sr.lastwritepos
+	defer func() {
+		sr.lastwritepos = pos
+	}()
+	n:=0
+	for{
+
+		if pos > sr.toppos{
+			sr.finishflag = true
+			return n,io.EOF
+		}
+
+		if v,ok:=sr.udpmsgcache[pos];!ok {
+			return n,nil
+		}else{
+			um:=v.(store.UdpMsg)
+			data:=um.GetData()
+			if len(data) ==0 {
+				delete(sr.udpmsgcache,pos)
+				pos ++
+				continue
+			}
+			nc:=copy(buf[n:],data)
+			n+=nc
+			if n >= len(buf){
+				return n,nil
+			}
+			if nc >=len(data){
+				delete(sr.udpmsgcache,pos)
+				pos ++
+				continue
+
+			}else{
+				data = data[nc:]
+				um.SetData(data)
+				return n,nil
+			}
+
+		}
+
+	}
+
+
+	return 0,nil
+}
+
+func (sr *streamrcv)write() error  {
+
+	if sr.w == nil{
+		return  nil
+	}
+
+	if sr.finishflag == true{
+		return io.EOF
+	}
+	pos :=sr.lastwritepos
+	defer func() {
+		sr.lastwritepos = pos
+	}()
+
+	for{
+
+		if pos > sr.toppos{
+			sr.finishflag = true
+			return io.EOF
+		}
+
+		if v,ok:=sr.udpmsgcache[pos];!ok {
+			return nil
+		}else{
+			um:=v.(store.UdpMsg)
+			data:=um.GetData()
+			if len(data) ==0 {
+				delete(sr.udpmsgcache,pos)
+				pos ++
+				continue
+			}
+
+			nc,err := sr.w.Write(data)
+
+			if nc >=len(data){
+				delete(sr.udpmsgcache,pos)
+				pos ++
+
+			}else{
+				data = data[nc:]
+				um.SetData(data)
+			}
+			if err!=nil{
+				return err
+			}
+
+		}
+
+	}
+
+	return nil
+
 }
