@@ -1,6 +1,9 @@
 package nbsnetwork
 
+import "github.com/kprc/nbsnetwork/tools"
+
 func init()  {
-//	G_BlockDatasLock  = sync.RWMutex{}
-//	G_BlockDatas = make(map[uint64]BlockDataer,0)
+	tick:=tools.GetNbsTickerInstance()
+	go tick.Run()
+
 }

@@ -33,7 +33,7 @@ type udpconn struct {
 
 type UdpConn interface {
 	Dial() error
-	Hello()
+	ConnSync()
 	Connect() error
 	Send(data [] byte,typ uint32) error
 	SendAsync(data [] byte, typ uint32) error  //unblocking
@@ -43,7 +43,7 @@ type UdpConn interface {
 	GetAddr() address.UdpAddresser
 	IsConnectTo(addr *net.UDPAddr) bool
 	Push(v interface{})
-	WaitHello() bool
+	WaitConnReady() bool
 	UpdateLastAccessTime()
 }
 
@@ -453,7 +453,7 @@ func (uc *udpconn)Push(v interface{})  {
 	cs.Push(rb)
 }
 
-func (uc *udpconn)Hello() {
+func (uc *udpconn)ConnSync() {
 	uc.wg = &sync.WaitGroup{}
 	if uc.isconn {
 		uc.wg.Add(2)
@@ -463,7 +463,7 @@ func (uc *udpconn)Hello() {
 
 }
 
-func (uc *udpconn)WaitHello() bool {
+func (uc *udpconn)WaitConnReady() bool {
 	uc.wg.Wait()
 	uc.wg = nil
 

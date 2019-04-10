@@ -85,9 +85,9 @@ func (cs *connstore)Add(uid string,conn UdpConn)  {
 
 func NewConn(sock *net.UDPConn,addr *net.UDPAddr) UdpConn {
 	uc:=NewUdpConnFromListen(addr,sock)
-	uc.Hello()
+	uc.ConnSync()
 	go uc.Connect()
-	uc.WaitHello()
+	uc.WaitConnReady()
 
 	return uc
 }

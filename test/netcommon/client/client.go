@@ -32,9 +32,9 @@ func main()  {
 		fmt.Print("Dial Error",err.Error())
 		return
 	}
-	uc.Hello()
+	uc.ConnSync()
 	go uc.Connect()
-	r:=uc.WaitHello()
+	r:=uc.WaitConnReady()
 
 	if !r{
 		uc.Close()
