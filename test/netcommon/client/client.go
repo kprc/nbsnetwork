@@ -10,12 +10,10 @@ import (
 	"os"
 	"strconv"
 	"github.com/kprc/nbsnetwork/translayer/store"
+	_ "github.com/kprc/nbsnetwork"
 )
 
 func main()  {
-	tick:=tools.GetNbsTickerInstance()
-	go tick.Run()
-
 	ips:="127.0.0.1"
 	port:=22113
 	if len(os.Args) > 1 {
@@ -66,7 +64,8 @@ func main()  {
 		}
 	}
 	uc.Close()
-	tick.Stop()
+	tools.GetNbsTickerInstance().Stop()
+	//tick.Stop()
 }
 
 //func read(cs netcommon.ConnStore,quit *chan int)  {

@@ -6,11 +6,11 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"strconv"
 	"github.com/kprc/nbsnetwork/translayer/store"
+	_ "github.com/kprc/nbsnetwork"
 )
 
 func main()  {
-	tick:=tools.GetNbsTickerInstance()
-	go tick.Run()
+
 	server:=netcommon.GetUpdListenInstance()
 	go server.Run("0.0.0.0",22113)
 	//go server.Run("localaddress",0)
@@ -23,5 +23,5 @@ func main()  {
 		rb.GetUdpConn().Send([]byte("rcv ip: "+s+" port: "+strconv.Itoa(int(p))),store.UDP_MESSAGE)
 	}
 
-	tick.Stop()
+	tools.GetNbsTickerInstance().Stop()
 }
