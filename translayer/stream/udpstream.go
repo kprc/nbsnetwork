@@ -33,6 +33,7 @@ type udpstream struct {
 	try2snd uint64
 	udpmsgcache map[uint64]*cacheblock
 	parent store.UdpMsg
+	um store.UdpMsg
 	ackchan chan interface{}
 }
 
@@ -53,12 +54,16 @@ var (
 	udpstreamtimeouterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"Send Stream Time Out Error"}
 )
 
-func NewUdpStream(conn netcommon.UdpConn) UdpStream  {
+func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
 	us:=&udpstream{conn:conn}
 	us.mtu = 544
 	us.timeout = 8000   //8 second
 	us.maxcache = 16*(1<<10)
 	us.resendtimetv = 1000
+
+	if !delayInit{
+		us.um = store.NewUdpMsg(nil,0)
+	}
 
 	return us
 }
@@ -83,7 +88,14 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 		if n>0 || (n==0 && err!=nil && err==io.EOF){
 			var um store.UdpMsg
 			if us.parent == nil {
-				um=store.NewUdpMsg(buf[:n],us.apptyp)
+				if us.um == nil {
+					um = store.NewUdpMsg(buf[:n], us.apptyp)
+				}else {
+					um = us.um
+					um.SetData(buf[:n])
+					um.SetAppTyp(us.apptyp)
+				}
+				us.parent = um
 				us.ackchan=make(chan interface{},8)
 				um.SetInform(&us.ackchan)
 				ms:=store.GetBlockStoreInstance()
