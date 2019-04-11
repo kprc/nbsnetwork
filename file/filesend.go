@@ -5,6 +5,9 @@ import (
 	"io"
 	"github.com/kprc/nbsnetwork/pb/file"
 	"github.com/gogo/protobuf/proto"
+	"github.com/kprc/nbsnetwork/translayer/stream"
+	"github.com/kprc/nbsnetwork/translayer/message"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 type udpfile struct {
@@ -59,9 +62,9 @@ func (uf *udpfile)DeSerialize(data []byte)  error  {
 
 
 type filesend struct {
-	conn netcommon.UdpConn
-	io.Reader
 	UdpFile
+	conn netcommon.UdpConn
+	r io.Reader
 }
 
 
@@ -72,11 +75,34 @@ type UdpSend interface {
 	SetFileHead(fh UdpFile)
 }
 
-func (us *filesend)Send() error  {
+func NewUdpSend() UdpSend  {
+	return &filesend{}
+}
 
-	
-	
-	return nil
+func (us *filesend)Send() error  {
+	ustream:=stream.NewUdpStream(us.conn,false)
+	sid,err:=ustream.GetStreamId()
+	if err!=nil{
+		return err
+	}
+	us.SetStreamId(sid)
+
+	msgsend:=message.NewReliableMsg(us.conn)
+	msgsend.SetAppTyp(constant.FILE_DESC_HANDLE)
+	var snddata []byte
+	snddata,err=us.Serialize()
+	if err!=nil {
+		return err
+	}
+	err = msgsend.ReliableSend(snddata)
+	if err!=nil{
+		return err
+	}
+
+	ustream.SetAppTyp(constant.FILE_STREAM_HANDLE)
+	err=ustream.ReliableSend(us.r)
+
+	return err
 }
 
 func (us *filesend)SetConn(conn netcommon.UdpConn)  {

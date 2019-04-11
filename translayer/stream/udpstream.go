@@ -45,6 +45,7 @@ type UdpStream interface {
 	SetTimeOut(tv int32)
 	SetMaxCache(cache int32)
 	SetResendTimeOut(tv int32)
+	GetStreamId() (uint64,error)
 }
 
 var (
@@ -280,4 +281,10 @@ func (us *udpstream)SetResendTimeOut(tv int32)  {
 	us.resendtimetv = tv
 }
 
+func (us *udpstream)GetStreamId() (uint64,error)  {
+	if us.um !=nil{
+		return us.um.GetSn(),nil
+	}
 
+	return 0,udpsendstreamerr
+}

@@ -27,7 +27,7 @@ var(
 )
 
 func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
-	return &reliablemsg{conn:conn}
+	return &reliablemsg{conn:conn,timeout:5000}
 }
 
 func SendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
