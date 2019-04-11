@@ -51,6 +51,7 @@ type filehead struct {
 }
 
 type FileHead interface {
+	FileDesc
 	GetStrHash() string
 	SetStrHash(sh string)
 }

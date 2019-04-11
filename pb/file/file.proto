@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package file;
+
+message udpfile{
+	bytes name = 1;
+    bytes strhash = 2;
+    uint64 size = 3;
+    uint64 streamid = 4;
+}
