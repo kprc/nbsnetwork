@@ -5,13 +5,19 @@ import (
 	"github.com/kprc/nbsdht/nbserr"
 	"strconv"
 	"strings"
-	"github.com/kprc/nbsnetwork/common/constant"
 	"net"
 	"fmt"
 )
 
 var udpparseerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_PARSE,Errmsg:"Parse ip4 address fault"}
 var ipreadableerr = nbserr.NbsErr{ErrId:nbserr.UDP_ADDR_TOSTRING_ERR,Errmsg:"byte of ip4 address to string ip4 address error"}
+
+
+const (
+	IP_TYPE_IP4 int = 0
+
+)
+
 
 type UdpAddresser interface {
 	AddIP4(ipstr string, port uint16) error
@@ -57,7 +63,7 @@ func NewUdpAddressP(addr []byte, port uint16) UdpAddresser  {
 
 	addrs.addrs = make([]address,1)
 
-	addrs.append(address{ip6type:constant.IP_TYPE_IP4,addr:addr,port:port})
+	addrs.append(address{ip6type:IP_TYPE_IP4,addr:addr,port:port})
 
 	return &addrs
 }
@@ -98,7 +104,7 @@ func NewUdpAddressS(ipstr string, port uint16) (error,UdpAddresser)  {
 		return udpparseerr,nil
 	}
 
-	baddr := address{ip6type:constant.IP_TYPE_IP4}
+	baddr := address{ip6type:IP_TYPE_IP4}
 
 	baddr.addr = make([]byte,0)
 
@@ -229,7 +235,7 @@ func (uaddr *udpAddress)append(addr address) {
 
 func (uaddr *udpAddress)AddIP4(ipstr string, port uint16) error {
 
-	baddr := address{ip6type:constant.IP_TYPE_IP4}
+	baddr := address{ip6type:IP_TYPE_IP4}
 
 	addr:= ipString2Byte(ipstr)
 
@@ -295,7 +301,7 @@ func GetAllLocalIPAddr(port uint16) UdpAddresser  {
 		if ipnet, ok := addr.(*net.IPNet); ok  {
 			if ipnet.IP.To4() != nil && !strings.Contains(ipnet.IP.String(),"169.254") {
 				r := address{}
-				r.ip6type = constant.IP_TYPE_IP4
+				r.ip6type = IP_TYPE_IP4
 				r.port = port
 				r.addr = ipString2Byte(ipnet.IP.String())
 				ua.addrs = append(ua.addrs,r)
