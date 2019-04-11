@@ -2,12 +2,13 @@ package file
 
 import (
 	"github.com/kprc/nbsnetwork/netcommon"
-	"io"
 	"github.com/kprc/nbsnetwork/pb/file"
 	"github.com/gogo/protobuf/proto"
 	"github.com/kprc/nbsnetwork/translayer/stream"
 	"github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/common/constant"
+	"os"
+	"path/filepath"
 )
 
 type udpfile struct {
@@ -60,23 +61,38 @@ func (uf *udpfile)DeSerialize(data []byte)  error  {
 	return nil
 }
 
-
 type filesend struct {
 	UdpFile
 	conn netcommon.UdpConn
-	r io.Reader
+	f *os.File
 }
-
 
 type UdpSend interface {
 	UdpFile
 	Send() error
 	SetConn(conn netcommon.UdpConn)
-	SetFileHead(fh UdpFile)
 }
 
-func NewUdpSend() UdpSend  {
-	return &filesend{}
+func NewUdpFileSend(uf UdpFile,conn netcommon.UdpConn) UdpSend  {
+	return &filesend{uf,conn,nil}
+}
+
+func (us *filesend)openFile() error {
+	if fi,err:=os.Open(filepath.Join(us.GetPath(),us.GetName()));err!=nil{
+		return err
+	}else{
+		us.f = fi
+	}
+
+	return nil
+
+}
+
+func (us *filesend)closeFile()  {
+	if us.f !=nil{
+		us.f.Close()
+		us.f = nil
+	}
 }
 
 func (us *filesend)Send() error  {
@@ -100,17 +116,20 @@ func (us *filesend)Send() error  {
 	}
 
 	ustream.SetAppTyp(constant.FILE_STREAM_HANDLE)
-	err=ustream.ReliableSend(us.r)
+	if us.f == nil{
+		if err = us.openFile();err!=nil{
+			return err
+		}
+	}
+	err=ustream.ReliableSend(us.f)
+
+	us.closeFile()
 
 	return err
 }
 
 func (us *filesend)SetConn(conn netcommon.UdpConn)  {
 	us.conn = conn
-}
-
-func (us *filesend)SetFileHead(fh UdpFile)  {
-	us.UdpFile = fh
 }
 
 

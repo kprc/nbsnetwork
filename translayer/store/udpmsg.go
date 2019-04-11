@@ -73,8 +73,6 @@ func (um *udpmsg)Inform(v interface{})  {
 	}
 }
 
-
-
 func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
 	um1 := &udpmsg{}
 	um1.sn = um.sn
@@ -84,10 +82,6 @@ func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
 
 	return um1
 }
-
-
-
-
 
 func (um *udpmsg)SetSn(sn uint64)  {
 	um.sn = sn
@@ -135,8 +129,6 @@ func (um *udpmsg)GetAppTyp() uint32  {
 
 	return typ
 }
-
-
 
 func (um *udpmsg)SetLastFlag(b bool){
 	um.last = b
