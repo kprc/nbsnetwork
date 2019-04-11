@@ -97,7 +97,7 @@ func (sr *streamrcv)constructResends(ack ackmessage.AckMessage){
 
 func Recv(rblk netcommon.RcvBlock)  error{
 	data:=rblk.GetConnPacket().GetData()
-	um:=store.NewUdpMsg(nil)
+	um:=store.NewUdpMsg(nil,0)
 
 
 	if err:=um.DeSerialize(data);err!=nil{

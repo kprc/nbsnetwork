@@ -21,6 +21,7 @@ type cacheblock struct {
 
 type udpstream struct {
 	conn netcommon.UdpConn
+	apptyp uint32
 	mtu int32
 	timeout int32
 	maxcache int32
@@ -38,6 +39,7 @@ type udpstream struct {
 
 type UdpStream interface {
 	ReliableSend(reader io.Reader) error
+	SetAppTyp(typ uint32)
 	SetMtu(mtu int32)
 	SetTimeOut(tv int32)
 	SetMaxCache(cache int32)
@@ -81,7 +83,7 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 		if n>0 || (n==0 && err!=nil && err==io.EOF){
 			var um store.UdpMsg
 			if us.parent == nil {
-				um=store.NewUdpMsg(buf[:n])
+				um=store.NewUdpMsg(buf[:n],us.apptyp)
 				us.ackchan=make(chan interface{},8)
 				um.SetInform(&us.ackchan)
 				ms:=store.GetBlockStoreInstance()
@@ -246,6 +248,9 @@ func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
 	return sendnoneerr
 }
 
+func (us *udpstream)SetAppTyp(typ uint32)  {
+	us.apptyp = typ
+}
 
 func (us *udpstream)SetMtu(mtu int32)  {
 	us.mtu = mtu

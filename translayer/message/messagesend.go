@@ -8,12 +8,14 @@ import (
 
 type reliablemsg struct {
 	conn netcommon.UdpConn
+	apptyp uint32
 	timeout int32
 }
 
 
 type ReliableMsg interface {
 	ReliableSend(data []byte) (err error)
+	SetAppTyp(typ uint32)
 	SetTimeOut(timeout int32)
 
 }
@@ -47,7 +49,7 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 		return udpsenddefaulterr
 	}
 
-	um:=store.NewUdpMsg(data)
+	um:=store.NewUdpMsg(data,rm.apptyp)
 
 	c:=make(chan interface{},1)
 	um.SetInform(&c)
@@ -74,6 +76,9 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 }
 
+func (rm *reliablemsg)SetAppTyp(typ uint32)  {
+	rm.apptyp = typ
+}
 
 func (rm *reliablemsg)SetTimeOut(timeout int32)  {
 	rm.timeout = timeout

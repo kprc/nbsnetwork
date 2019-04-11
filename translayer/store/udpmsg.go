@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-var gSerialNumber uint64
+var gSerialNumber uint64 = 0x20151031
 
 const(
 	UDP_MESSAGE uint32=0
@@ -30,6 +30,10 @@ type UdpMsg interface {
 	GetSn() uint64
 	SetPos(pos uint64)
 	GetPos() uint64
+	SetRealPos(pos uint32)
+	GetRealPos() uint32
+	SetAppTyp(typ uint32)
+	GetAppTyp() uint32
 	SetLastFlag(b bool)
 	GetLastFlag() bool
 	SetData(data []byte)
@@ -45,8 +49,10 @@ func getNextSerialNum() uint64 {
 	return atomic.AddUint64(&gSerialNumber,1)
 }
 
-func NewUdpMsg(data []byte) UdpMsg  {
+func NewUdpMsg(data []byte,typ uint32) UdpMsg  {
 	um:=&udpmsg{sn:getNextSerialNum(),data:data}
+
+	um.SetAppTyp(typ)
 
 	return um
 }
@@ -93,9 +99,44 @@ func (um *udpmsg)GetSn() uint64  {
 func (um *udpmsg)SetPos(pos uint64){
 	um.pos =pos
 }
+
+
 func (um *udpmsg)GetPos() uint64{
 	return um.pos
 }
+
+func (um *udpmsg)SetRealPos(pos uint32){
+	var l uint64
+
+	l = uint64(pos)
+
+	h:=um.pos >> 32
+
+	um.pos = h | l
+}
+
+
+func (um *udpmsg)GetRealPos() uint32{
+	return uint32(um.pos  & 0xFFFFFFFF)
+}
+
+
+func (um *udpmsg)SetAppTyp(typ uint32)  {
+	l:=um.pos  & 0xFFFFFFFF
+	var h uint64
+	h = uint64(typ)
+	h = h<<32
+
+	um.pos = h | l
+}
+
+func (um *udpmsg)GetAppTyp() uint32  {
+	typ := uint32(um.pos >> 32)
+
+	return typ
+}
+
+
 
 func (um *udpmsg)SetLastFlag(b bool){
 	um.last = b
@@ -118,7 +159,7 @@ func (um *udpmsg)Serialize() ([]byte,error){
 	pbum.Sn = um.sn
 	pbum.Pos = um.pos
 	pbum.Last = um.last
-	d,err:=proto.Marshal(pbum);
+	d,err:=proto.Marshal(pbum)
 	if err!=nil{
 		return nil,err
 	}
