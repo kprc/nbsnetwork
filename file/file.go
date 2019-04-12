@@ -68,6 +68,10 @@ func NewFileHead(desc FileDesc) FileHead {
 	return &filehead{desc,""}
 }
 
+func NewEmptyFileHead() FileHead  {
+	fdesc:=NewFileDesc()
+	return NewFileHead(fdesc)
+}
 
 
 

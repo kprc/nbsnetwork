@@ -28,6 +28,11 @@ func NewUdpFile(fh FileHead) UdpFile  {
 	return &udpfile{fh,0}
 }
 
+func NewEmptyUdpFile() UdpFile  {
+	efh:=NewEmptyFileHead()
+	return NewUdpFile(efh)
+}
+
 func (uf *udpfile)SetStreamId(id uint64)  {
 	uf.streamid = id
 }
