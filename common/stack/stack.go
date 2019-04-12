@@ -43,7 +43,7 @@ func (s *stack)Pop() interface{}  {
 		return nil
 	}
 	nxt.Remove()
-	atomic.AddInt32(&s.cnt,1)
+	atomic.AddInt32(&s.cnt,-1)
 	return nxt.Value
 }
 
