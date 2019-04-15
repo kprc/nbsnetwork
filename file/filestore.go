@@ -66,6 +66,18 @@ func GetFileStoreInstance()  FileStore{
 	return fsbInstance
 }
 
+func RefreshFSB(v interface{}){
+	blk:=v.(*filestoreblk)
+
+	blk.lastAccessTime = tools.GetNowMsTime()
+}
+
+func GetFileBlk()  {
+	
+}
+
+
+
 func (fs *filestore)addFile(f interface{},timeoutInterval int32)  {
 	fb:=f.(FileBlk)
 

@@ -46,6 +46,7 @@ func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  
 
 func findFileBlk(key store.UdpStreamKey) bool  {
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error){
+		RefreshFSB(v)
 		return v,nil
 	}
 
@@ -60,7 +61,17 @@ func findFileBlk(key store.UdpStreamKey) bool  {
 }
 
 func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error) {
+	cb:=rcv.(applayer.CtrlBlk)
+	uid:=cb.GetRcvBlk().GetConnPacket().GetUid()
+	sn:=cb.GetUdpMsg().GetSn()
 
+	key:=store.NewUdpStreamKeyWithParam(string(uid),sn)
+
+	if findFileBlk(key){
+		return nil,nil
+	}
+
+	return
 }
 
 
