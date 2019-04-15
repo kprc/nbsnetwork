@@ -52,7 +52,7 @@ func (fo *fileop)Write(p []byte) (n int, err error)  {
 	if fo.f == nil{
 		return 0,filenotseterr
 	}
-	return fo.Write(p)
+	return fo.f.Write(p)
 }
 
 func (fo *fileop)Close() error {
