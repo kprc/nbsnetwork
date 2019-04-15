@@ -1,13 +1,11 @@
 package message
 
 import (
-	"github.com/kprc/nbsnetwork/pb/udpmessage"
 	"github.com/kprc/nbsdht/nbserr"
-	"github.com/gogo/protobuf/proto"
-	"fmt"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"github.com/kprc/nbsnetwork/translayer/store"
+	"github.com/kprc/nbsnetwork/applayer"
 )
 
 var (
@@ -16,11 +14,19 @@ var (
 
 func Recv(rblk netcommon.RcvBlock)error  {
 	data:= rblk.GetConnPacket().GetData()
-	um:=&udpmessage.Udpmsg{}
 
-	if err:=proto.Unmarshal(data,um);err!=nil {
+	um:=store.NewUdpMsg(nil,0)
+
+	if err:=um.DeSerialize(data);err!=nil {
 		return err
 	}
+
+	cb:=applayer.NewCtrlBlk(rblk,um)
+
+	apptyp:=um.GetAppTyp()
+
+	abs:=applayer.GetAppBlockStore()
+	abs.Do(apptyp,cb,nil)
 
 	//send ack
 	ack:=ackmessage.GetAckMessage(um.GetSn(),um.GetPos())
@@ -28,8 +34,6 @@ func Recv(rblk netcommon.RcvBlock)error  {
 	if d2snd,err := ack.Serialize();err==nil{
 		rblk.GetUdpConn().Send(d2snd,store.UDP_ACK)
 	}
-	//TO DO... for application
-	fmt.Println(um.Sn,um.Pos)
 
 	return nil
 }

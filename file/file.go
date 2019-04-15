@@ -15,6 +15,9 @@ type FileDesc interface {
 	SetSize(size uint64)
 }
 
+const Save_file_path = "/Users/rickey/"
+
+
 
 func (fdesc *filedesc)GetPath() string  {
 	return fdesc.path

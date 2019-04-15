@@ -21,6 +21,7 @@ func (fsb *filestoreblk)GetKey() store.UdpStreamKey {
 }
 
 
+
 type filestore struct {
 	hashlist.HashList
 	tick chan int64
@@ -98,6 +99,7 @@ func (fs *filestore)FindFileDo(f interface{}, arg interface{}, do list.FDo)(r in
 	return fs.FindDo(f,arg,do)
 }
 
+
 func (fs *filestore)doTimeOut()  {
 	type fs2del struct {
 		arrdel []*filestoreblk
@@ -113,6 +115,7 @@ func (fs *filestore)doTimeOut()  {
 		tv:=curtime - fsb.lastAccessTime
 		if tv > int64(fsb.timeoutInterval){
 			l.arrdel = append(l.arrdel,fsb)
+			CloseFile(fsb.blk)
 		}
 
 		return

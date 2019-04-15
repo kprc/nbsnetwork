@@ -84,6 +84,10 @@ type fileblk struct {
 	key store.UdpStreamKey
 }
 
+func CloseFile(v interface{})  {
+	fb:=v.(FileBlk)
+	fb.GetFileOp().Close()
+}
 
 type FileBlk interface {
 	SetUdpFile(uf UdpFile)
