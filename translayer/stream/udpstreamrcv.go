@@ -15,11 +15,11 @@ type streamrcv struct {
 	finishflag bool			//write finish flag
 	toppos uint64		//max pos
 	key store.UdpStreamKey
-	w io.Writer
+	w io.WriteCloser
 }
 
 type StreamRcv interface {
-	SetWriter(w io.Writer)
+	SetWriter(w io.WriteCloser)
 	read(buf []byte) (int,error)
 	addData(um store.UdpMsg) error
 	constructResends(ack ackmessage.AckMessage)
@@ -154,7 +154,7 @@ func Recv(rblk netcommon.RcvBlock)  error{
 	return nil
 }
 
-func (sr *streamrcv)SetWriter(w io.Writer)  {
+func (sr *streamrcv)SetWriter(w io.WriteCloser)  {
 	sr.w = w
 }
 
