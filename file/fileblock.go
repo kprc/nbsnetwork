@@ -102,7 +102,9 @@ type fileblk struct {
 
 func CloseFile(v interface{})  {
 	fb:=v.(FileBlk)
-	fb.GetFileOp().Close()
+	if fb.GetFileOp() !=nil {
+		fb.GetFileOp().Close()
+	}
 }
 
 type FileBlk interface {

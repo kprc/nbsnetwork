@@ -36,7 +36,7 @@ func Recv(rblk netcommon.RcvBlock)error  {
 
 	if d2snd,err := ack.Serialize();err==nil{
 		fmt.Println("len:",len(d2snd))
-		//rblk.GetUdpConn().Send(d2snd,store.UDP_ACK)
+		rblk.GetUdpConn().Send(d2snd,store.UDP_ACK)
 	}
 
 	return nil

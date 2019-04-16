@@ -89,7 +89,9 @@ func closeFile(key store.UdpStreamKey) error {
 		blk:=GetFileBlk(v).(FileBlk)
 		//filename := blk.GetUdpFile().GetFileName()
 		//blk.GetFileOp().OpenFile(filename)
-		blk.GetFileOp().Close()
+		if blk.GetFileOp() != nil {
+			blk.GetFileOp().Close()
+		}
 
 		return v,nil
 	}

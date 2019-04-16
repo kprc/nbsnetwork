@@ -150,8 +150,6 @@ func (bs *blockstore)FindMessageDo(v interface{},arg interface{},do list.FDo) (r
 
 func (bs *blockstore)doTimeOut()  {
 
-	fmt.Println("doTimeOut")
-
 	type blk2del struct{
 		arrdel []*block
 	}
