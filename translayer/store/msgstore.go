@@ -98,7 +98,8 @@ func GetBlockStoreInstance()  BlockStore {
 
 func newBlockStore() BlockStore {
 
-	bs:=hashlist.NewHashList(0x80,fhash,fequals).(*blockstore)
+	hl:=hashlist.NewHashList(0x80,fhash,fequals)
+	bs:=&blockstore{HashList:hl}
 
 	bs.tick = make(chan int64,64)
 
