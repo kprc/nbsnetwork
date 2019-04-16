@@ -6,9 +6,12 @@ import (
 
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"io"
+	"fmt"
 )
 
 func FileRegister()  {
+	fmt.Println("File Handle Register")
+
 	abs:=applayer.GetAppBlockStore()
 
 	abs.Reg(constant.FILE_DESC_HANDLE,handleFileHead)

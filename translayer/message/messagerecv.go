@@ -21,7 +21,7 @@ func Recv(rblk netcommon.RcvBlock)error  {
 	if err:=um.DeSerialize(data);err!=nil {
 		return err
 	}
-
+	um.Print()
 	cb:=applayer.NewCtrlBlk(rblk,um)
 
 	apptyp:=um.GetAppTyp()

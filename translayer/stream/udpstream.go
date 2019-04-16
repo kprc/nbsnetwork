@@ -80,6 +80,7 @@ var (
 
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
+	um.Print()
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsendstreamerr
 	}else{
@@ -110,6 +111,7 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 					um.SetAppTyp(us.apptyp)
 				}
 				us.parent = um
+				um.SetLastPos()
 				us.ackchan=make(chan interface{},8)
 				um.SetInform(&us.ackchan)
 				ms:=store.GetBlockStoreInstance()

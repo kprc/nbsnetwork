@@ -5,6 +5,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/list"
 	"sync"
 	"github.com/kprc/nbsnetwork/tools"
+	"fmt"
 )
 
 
@@ -133,6 +134,7 @@ func (ss *streamstore)doTimeOut()  {
 }
 
 func (ss *streamstore)Run()  {
+	fmt.Println("Stream Store is Running")
 	select {
 	case <-ss.tick:
 		if tools.GetNowMsTime() - ssLastAccessTime > ssTimeOutTV{

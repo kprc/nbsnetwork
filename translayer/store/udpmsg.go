@@ -4,6 +4,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/kprc/nbsnetwork/pb/udpmessage"
 	"sync/atomic"
+	"fmt"
 )
 
 var gSerialNumber uint64 = 0x20151031
@@ -22,12 +23,14 @@ type udpmsg struct {
 	pos uint64
 	last bool
 	data []byte
+	lastpos uint64
 	inform *chan interface{}
 }
 
 type UdpMsg interface {
 	SetSn(sn uint64)
 	GetSn() uint64
+	SetLastPos()
 	SetPos(pos uint64)
 	GetPos() uint64
 	SetRealPos(pos uint32)
@@ -43,6 +46,7 @@ type UdpMsg interface {
 	NxtPos(data []byte) UdpMsg
 	SetInform(c *chan interface{})
 	Inform(v interface{})
+	Print()
 }
 
 func getNextSerialNum() uint64 {
@@ -57,7 +61,9 @@ func NewUdpMsg(data []byte,typ uint32) UdpMsg  {
 	return um
 }
 
-
+func (um *udpmsg)Print(){
+	fmt.Println("sn:",um.sn,"pos",um.GetRealPos(),"apptype:",um.GetAppTyp(),"last:",um.last)
+}
 
 func (um *udpmsg)SetInform(c *chan interface{}) {
 	um.inform = c
@@ -78,7 +84,9 @@ func (um *udpmsg)NxtPos(data []byte) UdpMsg  {
 	um1.sn = um.sn
 	um1.last = um.last
 	um1.data = data
-	um1.pos ++
+
+	um.lastpos ++
+	um1.pos = um.lastpos
 
 	return um1
 }
@@ -93,7 +101,9 @@ func (um *udpmsg)GetSn() uint64  {
 func (um *udpmsg)SetPos(pos uint64){
 	um.pos =pos
 }
-
+func (um *udpmsg)SetLastPos()  {
+	um.lastpos = um.pos
+}
 
 func (um *udpmsg)GetPos() uint64{
 	return um.pos

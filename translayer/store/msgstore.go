@@ -5,6 +5,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/list"
 	"github.com/kprc/nbsnetwork/tools"
 	"sync"
+	"fmt"
 )
 
 type block struct {
@@ -180,6 +181,7 @@ func (bs *blockstore)doTimeOut()  {
 }
 
 func (bs *blockstore)Run()  {
+	fmt.Println("Message Store is Running")
 	select {
 	case <-bs.tick:
 		if tools.GetNowMsTime() - lasttimeout > timeouttv{

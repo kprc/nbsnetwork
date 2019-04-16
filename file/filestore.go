@@ -7,6 +7,7 @@ import (
 	"sync"
 	"github.com/kprc/nbsnetwork/tools"
 
+	"fmt"
 )
 
 type filestoreblk struct {
@@ -143,6 +144,7 @@ func (fs *filestore)doTimeOut()  {
 }
 
 func (fs *filestore)Run()  {
+	fmt.Println("File Store is Running")
 	select {
 	case <-fs.tick:
 		if tools.GetNowMsTime() - fsbAccessTime > fsbTimeOutInterval{
