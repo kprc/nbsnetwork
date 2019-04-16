@@ -19,7 +19,7 @@ type FileOp interface {
 	io.Closer
 	SetFile(f *os.File)
 	IsClosed() bool
-	OpenFile(filename string) error
+	CreateFile(filename string) error
 }
 
 var (
@@ -31,12 +31,12 @@ func NewFileOp(f *os.File) FileOp {
 	return &fileop{f:f}
 }
 
-func (fo *fileop)OpenFile(filename string) error  {
+func (fo *fileop)CreateFile(filename string) error  {
 	if fo.f == nil {
 		fo.lock.Lock()
 		defer fo.lock.Unlock()
 		if fo.f == nil {
-			if f, err := os.Open(filename); err != nil {
+			if f, err := os.Create(filename); err != nil {
 				return err
 			}else {
 				fo.f = f

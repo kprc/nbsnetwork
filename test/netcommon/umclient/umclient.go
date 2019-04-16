@@ -9,7 +9,7 @@ import (
 
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/file"
-	"github.com/kprc/nbsnetwork/tools"
+	"github.com/kprc/nbsnetwork"
 )
 
 
@@ -61,7 +61,7 @@ func main()  {
 		fmt.Println(err.Error())
 	}
 
-	tools.GetNbsTickerInstance().Stop()
+	nbsnetwork.NetWorkDone()
 
 }
 

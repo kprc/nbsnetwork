@@ -26,6 +26,8 @@ func (fsb *filestoreblk)GetKey() store.UdpStreamKey {
 type filestore struct {
 	hashlist.HashList
 	tick chan int64
+	quit chan int64
+	wg *sync.WaitGroup
 }
 
 type FileStore interface {
@@ -34,6 +36,7 @@ type FileStore interface {
 	DelFile(f interface{})
 	FindFileDo(f interface{}, arg interface{}, do list.FDo)(r interface{}, err error)
 	Run()
+	Stop()
 }
 
 var (
@@ -45,7 +48,7 @@ var (
 
 func newFileStore() FileStore {
 	hl:=hashlist.NewHashList(0x80,store.StreamKeyHash,store.StreamKeyEquals)
-	fs:=&filestore{hl,make(chan int64,64)}
+	fs:=&filestore{hl,make(chan int64,64),make(chan int64,1),&sync.WaitGroup{}}
 
 	t:=tools.GetNbsTickerInstance()
 	t.Reg(&fs.tick)
@@ -144,14 +147,25 @@ func (fs *filestore)doTimeOut()  {
 }
 
 func (fs *filestore)Run()  {
+	fs.wg.Add(1)
+	defer fs.wg.Done()
 	fmt.Println("File Store is Running")
-	select {
-	case <-fs.tick:
-		if tools.GetNowMsTime() - fsbAccessTime > fsbTimeOutInterval{
-			fsbAccessTime = tools.GetNowMsTime()
-			fs.doTimeOut()
+	for {
+		select {
+		case <-fs.tick:
+			if tools.GetNowMsTime()-fsbAccessTime > fsbTimeOutInterval {
+				fsbAccessTime = tools.GetNowMsTime()
+				fs.doTimeOut()
+			}
+		case <-fs.quit:
+			return
 		}
 	}
 }
-
+func (fs *filestore)Stop()  {
+	fs.quit <- 1
+	if fs.wg !=nil{
+		fs.wg.Wait()
+	}
+}
 

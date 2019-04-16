@@ -22,6 +22,8 @@ type streamblk struct {
 type streamstore struct {
 	hashlist.HashList
 	tick chan int64
+	quit chan int64
+	wg *sync.WaitGroup
 }
 
 type StreamStore interface {
@@ -30,6 +32,7 @@ type StreamStore interface {
 	DelStream(s interface{})
 	FindStreamDo(s interface{},arg interface{}, do list.FDo) (r interface{}, err error)
 	Run()
+	Stop()
 }
 
 var (
@@ -59,7 +62,7 @@ func GetStreamStoreInstance() StreamStore  {
 func newStreamStore() StreamStore  {
 
 	hl:=hashlist.NewHashList(0x80,StreamKeyHash,StreamKeyEquals)
-	ss:=&streamstore{hl,make(chan int64,64)}
+	ss:=&streamstore{hl,make(chan int64,64),make(chan int64,1),&sync.WaitGroup{}}
 
 	t:=tools.GetNbsTickerInstance()
 	t.Reg(&ss.tick)
@@ -134,12 +137,25 @@ func (ss *streamstore)doTimeOut()  {
 }
 
 func (ss *streamstore)Run()  {
+	ss.wg.Add(1)
+	defer ss.wg.Done()
 	fmt.Println("Stream Store is Running")
-	select {
-	case <-ss.tick:
-		if tools.GetNowMsTime() - ssLastAccessTime > ssTimeOutTV{
-			ssLastAccessTime = tools.GetNowMsTime()
-			ss.doTimeOut()
+	for {
+		select {
+		case <-ss.tick:
+			if tools.GetNowMsTime()-ssLastAccessTime > ssTimeOutTV {
+				ssLastAccessTime = tools.GetNowMsTime()
+				ss.doTimeOut()
+			}
+		case <-ss.quit:
+			return
 		}
+	}
+}
+
+func (ss *streamstore)Stop(){
+	ss.quit <- 1
+	if ss.wg !=nil{
+		ss.wg.Wait()
 	}
 }

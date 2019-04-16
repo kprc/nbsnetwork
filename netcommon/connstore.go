@@ -12,6 +12,7 @@ type connblock struct {
 type connstore struct {
 	store map[string]*connblock
 	rcvpacket chan interface{}
+	wg *sync.WaitGroup
 }
 
 
@@ -21,8 +22,12 @@ type ConnStore interface {
 	Del(uid string)
 	GetConn(uid string) UdpConn
 	Push(v interface{}) error
+	RSync()
 	Read() RcvBlock
+	RDone()
+	RWait()
 	ReadAsync() (RcvBlock,error)
+
 }
 
 
@@ -37,6 +42,7 @@ func newConnStore() ConnStore {
 	cs := &connstore{}
 	cs.store = make(map[string]*connblock)
 	cs.rcvpacket = make(chan interface{},1024)
+	cs.wg = &sync.WaitGroup{}
 
 	return cs
 }
@@ -148,11 +154,28 @@ func (cs *connstore)Push(v interface{}) error{
 	}
 }
 
+func (cs *connstore)RSync()  {
+	if cs.wg !=nil{
+		cs.wg.Add(1)
+	}
+}
 
 func (cs *connstore)Read() RcvBlock{
 	cp:=<-cs.rcvpacket
 
 	return cp.(RcvBlock)
+}
+
+func (cs *connstore)RDone()  {
+	if cs.wg !=nil{
+		cs.wg.Done()
+	}
+}
+
+func (cs *connstore)RWait()  {
+	if cs.wg !=nil{
+		cs.wg.Wait()
+	}
 }
 
 func (cs *connstore)ReadAsync() (RcvBlock,error){

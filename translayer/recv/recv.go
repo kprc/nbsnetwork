@@ -11,6 +11,9 @@ import (
 func ReceiveFromUdpConn() error  {
 	cs:=netcommon.GetConnStoreInstance()
 
+	cs.RSync()
+	defer cs.RDone()
+
 	for{
 		rcvblk:=cs.Read()
 		translayerdata := rcvblk.GetConnPacket()
@@ -23,6 +26,21 @@ func ReceiveFromUdpConn() error  {
 			message.Recv(rcvblk)
 		case store.UDP_STREAM:
 			stream.Recv(rcvblk)
+		case store.UDP_RCV_QUIT:
+			return nil
 		}
 	}
+
+}
+
+func ReceiveFromUdpStop()  {
+	cs:=netcommon.GetConnStoreInstance()
+	cp:=netcommon.NewConnPacket()
+	cp.SetMsgTyp(store.UDP_RCV_QUIT)
+	rcvblk:=netcommon.NewRcvBlock(cp,nil)
+
+	cs.Push(rcvblk)
+
+	cs.RWait()
+
 }

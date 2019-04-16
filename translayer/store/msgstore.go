@@ -24,6 +24,8 @@ type BlockInter interface {
 type blockstore struct {
 	hashlist.HashList
 	tick chan int64
+	quit chan int64
+	wg *sync.WaitGroup
 }
 
 type BlockStore interface {
@@ -32,6 +34,7 @@ type BlockStore interface {
 	DelMessage(blk interface{})
 	FindMessageDo(v interface{},arg interface{},do list.FDo) (r interface{},err error)
 	Run()
+	Stop()
 }
 
 
@@ -103,6 +106,8 @@ func newBlockStore() BlockStore {
 	bs:=&blockstore{HashList:hl}
 
 	bs.tick = make(chan int64,64)
+	bs.quit = make(chan int64,1)
+	bs.wg = &sync.WaitGroup{}
 
 	t := tools.GetNbsTickerInstance()
 
@@ -145,6 +150,8 @@ func (bs *blockstore)FindMessageDo(v interface{},arg interface{},do list.FDo) (r
 
 func (bs *blockstore)doTimeOut()  {
 
+	fmt.Println("doTimeOut")
+
 	type blk2del struct{
 		arrdel []*block
 	}
@@ -181,13 +188,25 @@ func (bs *blockstore)doTimeOut()  {
 }
 
 func (bs *blockstore)Run()  {
+	bs.wg.Add(1)
+	defer bs.wg.Done()
 	fmt.Println("Message Store is Running")
-	select {
-	case <-bs.tick:
-		if tools.GetNowMsTime() - lasttimeout > timeouttv{
-			lasttimeout = tools.GetNowMsTime()
-			bs.doTimeOut()
+	for {
+		select {
+		case <-bs.tick:
+			if tools.GetNowMsTime()-lasttimeout > timeouttv {
+				lasttimeout = tools.GetNowMsTime()
+				bs.doTimeOut()
+			}
+		case <-bs.quit:
+			return
 		}
 	}
 }
 
+func (bs *blockstore)Stop()  {
+	bs.quit <- 1
+	if bs.wg !=nil{
+		bs.wg.Wait()
+	}
+}

@@ -31,6 +31,7 @@ func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
 }
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
+	um.Print()
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsenddefaulterr
 	}else{
@@ -53,6 +54,7 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	c:=make(chan interface{},1)
 	um.SetInform(&c)
+	um.SetAppTyp(rm.apptyp)
 
 	ms:=store.GetBlockStoreInstance()
 

@@ -71,7 +71,7 @@ func openFile(key store.UdpStreamKey) (io.WriteCloser,error) {
 			fo:=NewFileOp(nil)
 			blk.SetFileOp(fo)
 		}
-		blk.GetFileOp().OpenFile(filename)
+		blk.GetFileOp().CreateFile(filename)
 
 		return blk.GetFileOp(),nil
 	}

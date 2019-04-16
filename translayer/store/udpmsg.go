@@ -14,6 +14,9 @@ const(
 	UDP_STREAM uint32=1
 	UDP_ACK uint32 = 2
 
+
+	UDP_RCV_QUIT uint32=1010
+
 	UDP_INFORM_ACK int64 = 0
 	UDP_INFORM_TIMEOUT int64 = 1
 )
