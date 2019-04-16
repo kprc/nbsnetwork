@@ -69,13 +69,13 @@ func newStreamStore() StreamStore  {
 }
 
 func GetStreamBlkAndRefresh(v interface{}) interface{}{
-	sb:=v.(streamblk)
+	sb:=v.(*streamblk)
 	sb.lastAccessTime = tools.GetNowMsTime()
 	return sb.blk
 }
 
 func GetStreamBlk(v interface{}) interface{}  {
-	sb:=v.(streamblk)
+	sb:=v.(*streamblk)
 	return sb.blk
 }
 

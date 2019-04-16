@@ -56,7 +56,10 @@ func main()  {
 
 	ufs := file.NewUdpFileSend(uf,uc)
 
-	ufs.Send()
+	err:=ufs.Send()
+	if err!=nil{
+		fmt.Println(err.Error())
+	}
 
 	tools.GetNbsTickerInstance().Stop()
 

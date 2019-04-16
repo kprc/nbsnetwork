@@ -217,7 +217,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 
 	if sr.w == nil{
 		abs:=applayer.GetAppBlockStore()
-		if w,err:=abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,nil);err!=nil{
+		if w,err:=abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,false);err!=nil{
 			return nbserr.NbsErr{ErrId:nbserr.FILE_CANNT_OPEN,Errmsg:"File can't open"}
 		}else{
 			sr.w = w.(io.WriteCloser)
@@ -237,7 +237,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 		if pos > sr.toppos{
 			sr.finishflag = true
 			abs:=applayer.GetAppBlockStore()
-			abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,nil)
+			abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,true)
 			return io.EOF
 		}
 

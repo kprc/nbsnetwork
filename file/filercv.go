@@ -64,6 +64,10 @@ func openFile(key store.UdpStreamKey) (io.WriteCloser,error) {
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
 		blk:=GetFileBlk(v).(FileBlk)
 		filename := blk.GetUdpFile().GetFileName()
+		if blk.GetFileOp() == nil{
+			fo:=NewFileOp(nil)
+			blk.SetFileOp(fo)
+		}
 		blk.GetFileOp().OpenFile(filename)
 
 		return blk.GetFileOp(),nil

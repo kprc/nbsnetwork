@@ -13,9 +13,7 @@ func init()  {
 
 	file.FileRegister()
 
-
 	runstore()
-
 
 	go recv.ReceiveFromUdpConn()
 }
