@@ -1,5 +1,7 @@
 package file
 
+import path2 "path"
+
 type filedesc struct {
 	path string
 	name string
@@ -13,6 +15,7 @@ type FileDesc interface {
 	SetName(name string)
 	GetSize() uint64
 	SetSize(size uint64)
+	GetFileName() string
 }
 
 const Save_file_path = "/Users/rickey/"
@@ -42,6 +45,17 @@ func (fdesc *filedesc)GetSize() uint64  {
 func (fdesc *filedesc)SetSize(size uint64)  {
 	fdesc.size = size
 }
+
+func (fdesc *filedesc)GetFileName() string  {
+	path:=fdesc.GetPath()
+	if path == "" {
+		path = Save_file_path
+	}
+	filename:=path2.Join(path,fdesc.GetName())
+
+	return filename
+}
+
 
 func NewFileDesc() FileDesc {
 	return &filedesc{}

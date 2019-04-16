@@ -72,8 +72,10 @@ func RefreshFSB(v interface{}){
 	blk.lastAccessTime = tools.GetNowMsTime()
 }
 
-func GetFileBlk()  {
-	
+func GetFileBlk(v interface{}) interface{} {
+	blk:=v.(*filestoreblk)
+
+	return blk.blk
 }
 
 

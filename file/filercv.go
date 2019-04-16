@@ -57,8 +57,45 @@ func findFileBlk(key store.UdpStreamKey) bool  {
 	}
 
 	return true
-
 }
+
+func openFile(key store.UdpStreamKey) error {
+	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
+		blk:=GetFileBlk(v).(FileBlk)
+		filename := blk.GetUdpFile().GetFileName()
+		blk.GetFileOp().OpenFile(filename)
+
+		return nil,nil
+	}
+
+	fs:=GetFileStoreInstance()
+	if _,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
+		return err
+	}
+
+	return nil
+}
+
+func closeFile(key store.UdpStreamKey) error {
+	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
+		blk:=GetFileBlk(v).(FileBlk)
+		//filename := blk.GetUdpFile().GetFileName()
+		//blk.GetFileOp().OpenFile(filename)
+		blk.GetFileOp().Close()
+
+		return nil,nil
+	}
+
+	fs:=GetFileStoreInstance()
+	if _,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
+		return err
+	}
+
+	return nil
+}
+
+
+
 
 func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error) {
 	cb:=rcv.(applayer.CtrlBlk)
@@ -67,8 +104,12 @@ func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error)
 
 	key:=store.NewUdpStreamKeyWithParam(string(uid),sn)
 
-	if findFileBlk(key){
-		return nil,nil
+	closeflag := arg.(bool)
+
+	if !closeflag{
+		openFile(key)
+	}else {
+		closeFile(key)
 	}
 
 	return
