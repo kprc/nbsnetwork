@@ -6,6 +6,7 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"github.com/kprc/nbsnetwork/applayer"
+	"fmt"
 )
 
 var (
@@ -26,7 +27,9 @@ func Recv(rblk netcommon.RcvBlock)error  {
 	apptyp:=um.GetAppTyp()
 
 	abs:=applayer.GetAppBlockStore()
-	abs.Do(apptyp,cb,nil)
+	if _,err:=abs.Do(apptyp,cb,nil);err!=nil{
+		fmt.Println(um.GetAppTyp(),um.GetSn(),um.GetRealPos(),string(um.GetData()))
+	}
 
 	//send ack
 	ack:=ackmessage.GetAckMessage(um.GetSn(),um.GetPos())

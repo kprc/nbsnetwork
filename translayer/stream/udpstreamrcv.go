@@ -8,7 +8,6 @@ import (
 	"github.com/kprc/nbsdht/nbserr"
 	"reflect"
 	"github.com/kprc/nbsnetwork/applayer"
-	"github.com/kprc/nbsnetwork/file"
 )
 
 type streamrcv struct {
@@ -221,7 +220,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 		if w,err:=abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,nil);err!=nil{
 			return nbserr.NbsErr{ErrId:nbserr.FILE_CANNT_OPEN,Errmsg:"File can't open"}
 		}else{
-			sr.w = w.(file.FileOp)
+			sr.w = w.(io.WriteCloser)
 		}
 	}
 

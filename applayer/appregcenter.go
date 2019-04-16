@@ -42,7 +42,7 @@ func GetAppBlockStore() AppBlockStore {
 }
 
 func newAppBlockStore() AppBlockStore  {
-	return &appblockstore{}
+	return &appblockstore{handle:make(map[uint32]*appblock)}
 }
 
 func (aps *appblockstore)Reg(apptyp uint32, do Appdo) {
