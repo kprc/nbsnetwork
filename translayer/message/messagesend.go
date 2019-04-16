@@ -30,7 +30,7 @@ func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
 	return &reliablemsg{conn:conn,timeout:5000}
 }
 
-func SendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
+func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsenddefaulterr
 	}else{
@@ -58,7 +58,7 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	ms.AddMessageWithParam(um,rm.timeout)
 
-	if err:=SendUm(um,rm.conn);err!=nil {
+	if err:=sendUm(um,rm.conn);err!=nil {
 		return err
 	}
 

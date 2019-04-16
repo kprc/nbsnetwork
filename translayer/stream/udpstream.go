@@ -5,7 +5,6 @@ import (
 	"github.com/kprc/nbsdht/nbserr"
 	"io"
 	"github.com/kprc/nbsnetwork/translayer/store"
-	"github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/tools"
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"reflect"
@@ -61,6 +60,7 @@ func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
 	us.timeout = 8000   //8 second
 	us.maxcache = 16*(1<<10)
 	us.resendtimetv = 1000
+	us.udpmsgcache = make(map[uint64]*cacheblock)
 
 	if !delayInit{
 		us.um = store.NewUdpMsg(nil,0)
@@ -77,6 +77,19 @@ var (
 	senderr int = 4
 	sendfinish = 5
 )
+
+
+func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
+	if d2snd,err:=um.Serialize();err!=nil{
+		return udpsendstreamerr
+	}else{
+		if err:=conn.Send(d2snd,store.UDP_STREAM); err!=nil{
+			return err
+		}
+	}
+
+	return nil
+}
 
 func (us *udpstream)sendBlk(reader io.Reader) int{
 
@@ -107,7 +120,7 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 			if err!=nil && err==io.EOF {
 				um.SetLastFlag(true)
 			}
-			if err:=message.SendUm(um,us.conn);err!=nil {
+			if err:=sendUm(um,us.conn);err!=nil {
 				return senderr
 			}
 			us.curcnt ++
@@ -218,7 +231,7 @@ func (us *udpstream)doTimeOut()  int {
 			v.lastSendTime = tools.GetNowMsTime()
 			v.cnt ++
 			um := *v
-			if err:=message.SendUm(um,us.conn);err!=nil {
+			if err:=sendUm(um,us.conn);err!=nil {
 				return senderr
 			}
 			us.try2snd += uint64(len(um.GetData()))
@@ -247,7 +260,7 @@ func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
 	for _,idx:=range resendpos{
 		if v,ok:=us.udpmsgcache[idx];ok{
 			um := *v
-			if err:=message.SendUm(um,us.conn);err!=nil {
+			if err:=sendUm(um,us.conn);err!=nil {
 				return senderr
 			}
 			us.try2snd += uint64(len(um.GetData()))
