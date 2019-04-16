@@ -5,6 +5,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/constant"
 
 	"github.com/kprc/nbsnetwork/translayer/store"
+	"io"
 )
 
 func FileRegister()  {
@@ -59,21 +60,21 @@ func findFileBlk(key store.UdpStreamKey) bool  {
 	return true
 }
 
-func openFile(key store.UdpStreamKey) error {
+func openFile(key store.UdpStreamKey) (io.WriteCloser,error) {
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
 		blk:=GetFileBlk(v).(FileBlk)
 		filename := blk.GetUdpFile().GetFileName()
 		blk.GetFileOp().OpenFile(filename)
 
-		return nil,nil
+		return blk.GetFileOp(),nil
 	}
 
 	fs:=GetFileStoreInstance()
-	if _,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
-		return err
+	if wc,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
+		return nil,err
+	}else{
+		return wc.(FileOp),nil
 	}
-
-	return nil
 }
 
 func closeFile(key store.UdpStreamKey) error {
@@ -83,12 +84,16 @@ func closeFile(key store.UdpStreamKey) error {
 		//blk.GetFileOp().OpenFile(filename)
 		blk.GetFileOp().Close()
 
-		return nil,nil
+		return v,nil
 	}
 
 	fs:=GetFileStoreInstance()
-	if _,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
+	if fsb,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
 		return err
+	}else {
+		if fsb !=nil{
+			fs.DelFile(fsb)
+		}
 	}
 
 	return nil
@@ -107,7 +112,7 @@ func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error)
 	closeflag := arg.(bool)
 
 	if !closeflag{
-		openFile(key)
+		return openFile(key)
 	}else {
 		closeFile(key)
 	}

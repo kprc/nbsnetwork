@@ -7,6 +7,8 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"github.com/kprc/nbsdht/nbserr"
 	"reflect"
+	"github.com/kprc/nbsnetwork/applayer"
+	"github.com/kprc/nbsnetwork/file"
 )
 
 type streamrcv struct {
@@ -24,7 +26,7 @@ type StreamRcv interface {
 	addData(um store.UdpMsg) error
 	constructResends(ack ackmessage.AckMessage)
 	setTopPos(pos uint64)
-	write() error
+	write(cb applayer.CtrlBlk) error
 	getFinishFlag() bool
 }
 
@@ -141,13 +143,16 @@ func Recv(rblk netcommon.RcvBlock)  error{
 
 	fwrite := func(arg interface{},v interface{})(ret interface{},err error) {
 		blk:=store.GetStreamBlk(v).(StreamRcv)
-		blk.write()
+		blk.write(arg.(applayer.CtrlBlk))
 		if blk.getFinishFlag() {
 			return blk,nil
 		}
 		return
 	}
-	if r,_=ss.FindStreamDo(key,nil,fwrite);r!=nil{
+
+	cb:=applayer.NewCtrlBlk(rblk,um)
+
+	if r,_=ss.FindStreamDo(key,cb,fwrite);r!=nil{
 		ss.DelStream(r)
 	}
 
@@ -209,10 +214,15 @@ func (sr *streamrcv)read(buf []byte) (int,error)  {
 	return 0,nil
 }
 
-func (sr *streamrcv)write() error  {
+func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 
 	if sr.w == nil{
-		return  nil
+		abs:=applayer.GetAppBlockStore()
+		if w,err:=abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,nil);err!=nil{
+			return nbserr.NbsErr{ErrId:nbserr.FILE_CANNT_OPEN,Errmsg:"File can't open"}
+		}else{
+			sr.w = w.(file.FileOp)
+		}
 	}
 
 	if sr.finishflag == true{
@@ -227,6 +237,8 @@ func (sr *streamrcv)write() error  {
 
 		if pos > sr.toppos{
 			sr.finishflag = true
+			abs:=applayer.GetAppBlockStore()
+			abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,nil)
 			return io.EOF
 		}
 
