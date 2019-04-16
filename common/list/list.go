@@ -80,6 +80,9 @@ func (l *list)Add(node *nbslink.LinkNode)  {
 }
 
 func (l *list)Del(node *nbslink.LinkNode)  {
+	if l.root == nil{
+		return
+	}
 	root:=l.root
 	n:=l.root
 
@@ -113,6 +116,10 @@ func (l *list)AddValue(v interface{})  {
 }
 
 func (l *list)DelValue(v interface{})  {
+
+	if l.root == nil{
+		return
+	}
 	root:=l.root
 	n:=l.root
 

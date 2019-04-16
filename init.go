@@ -4,6 +4,7 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"github.com/kprc/nbsnetwork/file"
 	"github.com/kprc/nbsnetwork/translayer/store"
+	"github.com/kprc/nbsnetwork/translayer/recv"
 )
 
 func init()  {
@@ -14,6 +15,9 @@ func init()  {
 
 
 	runstore()
+
+
+	go recv.ReceiveFromUdpConn()
 }
 
 

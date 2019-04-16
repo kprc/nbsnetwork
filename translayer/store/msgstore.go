@@ -118,7 +118,7 @@ func (bs *blockstore)AddMessage(data interface{}) {
 }
 
 func (bs *blockstore)addBlk(data interface{},timeinterval int32,msgtyp uint32)  {
-	blk:=block{blk:data}
+	blk:=&block{blk:data}
 	blk.sn = data.(BlockInter).GetSn()
 	blk.timeoutInterval = timeinterval  //ms
 	blk.msgtype = msgtyp
