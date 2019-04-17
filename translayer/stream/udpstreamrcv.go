@@ -8,6 +8,7 @@ import (
 	"github.com/kprc/nbsdht/nbserr"
 	"reflect"
 	"github.com/kprc/nbsnetwork/applayer"
+	"github.com/kprc/nbsnetwork/tools"
 )
 
 type streamrcv struct {
@@ -21,7 +22,7 @@ type streamrcv struct {
 
 type StreamRcv interface {
 	SetWriter(w io.WriteCloser)
-	read(buf []byte) (int,error)
+	//read(buf []byte) (int,error)
 	addData(um store.UdpMsg) error
 	constructResends(ack ackmessage.AckMessage)
 	setTopPos(pos uint64)
@@ -72,19 +73,22 @@ func (sr *streamrcv)constructResends(ack ackmessage.AckMessage){
 	if len(listkeys) == 0 {
 		return
 	}
+	var apptyp uint32
 	minpos := sr.lastwritepos
 	maxpos := minpos
 	for _,k:=range listkeys{
 		keypos := k.Uint()
 		if maxpos < keypos{
+			apptyp = sr.udpmsgcache[keypos].GetAppTyp()
 			maxpos = keypos
 		}
 	}
 
 	arrpos:= make([]uint64,0)
 
-	for i:=minpos;i<maxpos; i++{
-		if _,ok:=sr.udpmsgcache[i];!ok{
+	var i uint64
+	for i=tools.GetRealPos(minpos); i< tools.GetRealPos(maxpos); i++{
+		if _,ok:=sr.udpmsgcache[tools.AssemblePos(i,apptyp)]; !ok{
 			arrpos = append(arrpos,i)
 		}
 	}
@@ -92,14 +96,13 @@ func (sr *streamrcv)constructResends(ack ackmessage.AckMessage){
 	if len(arrpos) > 0 {
 		ack.SetResendPos(arrpos)
 	}
-
 }
 
 
 func Recv(rblk netcommon.RcvBlock)  error{
+
 	data:=rblk.GetConnPacket().GetData()
 	um:=store.NewUdpMsg(nil,0)
-
 
 	if err:=um.DeSerialize(data);err!=nil{
 		return err
@@ -164,62 +167,64 @@ func (sr *streamrcv)SetWriter(w io.WriteCloser)  {
 	sr.w = w
 }
 
-
-func (sr *streamrcv)read(buf []byte) (int,error)  {
-	if sr.finishflag == true{
-		return 0,io.EOF
-	}
-	pos :=sr.lastwritepos
-	defer func() {
-		sr.lastwritepos = pos
-	}()
-	n:=0
-	for{
-
-		if pos > sr.toppos{
-			sr.finishflag = true
-			return n,io.EOF
-		}
-
-		if v,ok:=sr.udpmsgcache[pos];!ok {
-			return n,nil
-		}else{
-			um:=v.(store.UdpMsg)
-			data:=um.GetData()
-			if len(data) ==0 {
-				delete(sr.udpmsgcache,pos)
-				pos ++
-				continue
-			}
-			nc:=copy(buf[n:],data)
-			n+=nc
-			if n >= len(buf){
-				return n,nil
-			}
-			if nc >=len(data){
-				delete(sr.udpmsgcache,pos)
-				pos ++
-				continue
-
-			}else{
-				data = data[nc:]
-				um.SetData(data)
-				return n,nil
-			}
-
-		}
-
-	}
-
-
-	return 0,nil
-}
+//
+//func (sr *streamrcv)read(buf []byte) (int,error)  {
+//	if sr.finishflag == true{
+//		return 0,io.EOF
+//	}
+//	pos :=sr.lastwritepos
+//	defer func() {
+//		sr.lastwritepos = pos
+//	}()
+//	n:=0
+//	for{
+//
+//		if pos > sr.toppos{
+//			sr.finishflag = true
+//			return n,io.EOF
+//		}
+//
+//		if v,ok:=sr.udpmsgcache[pos];!ok {
+//			return n,nil
+//		}else{
+//			um:=v.(store.UdpMsg)
+//			data:=um.GetData()
+//			if len(data) ==0 {
+//				delete(sr.udpmsgcache,pos)
+//				pos ++
+//				continue
+//			}
+//			nc:=copy(buf[n:],data)
+//			n+=nc
+//			if n >= len(buf){
+//				return n,nil
+//			}
+//			if nc >=len(data){
+//				delete(sr.udpmsgcache,pos)
+//				pos ++
+//				continue
+//
+//			}else{
+//				data = data[nc:]
+//				um.SetData(data)
+//				return n,nil
+//			}
+//
+//		}
+//
+//	}
+//
+//
+//	return 0,nil
+//}
 
 func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 
+	apptyp:=cb.GetUdpMsg().GetAppTyp()
+
 	if sr.w == nil{
 		abs:=applayer.GetAppBlockStore()
-		if w,err:=abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,false);err!=nil{
+		if w,err:=abs.Do(apptyp,cb,false);err!=nil{
 			return nbserr.NbsErr{ErrId:nbserr.FILE_CANNT_OPEN,Errmsg:"File can't open"}
 		}else{
 			sr.w = w.(io.WriteCloser)
@@ -229,17 +234,23 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 	if sr.finishflag == true{
 		return io.EOF
 	}
+
 	pos :=sr.lastwritepos
+
+	if sr.lastwritepos == 0 && apptyp > 0 {
+		pos = tools.AssemblePos(pos,apptyp)
+	}
+
 	defer func() {
 		sr.lastwritepos = pos
 	}()
 
 	for{
 
-		if pos > sr.toppos{
+		if (pos > sr.toppos) && (sr.toppos != 0){
 			sr.finishflag = true
 			abs:=applayer.GetAppBlockStore()
-			abs.Do(cb.GetUdpMsg().GetAppTyp(),cb,true)
+			abs.Do(apptyp,cb,true)
 			return io.EOF
 		}
 
