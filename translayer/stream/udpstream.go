@@ -80,7 +80,7 @@ var (
 
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
-
+	um.Print()
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsendstreamerr
 	}else{
