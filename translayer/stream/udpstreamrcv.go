@@ -108,6 +108,7 @@ func Recv(rblk netcommon.RcvBlock)  error{
 		return err
 	}
 
+	um.Print()
 	sn:=um.GetSn()
 	uid:=string(rblk.GetConnPacket().GetUid())
 
@@ -140,6 +141,7 @@ func Recv(rblk netcommon.RcvBlock)  error{
 
 	ackdata,_:=r.(ackmessage.AckMessage).Serialize()
 	if ackdata !=nil{
+		r.(ackmessage.AckMessage).Print()
 		rblk.GetUdpConn().Send(ackdata,store.UDP_ACK)
 	}
 
