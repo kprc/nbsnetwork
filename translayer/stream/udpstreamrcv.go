@@ -89,7 +89,7 @@ func (sr *streamrcv)constructResends(ack ackmessage.AckMessage){
 	var i uint64
 	for i=tools.GetRealPos(minpos); i< tools.GetRealPos(maxpos); i++{
 		if _,ok:=sr.udpmsgcache[tools.AssemblePos(i,apptyp)]; !ok{
-			arrpos = append(arrpos,i)
+			arrpos = append(arrpos,tools.AssemblePos(i,apptyp))
 		}
 	}
 
