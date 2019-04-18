@@ -279,7 +279,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 				um.SetData(data)
 			}
 			if err!=nil{
-				fmt.Println("Write error")
+				fmt.Println("Write error",err.Error())
 				return err
 			}
 
