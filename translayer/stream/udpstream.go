@@ -158,7 +158,7 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 		us.maxcnt = 16
 	}
 
-	us.maxcnt = 3
+	//us.maxcnt = 3
 
 	r:=us.sendBlk(reader)
 	finishflag := false

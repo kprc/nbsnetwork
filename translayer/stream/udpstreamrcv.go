@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"github.com/kprc/nbsnetwork/applayer"
 	"github.com/kprc/nbsnetwork/tools"
+	"fmt"
 )
 
 type streamrcv struct {
@@ -108,7 +109,7 @@ func Recv(rblk netcommon.RcvBlock)  error{
 		return err
 	}
 
-	um.Print()
+	//um.Print()
 	sn:=um.GetSn()
 	uid:=string(rblk.GetConnPacket().GetUid())
 
@@ -141,7 +142,7 @@ func Recv(rblk netcommon.RcvBlock)  error{
 
 	ackdata,_:=r.(ackmessage.AckMessage).Serialize()
 	if ackdata !=nil{
-		r.(ackmessage.AckMessage).Print()
+		//r.(ackmessage.AckMessage).Print()
 		rblk.GetUdpConn().Send(ackdata,store.UDP_ACK)
 	}
 
@@ -251,6 +252,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 			sr.finishflag = true
 			abs:=applayer.GetAppBlockStore()
 			abs.Do(apptyp,cb,true)
+			fmt.Println("close file")
 			return io.EOF
 		}
 
@@ -268,6 +270,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 			nc,err := sr.w.Write(data)
 
 			if nc >=len(data){
+				um.Print()
 				delete(sr.udpmsgcache,pos)
 				pos ++
 
@@ -276,6 +279,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 				um.SetData(data)
 			}
 			if err!=nil{
+				fmt.Println("Write error")
 				return err
 			}
 
