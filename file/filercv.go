@@ -39,10 +39,11 @@ func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  
 	fb.SetKey(key)
 	fb.SetUdpFile(uf)
 
+
 	fs:=GetFileStoreInstance()
 
 	if !findFileBlk(key) {
-		fs.AddFile(fb)
+		fs.AddFileWithParam(fb,60000)
 	}
 
 	return nil,nil
