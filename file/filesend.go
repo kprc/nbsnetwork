@@ -121,6 +121,7 @@ func (us *filesend)Send() error  {
 	}
 
 	ustream.SetAppTyp(constant.FILE_STREAM_HANDLE)
+	ustream.SetTimeOut(30000)
 	if us.f == nil{
 		if err = us.openFile();err!=nil{
 			return err

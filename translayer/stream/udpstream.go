@@ -80,7 +80,7 @@ var (
 
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
-	
+
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsendstreamerr
 	}else{
@@ -231,7 +231,7 @@ func (us *udpstream)doTimeOut()  int {
 		idx:=key.Uint()
 		v:=us.udpmsgcache[idx]
 		curtime:=tools.GetNowMsTime()
-		if curtime - v.lastSendTime > 1000 && v.cnt < 3{
+		if curtime - v.lastSendTime > 2000 && v.cnt < 15{
 			v.lastSendTime = tools.GetNowMsTime()
 			v.cnt ++
 			um := *v
