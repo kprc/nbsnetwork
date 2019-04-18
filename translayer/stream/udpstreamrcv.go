@@ -108,8 +108,6 @@ func Recv(rblk netcommon.RcvBlock)  error{
 		return err
 	}
 
-	um.Print()
-
 	sn:=um.GetSn()
 	uid:=string(rblk.GetConnPacket().GetUid())
 

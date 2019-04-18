@@ -21,7 +21,6 @@ func Recv(rblk netcommon.RcvBlock)error  {
 	if err:=um.DeSerialize(data);err!=nil {
 		return err
 	}
-	um.Print()
 	cb:=applayer.NewCtrlBlk(rblk,um)
 
 	apptyp:=um.GetAppTyp()
@@ -35,7 +34,6 @@ func Recv(rblk netcommon.RcvBlock)error  {
 	ack:=ackmessage.GetAckMessage(um.GetSn(),um.GetPos())
 
 	if d2snd,err := ack.Serialize();err==nil{
-		fmt.Println("len:",len(d2snd))
 		rblk.GetUdpConn().Send(d2snd,store.UDP_ACK)
 	}
 

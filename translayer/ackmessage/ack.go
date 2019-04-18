@@ -4,6 +4,8 @@ import (
 	"github.com/kprc/nbsnetwork/pb/udpmessage"
 	"github.com/gogo/protobuf/proto"
 
+	"fmt"
+	"github.com/kprc/nbsnetwork/tools"
 )
 
 type Ackid struct {
@@ -25,6 +27,7 @@ type AckMessage interface {
 	Append(pos uint64)
 	GetResendPos() []uint64
 	SetResendPos(arr []uint64)
+	Print()
 	Serialize() ([]byte,error)
 	Deserialize(data []byte) error
 }
@@ -61,6 +64,14 @@ func (am *ackmessage)GetResendPos() []uint64  {
 
 func (am *ackmessage)SetResendPos(arr []uint64)  {
 	am.resendpos = arr
+}
+
+func (am *ackmessage)Print()  {
+	fmt.Print("ack sn: ",am.GetSn()," pos: ",tools.GetRealPos(am.GetPos())," typ: ",tools.GetTypFromPos(am.GetPos()))
+	for _,pos:=range am.resendpos{
+		fmt.Print(" resendpos: ",tools.GetRealPos(pos)," resendtyp: ",tools.GetTypFromPos(pos))
+	}
+	fmt.Println()
 }
 
 func (am *ackmessage)Serialize() ([]byte,error)  {

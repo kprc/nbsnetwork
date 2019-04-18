@@ -16,6 +16,7 @@ type reliablemsg struct {
 type ReliableMsg interface {
 	ReliableSend(data []byte) (err error)
 	SetAppTyp(typ uint32)
+
 	SetTimeOut(timeout int32)
 
 }
@@ -31,7 +32,7 @@ func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
 }
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
-	um.Print()
+
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsenddefaulterr
 	}else{
@@ -58,7 +59,8 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	ms:=store.GetBlockStoreInstance()
 
-	ms.AddMessageWithParam(um,rm.timeout)
+
+	ms.AddMessageWithParam(um,rm.timeout,store.UDP_MESSAGE)
 
 	if err:=sendUm(um,rm.conn);err!=nil {
 		return err

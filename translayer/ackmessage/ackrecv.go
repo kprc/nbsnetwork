@@ -17,7 +17,7 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 
 		typ := store.GetMsgTyp(blk)
 
-		if typ == store.UDP_MESSAGE {
+		if typ == store.UDP_MESSAGE  {
 			data :=store.GetBlk(blk,true)
 
 			um:=data.(store.UdpMsg)
@@ -39,7 +39,7 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 	}
 
 	ms:=store.GetBlockStoreInstance()
-	if v,err:=ms.FindMessageDo(ack,nil,fdo); err!=nil{
+	if v,err:=ms.FindMessageDo(ack,ack,fdo); err!=nil{
 		return err
 	}else {
 		if v!=nil {

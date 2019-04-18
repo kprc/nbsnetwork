@@ -80,7 +80,7 @@ var (
 
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
-	um.Print()
+	
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsendstreamerr
 	}else{
@@ -112,10 +112,10 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 				}
 				us.parent = um
 				um.SetLastPos()
-				us.ackchan=make(chan interface{},8)
+				us.ackchan=make(chan interface{},us.maxcnt+1)
 				um.SetInform(&us.ackchan)
 				ms:=store.GetBlockStoreInstance()
-				ms.AddMessageWithParam(um,us.timeout)
+				ms.AddMessageWithParam(um,us.timeout,store.UDP_STREAM)
 			}else{
 				um = us.parent.NxtPos(buf[:n])
 			}
@@ -150,10 +150,11 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 	if us.mtu <512{
 		us.mtu = 512
 	}
+
+	us.maxcnt = us.maxcache/us.mtu
 	if us.maxcnt < 16 {
 		us.maxcnt = 16
 	}
-	us.maxcnt = us.maxcache/us.mtu
 
 	r:=us.sendBlk(reader)
 	finishflag := false
@@ -187,6 +188,7 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 					return udpstreamtimeouterr
 				}
 			case ackmessage.AckMessage:
+
 				ret:=us.doAck(ack.(ackmessage.AckMessage))
 				if ret == senderr{
 					return udpstreamconnerr

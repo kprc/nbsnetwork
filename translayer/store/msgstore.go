@@ -30,7 +30,7 @@ type blockstore struct {
 
 type BlockStore interface {
 	AddMessage(blk interface{})
-	AddMessageWithParam(data interface{},timeInterval int32)
+	AddMessageWithParam(data interface{},timeInterval int32,msgtyp uint32)
 	DelMessage(blk interface{})
 	FindMessageDo(v interface{},arg interface{},do list.FDo) (r interface{},err error)
 	Run()
@@ -134,8 +134,8 @@ func (bs *blockstore)addBlk(data interface{},timeinterval int32,msgtyp uint32)  
 	bs.Add(blk)
 }
 
-func (bs *blockstore)AddMessageWithParam(data interface{},timeInterval int32){
-	bs.addBlk(data,timeInterval,UDP_MESSAGE)
+func (bs *blockstore)AddMessageWithParam(data interface{},timeInterval int32,msgtyp uint32){
+	bs.addBlk(data,timeInterval,msgtyp)
 }
 
 func (bs *blockstore)DelMessage(blk interface{}) {

@@ -36,3 +36,10 @@ func AssemblePos(pos uint64,typ uint32) uint64 {
 	return typ1 | pos
 
 }
+
+func GetTypFromPos(pos uint64) uint32  {
+	typ := (pos >> 32) & 0xFFFFFFFF
+
+	return uint32(typ)
+
+}
