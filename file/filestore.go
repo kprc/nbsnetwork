@@ -133,6 +133,7 @@ func (fs *filestore)doTimeOut()  {
 		tv:=curtime - fsb.lastAccessTime
 		if tv > int64(fsb.timeoutInterval){
 			l.arrdel = append(l.arrdel,fsb)
+			fmt.Println("close file in do time out",)
 			CloseFile(fsb.blk)
 		}
 
