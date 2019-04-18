@@ -8,6 +8,7 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"reflect"
+	"sort"
 )
 
 
@@ -157,6 +158,8 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 		us.maxcnt = 16
 	}
 
+	us.maxcnt = 3
+
 	r:=us.sendBlk(reader)
 	finishflag := false
 	switch r {
@@ -246,6 +249,39 @@ func (us *udpstream)doTimeOut()  int {
 	return sendnoneerr
 }
 
+func (us *udpstream)deleteCache(resends []uint64,curpos uint64)  {
+	keys:=reflect.ValueOf(us.udpmsgcache).MapKeys()
+
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].Uint() < keys[j].Uint(){
+			return true
+		}else {
+			return false
+		}
+	})
+
+	notin:= func(k uint64, rsd []uint64) bool {
+		for _,r:=range rsd{
+			if k == r{
+				return false
+			}
+		}
+		return true
+	}
+
+	for _,key:=range keys{
+		if key.Uint() < curpos{
+			if notin(key.Uint(),resends){
+				delete(us.udpmsgcache,key.Uint())
+				us.curcnt --
+			}
+		}else {
+			break
+		}
+	}
+
+}
+
 func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
 	pos:=ack.GetPos()
 
@@ -262,6 +298,9 @@ func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
 	}
 
 	resendpos:=ack.GetResendPos()
+
+	us.deleteCache(resendpos,pos)
+
 	for _,idx:=range resendpos{
 		if v,ok:=us.udpmsgcache[idx];ok{
 			um := *v
