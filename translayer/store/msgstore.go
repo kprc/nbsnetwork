@@ -69,6 +69,7 @@ func GetBlk(data interface{}, b bool) interface{}  {
 		return nil
 	}else{
 		blk.ackflag = b
+		blk.lastAccessTime = tools.GetNowMsTime()
 		return blk.blk
 	}
 }
