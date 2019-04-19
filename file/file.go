@@ -18,7 +18,20 @@ type FileDesc interface {
 	GetFileName() string
 }
 
-const Save_file_path = "/Users/rickey/"
+var Save_file_path = ""
+
+func GetSaveFilePath() string {
+	if Save_file_path == ""{
+		return "/Users/rickey/umfile"
+	}else {
+		return Save_file_path
+	}
+}
+
+func SetSaveFilePath(p string)  {
+	Save_file_path = p
+}
+
 
 func (fdesc *filedesc)GetPath() string  {
 	return fdesc.path
