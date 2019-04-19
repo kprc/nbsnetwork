@@ -9,6 +9,7 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"reflect"
 	"sort"
+	"fmt"
 )
 
 
@@ -57,7 +58,7 @@ var (
 
 func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
 	us:=&udpstream{conn:conn}
-	us.mtu = 544
+	us.mtu = 1024
 	us.timeout = 8000   //8 second
 	us.maxcache = 16*(1<<10)
 	us.resendtimetv = 1000
@@ -87,6 +88,7 @@ func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
 		return udpsendstreamerr
 	}else{
 		if err:=conn.Send(d2snd,store.UDP_STREAM); err!=nil{
+			fmt.Println(err.Error())
 			return err
 		}
 	}

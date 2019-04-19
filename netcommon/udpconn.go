@@ -7,6 +7,7 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"net"
 	"sync"
+	"fmt"
 )
 
 
@@ -238,6 +239,7 @@ func (uc *udpconn)Connect() error{
 					return err
 				}
 			case <-uc.stopsendsign:
+				fmt.Println("stop connection")
 				uc.status = STOP_CONNECTION
 				closesign = 1
 				return nil
@@ -331,6 +333,7 @@ func (uc *udpconn)sendKAPacket() error {
 	tv:=tools.GetNowMsTime() - uc.lastrcvtime
 
 	if tv > int64(uc.timeouttv) && uc.lastrcvtime != 0{
+		fmt.Println("connection timeout, return bad connection")
 		return baderr
 	}
 
@@ -367,6 +370,7 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 	//send d
 	if uc.isconn {
 		if _,err1:=uc.sock.Write(d);err1!=nil{
+			fmt.Println(err1.Error(),372,"udpconn send")
 			return baderr
 		}
 	}else {
