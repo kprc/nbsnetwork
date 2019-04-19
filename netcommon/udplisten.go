@@ -114,12 +114,13 @@ func (ul *udplisten)sockRecv(conn *net.UDPConn)  {
 		buf:=make([]byte,1024)
 		nr,addr,err:=conn.ReadFromUDP(buf)
 		if err!=nil{
-			//fmt.Println("err",err.Error())
+			fmt.Println("sock Recv err",err.Error())
 			return
 		}
 		//fmt.Println(addr.String())
 		cp := NewConnPacket()
 		if err=cp.DeSerialize(buf[0:nr]);err!=nil{
+			fmt.Println("Deserialize error",err.Error())
 			continue
 		}
 		cs:=GetConnStoreInstance()
