@@ -119,7 +119,7 @@ func NewUdpCreateConnection(rip,lip string,rport,lport uint16) UdpConn  {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	nt.RegWithTimeOut(&uc.tickrcv,2500)
+	nt.RegWithTimeOut(&uc.tickrcv,1000)
 	uc.timeouttv = 10000   //ms
 
 
