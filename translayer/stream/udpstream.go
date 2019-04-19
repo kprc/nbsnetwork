@@ -58,7 +58,7 @@ var (
 
 func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
 	us:=&udpstream{conn:conn}
-	us.mtu = 1024
+	us.mtu = 512
 	us.timeout = 8000   //8 second
 	us.maxcache = 16*(1<<10)
 	us.resendtimetv = 1000
@@ -102,7 +102,7 @@ func (us *udpstream)sendBlk(reader io.Reader) int{
 		if us.curcnt >= us.maxcnt{
 			return overmaxcnt
 		}
-		buf:=make([]byte,us.mtu)
+		buf:=make([]byte,us.mtu+1)
 		n,err:=reader.Read(buf)
 		if n>0 || (n==0 && err!=nil && err==io.EOF){
 			var um store.UdpMsg
