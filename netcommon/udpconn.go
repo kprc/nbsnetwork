@@ -89,7 +89,7 @@ func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	uc.timeouttv = 10000   //ms
+	uc.timeouttv = 30000   //ms
 
 	return uc
 
@@ -121,7 +121,7 @@ func NewUdpCreateConnection(rip,lip string,rport,lport uint16) UdpConn  {
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
 	nt.RegWithTimeOut(&uc.tickrcv,1000)
-	uc.timeouttv = 10000   //ms
+	uc.timeouttv = 30000   //ms
 
 
 	return uc
