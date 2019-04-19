@@ -43,7 +43,7 @@ func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  
 	fs:=GetFileStoreInstance()
 
 	if !findFileBlk(key) {
-		fs.AddFileWithParam(fb,60000)
+		fs.AddFileWithParam(fb,10000)
 	}
 
 	return nil,nil
@@ -85,6 +85,19 @@ func openFile(key store.UdpStreamKey) (io.WriteCloser,error) {
 	}
 }
 
+func freshFile(key store.UdpStreamKey) error  {
+	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
+		RefreshFSB(v)
+		return
+	}
+
+	fs:=GetFileStoreInstance()
+
+	fs.FindFileDo(key,nil,fdo)
+
+	return nil
+}
+
 func closeFile(key store.UdpStreamKey) error {
 	fmt.Println("close File from fdo")
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
@@ -120,12 +133,14 @@ func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error)
 
 	key:=store.NewUdpStreamKeyWithParam(string(uid),sn)
 
-	closeflag := arg.(bool)
+	h:=arg.(int)
 
-	if !closeflag{
+	if h == 1 {
 		return openFile(key)
-	}else {
+	}else if h== 2{
 		closeFile(key)
+	}else {
+		freshFile(key)
 	}
 
 	return

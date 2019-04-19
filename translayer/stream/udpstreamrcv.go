@@ -19,6 +19,7 @@ type streamrcv struct {
 	toppos uint64		//max pos
 	key store.UdpStreamKey
 	w io.WriteCloser
+	lastFreshTime int64
 }
 
 type StreamRcv interface {
@@ -224,8 +225,9 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 	apptyp:=cb.GetUdpMsg().GetAppTyp()
 
 	if sr.w == nil{
+		sr.lastFreshTime = tools.GetNowMsTime()
 		abs:=applayer.GetAppBlockStore()
-		if w,err:=abs.Do(apptyp,cb,false);err!=nil{
+		if w,err:=abs.Do(apptyp,cb,int(1));err!=nil{
 			return nbserr.NbsErr{ErrId:nbserr.FILE_CANNT_OPEN,Errmsg:"File can't open"}
 		}else{
 			sr.w = w.(io.WriteCloser)
@@ -234,6 +236,13 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 
 	if sr.finishflag == true{
 		return io.EOF
+	}
+
+	//fresh
+	if tools.GetNowMsTime() - sr.lastFreshTime > 1000{
+		abs:=applayer.GetAppBlockStore()
+		abs.Do(apptyp,cb,int(3))
+		sr.lastFreshTime = tools.GetNowMsTime()
 	}
 
 	pos :=sr.lastwritepos
@@ -251,7 +260,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 		if (pos > sr.toppos) && (sr.toppos != 0){
 			sr.finishflag = true
 			abs:=applayer.GetAppBlockStore()
-			abs.Do(apptyp,cb,true)
+			abs.Do(apptyp,cb,int(2))
 			fmt.Println("close file")
 			return io.EOF
 		}
