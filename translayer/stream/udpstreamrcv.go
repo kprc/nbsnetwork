@@ -137,7 +137,7 @@ func Recv(rblk netcommon.RcvBlock)  error{
 	if r == nil{
 		sr:=NewStreamRcv(key)
 		sr.addData(um)
-		ss.AddStream(sr)
+		ss.AddStreamWithParam(sr,30000)
 		r=ackmessage.GetAckMessage(sn,um.GetPos())
 	}
 
