@@ -74,6 +74,7 @@ func RefreshFSB(v interface{}){
 	blk:=v.(*filestoreblk)
 
 	blk.lastAccessTime = tools.GetNowMsTime()
+	fmt.Println("Fresh File ", tools.GetNowMsTime())
 }
 
 func GetFileBlk(v interface{}) interface{} {
@@ -133,7 +134,7 @@ func (fs *filestore)doTimeOut()  {
 		tv:=curtime - fsb.lastAccessTime
 		if tv > int64(fsb.timeoutInterval){
 			l.arrdel = append(l.arrdel,fsb)
-			fmt.Println("close file in do time out",)
+			fmt.Println("close file in do time out",curtime)
 			CloseFile(fsb.blk)
 		}
 
