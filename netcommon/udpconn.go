@@ -378,6 +378,7 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 				uc.lastSendKaTime = tools.GetNowMsTime()
 				return nil
 			default:
+				return baderr
 			}
 		}
 	}else {
@@ -389,10 +390,12 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 				uc.lastSendKaTime = tools.GetNowMsTime()
 				return nil
 			default:
+				return baderr
 			}
 		}
 	}
-	return baderr
+	uc.lastSendKaTime = tools.GetNowMsTime()
+	return nil
 }
 
 func (uc *udpconn)Send(data []byte,typ uint32) error  {
