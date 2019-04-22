@@ -373,27 +373,32 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 		if _,err1:=uc.sock.Write(d);err1!=nil{
 			switch err1.(type) {
 			case syscall.Errno:
-				time.Sleep(time.Millisecond*100)
-				fmt.Println(err1.Error(),372,"udpconn send")
-				uc.lastSendKaTime = tools.GetNowMsTime()
-				return nil
-			default:
-				return baderr
+				if err1.(syscall.Errno) == syscall.ENOBUFS{
+					time.Sleep(time.Millisecond*100)
+					fmt.Println(err1.Error(),372,"udpconn send")
+					uc.lastSendKaTime = tools.GetNowMsTime()
+					return nil
+				}
+
 			}
+			fmt.Println("other conn error",err1.Error())
 		}
 	}else {
 		if _,err1:=uc.sock.WriteToUDP(d,uc.addr);err1!=nil{
 			switch err1.(type) {
 			case syscall.Errno:
-				fmt.Println(err1.Error(),387,"udpconn send")
-				time.Sleep(time.Millisecond*100)
-				uc.lastSendKaTime = tools.GetNowMsTime()
-				return nil
-			default:
-				return baderr
+				if err1.(syscall.Errno) == syscall.ENOBUFS {
+					fmt.Println(err1.Error(), 387, "udpconn send")
+					time.Sleep(time.Millisecond * 100)
+					uc.lastSendKaTime = tools.GetNowMsTime()
+					return nil
+				}
+
 			}
+			fmt.Println("listen other conn error",err1.Error())
 		}
 	}
+
 	uc.lastSendKaTime = tools.GetNowMsTime()
 	return nil
 }
