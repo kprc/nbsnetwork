@@ -58,7 +58,7 @@ var (
 
 func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
 	us:=&udpstream{conn:conn}
-	us.mtu = 512
+	us.mtu = 544
 	us.timeout = 8000   //8 second
 	us.maxcache = 16*(1<<10)
 	us.resendtimetv = 1000

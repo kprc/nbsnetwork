@@ -111,7 +111,7 @@ func (ul *udplisten)sockRecv(conn *net.UDPConn)  {
 	defer ul.wg.Done()
 
 	for{
-		buf:=make([]byte,1024)
+		buf:=make([]byte,2048)
 		nr,addr,err:=conn.ReadFromUDP(buf)
 		if err!=nil{
 			fmt.Println("sock Recv err",err.Error())

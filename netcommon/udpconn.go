@@ -8,6 +8,8 @@ import (
 	"net"
 	"sync"
 	"fmt"
+	"syscall"
+	"time"
 )
 
 
@@ -253,15 +255,14 @@ func (uc *udpconn)Connect() error{
 func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 	defer wg.Done()
 
-	n:=1024
-	roundbuf := make([]byte,n)
+
 
 	if uc.wg !=nil{
 		uc.wg.Done()
 	}
 
 	for {
-		buf := roundbuf[0:n]
+		buf := make([]byte,2048)
 
 		var err error
 		var nr int
@@ -370,18 +371,28 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 	//send d
 	if uc.isconn {
 		if _,err1:=uc.sock.Write(d);err1!=nil{
-			fmt.Println(err1.Error(),372,"udpconn send")
-			return baderr
+			switch err1.(type) {
+			case syscall.Errno:
+				time.Sleep(time.Millisecond*100)
+				fmt.Println(err1.Error(),372,"udpconn send")
+				uc.lastSendKaTime = tools.GetNowMsTime()
+				return nil
+			default:
+			}
 		}
 	}else {
 		if _,err1:=uc.sock.WriteToUDP(d,uc.addr);err1!=nil{
-			return baderr
+			switch err1.(type) {
+			case syscall.Errno:
+				fmt.Println(err1.Error(),387,"udpconn send")
+				time.Sleep(time.Millisecond*100)
+				uc.lastSendKaTime = tools.GetNowMsTime()
+				return nil
+			default:
+			}
 		}
 	}
-
-	uc.lastSendKaTime = tools.GetNowMsTime()
-
-	return nil
+	return baderr
 }
 
 func (uc *udpconn)Send(data []byte,typ uint32) error  {
