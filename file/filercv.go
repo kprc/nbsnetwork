@@ -43,7 +43,7 @@ func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  
 	fs:=GetFileStoreInstance()
 
 	if !findFileBlk(key) {
-		fs.AddFileWithParam(fb,10000)
+		fs.AddFileWithParam(fb,30000)
 	}
 
 	return nil,nil
