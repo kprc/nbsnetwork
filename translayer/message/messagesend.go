@@ -4,6 +4,7 @@ import (
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"github.com/kprc/nbsdht/nbserr"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 type reliablemsg struct {
@@ -28,7 +29,7 @@ var(
 )
 
 func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
-	return &reliablemsg{conn:conn,timeout:5000}
+	return &reliablemsg{conn:conn,timeout:int32(constant.UDP_MESSAGE_STORE_TIMEOUT)}
 }
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
@@ -47,7 +48,7 @@ func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
 
 func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
-	if rm.conn == nil || !rm.conn.Status(){
+	if rm.conn == nil || !rm.conn.Status() || len(data) == 0 || len(data) > 1024{
 		return udpsenddefaulterr
 	}
 

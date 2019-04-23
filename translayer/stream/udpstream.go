@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"sort"
 	"fmt"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 
@@ -58,9 +59,9 @@ var (
 
 func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
 	us:=&udpstream{conn:conn}
-	us.mtu = 544
-	us.timeout = 8000   //8 second
-	us.maxcache = 16*(1<<10)
+	us.mtu = int32(constant.STREAM_MTU)
+	us.timeout = int32(constant.UDP_STREAM_STORE_TIMEOUT)
+	us.maxcache = int32(constant.STREAM_MAXCACHE)
 	us.resendtimetv = 1000
 	us.udpmsgcache = make(map[uint64]*cacheblock)
 
@@ -237,7 +238,7 @@ func (us *udpstream)doTimeOut()  int {
 		idx:=key.Uint()
 		v:=us.udpmsgcache[idx]
 		curtime:=tools.GetNowMsTime()
-		if curtime - v.lastSendTime > 2000 && v.cnt < 15{
+		if curtime - v.lastSendTime > int64(constant.STREAM_BLOCK_RESEND_TIMEOUT) && v.cnt < constant.STREAM_BLOCK_RESEND_TIMES{
 			v.lastSendTime = tools.GetNowMsTime()
 			v.cnt ++
 			um := *v
