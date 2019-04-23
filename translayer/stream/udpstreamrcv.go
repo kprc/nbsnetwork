@@ -150,7 +150,10 @@ func Recv(rblk netcommon.RcvBlock)  error{
 
 	fwrite := func(arg interface{},v interface{})(ret interface{},err error) {
 		blk:=store.GetStreamBlk(v).(StreamRcv)
-		blk.write(arg.(applayer.CtrlBlk))
+		errw:=blk.write(arg.(applayer.CtrlBlk))
+		if errw!=nil{
+			fmt.Println("Write error",errw.Error())
+		}
 		if blk.getFinishFlag() {
 			return blk,nil
 		}
