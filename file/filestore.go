@@ -8,6 +8,7 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 
 	"fmt"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 type filestoreblk struct {
@@ -89,9 +90,6 @@ func (fs *filestore)addFile(f interface{},timeoutInterval int32)  {
 	fb:=f.(FileBlk)
 
 	fsb:=&filestoreblk{blk:f}
-	if timeoutInterval < 5000 {
-		timeoutInterval = 5000
-	}
 
 	fsb.timeoutInterval = timeoutInterval
 
@@ -103,10 +101,13 @@ func (fs *filestore)addFile(f interface{},timeoutInterval int32)  {
 }
 
 func (fs *filestore)AddFile(f interface{})  {
-	fs.addFile(f,0)
+	fs.addFile(f,int32(constant.FILE_STORE_TIMEOUT))
 }
 
 func (fs *filestore)AddFileWithParam(f interface{},timeoutInterval int32)  {
+	if timeoutInterval == 0{
+		timeoutInterval = int32(constant.FILE_STORE_TIMEOUT)
+	}
 	fs.addFile(f,timeoutInterval)
 }
 

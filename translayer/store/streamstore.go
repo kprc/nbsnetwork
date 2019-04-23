@@ -6,8 +6,8 @@ import (
 	"sync"
 	"github.com/kprc/nbsnetwork/tools"
 	"fmt"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
-
 
 type streamblk struct {
 	key UdpStreamKey
@@ -15,9 +15,6 @@ type streamblk struct {
 	timeoutInterval int32
 	lastAccessTime int64
 }
-
-
-
 
 type streamstore struct {
 	hashlist.HashList
@@ -94,10 +91,13 @@ func (ss *streamstore)addStream(v interface{}, timeinterval int32)  {
 }
 
 func (ss *streamstore)AddStream(v interface{})  {
-	ss.addStream(v,10000)
+	ss.addStream(v,int32(constant.UDP_STREAM_STORE_TIMEOUT))
 }
 
 func (ss *streamstore)AddStreamWithParam(v interface{},timeInterval int32)  {
+	if timeInterval == 0{
+		timeInterval = int32(constant.UDP_STREAM_STORE_TIMEOUT)
+	}
 	ss.addStream(v,timeInterval)
 }
 

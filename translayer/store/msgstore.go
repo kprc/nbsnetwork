@@ -6,6 +6,7 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"sync"
 	"fmt"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 type block struct {
@@ -121,7 +122,7 @@ func newBlockStore() BlockStore {
 
 
 func (bs *blockstore)AddMessage(data interface{}) {
-	bs.addBlk(data,5000,UDP_MESSAGE)
+	bs.addBlk(data,int32(constant.UDP_MESSAGE_STORE_TIMEOUT),UDP_MESSAGE)
 }
 
 func (bs *blockstore)addBlk(data interface{},timeinterval int32,msgtyp uint32)  {
@@ -136,6 +137,9 @@ func (bs *blockstore)addBlk(data interface{},timeinterval int32,msgtyp uint32)  
 }
 
 func (bs *blockstore)AddMessageWithParam(data interface{},timeInterval int32,msgtyp uint32){
+	if timeInterval == 0{
+		timeInterval = int32(constant.UDP_MESSAGE_STORE_TIMEOUT)
+	}
 	bs.addBlk(data,timeInterval,msgtyp)
 }
 

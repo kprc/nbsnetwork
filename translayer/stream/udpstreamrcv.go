@@ -10,6 +10,7 @@ import (
 	"github.com/kprc/nbsnetwork/applayer"
 	"github.com/kprc/nbsnetwork/tools"
 	"fmt"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 type streamrcv struct {
@@ -137,7 +138,7 @@ func Recv(rblk netcommon.RcvBlock)  error{
 	if r == nil{
 		sr:=NewStreamRcv(key)
 		sr.addData(um)
-		ss.AddStreamWithParam(sr,30000)
+		ss.AddStreamWithParam(sr,int32(constant.UDP_STREAM_STORE_TIMEOUT))
 		r=ackmessage.GetAckMessage(sn,um.GetPos())
 	}
 

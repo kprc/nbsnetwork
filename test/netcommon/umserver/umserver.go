@@ -17,5 +17,7 @@ func main()  {
 	server:=netcommon.GetUpdListenInstance()
 	server.Run("0.0.0.0",22113)
 
+	server.Close()
+
 	nbsnetwork.NetWorkDone()
 }

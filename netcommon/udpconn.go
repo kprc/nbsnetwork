@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 	"strings"
+	"github.com/kprc/nbsnetwork/common/constant"
 )
 
 
@@ -80,7 +81,7 @@ func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 	uc:= &udpconn{}
 
 	uc.ready2send = make(chan interface{},1024)
-	//uc.recvFromConn = make(chan interface{},1024)
+
 	uc.tick = make(chan int64,8)
 	uc.stopsendsign = make(chan int)
 	uc.closesign = make(chan int)
@@ -91,7 +92,7 @@ func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	uc.timeouttv = 30000   //ms
+	uc.timeouttv = constant.UDP_CONNECTION_TIMEOUT   //ms
 
 	return uc
 
@@ -123,7 +124,7 @@ func NewUdpCreateConnection(rip,lip string,rport,lport uint16) UdpConn  {
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
 	nt.RegWithTimeOut(&uc.tickrcv,1000)
-	uc.timeouttv = 30000   //ms
+	uc.timeouttv = constant.UDP_CONNECTION_TIMEOUT   //ms
 
 
 	return uc
@@ -254,8 +255,6 @@ func (uc *udpconn)Connect() error{
 
 func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 	defer wg.Done()
-
-
 
 	if uc.wg !=nil{
 		uc.wg.Done()

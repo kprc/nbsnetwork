@@ -3,7 +3,6 @@ package file
 import (
 	"github.com/kprc/nbsnetwork/applayer"
 	"github.com/kprc/nbsnetwork/common/constant"
-
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"io"
 	"fmt"
@@ -43,7 +42,7 @@ func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  
 	fs:=GetFileStoreInstance()
 
 	if !findFileBlk(key) {
-		fs.AddFileWithParam(fb,30000)
+		fs.AddFileWithParam(fb,int32(constant.FILE_STORE_TIMEOUT))
 	}
 
 	return nil,nil
