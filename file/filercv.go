@@ -12,6 +12,7 @@ const(
 	OPEN_FILE int = 1
 	CLOSE_FILE int = 2
 	REFRESH_FILE int = 3
+	OPEN_FILE_CONTINUE int = 4    //file continue
 )
 
 func FileRegister()  {
@@ -77,7 +78,29 @@ func openFile(key store.UdpStreamKey) (io.WriteCloser,error) {
 			fo:=NewFileOp(nil)
 			blk.SetFileOp(fo)
 		}
-		blk.GetFileOp().CreateFile(filename)
+		blk.GetFileOp().CreateFile(filename,NEW_CREATE)
+
+		return blk.GetFileOp(),nil
+	}
+
+	fs:=GetFileStoreInstance()
+	if wc,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
+		return nil,err
+	}else{
+		return wc.(FileOp),nil
+	}
+}
+
+
+func openFileContinue(key store.UdpStreamKey) (io.WriteCloser,error) {
+	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
+		blk:=GetFileBlk(v).(FileBlk)
+		filename := blk.GetUdpFile().GetFileName()
+		if blk.GetFileOp() == nil{
+			fo:=NewFileOp(nil)
+			blk.SetFileOp(fo)
+		}
+		blk.GetFileOp().CreateFile(filename,APPEND_CREATE)
 
 		return blk.GetFileOp(),nil
 	}
@@ -144,8 +167,10 @@ func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error)
 		return openFile(key)
 	}else if h== CLOSE_FILE{
 		closeFile(key)
-	}else {   //REFRESH_FILE
+	}else if h == REFRESH_FILE{
 		freshFile(key)
+	}else if h == OPEN_FILE_CONTINUE{
+		openFileContinue(key)
 	}
 
 	return

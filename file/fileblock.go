@@ -8,6 +8,12 @@ import (
 	"sync"
 )
 
+
+const(
+	APPEND_CREATE int = 1
+	NEW_CREATE int = 2
+)
+
 type fileop struct {
 	f *os.File
 	lock sync.Mutex
@@ -19,7 +25,8 @@ type FileOp interface {
 	io.Closer
 	SetFile(f *os.File)
 	IsClosed() bool
-	CreateFile(filename string) error
+	CreateFile(filename string, mode int) error
+	GetFileSize(filename string) int64
 }
 
 var (
@@ -31,12 +38,26 @@ func NewFileOp(f *os.File) FileOp {
 	return &fileop{f:f}
 }
 
-func (fo *fileop)CreateFile(filename string) error  {
+func (fo *fileop)GetFileSize(filename string) int64  {
+	fi,err:=os.Stat(filename)
+
+	if err!=nil{
+		return 0
+	}
+
+	return fi.Size()
+}
+
+func (fo *fileop)CreateFile(filename string,mode int) error  {
 	if fo.f == nil {
 		fo.lock.Lock()
 		defer fo.lock.Unlock()
 		if fo.f == nil {
-			if f, err := os.Create(filename); err != nil {
+			m:= os.O_CREATE | os.O_WRONLY
+			if mode == APPEND_CREATE {
+				m |= os.O_APPEND
+			}
+			if f, err := os.OpenFile(filename,m,0666); err != nil {
 				return err
 			}else {
 				fo.f = f
