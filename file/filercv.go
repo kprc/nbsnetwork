@@ -8,6 +8,12 @@ import (
 	"fmt"
 )
 
+const(
+	OPEN_FILE int = 1
+	CLOSE_FILE int = 2
+	REFRESH_FILE int = 3
+)
+
 func FileRegister()  {
 	fmt.Println("File Handle Register")
 
@@ -134,11 +140,11 @@ func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error)
 
 	h:=arg.(int)
 
-	if h == 1 {
+	if h == OPEN_FILE {
 		return openFile(key)
-	}else if h== 2{
+	}else if h== CLOSE_FILE{
 		closeFile(key)
-	}else {
+	}else {   //REFRESH_FILE
 		freshFile(key)
 	}
 

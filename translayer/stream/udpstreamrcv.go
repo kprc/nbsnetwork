@@ -11,6 +11,7 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/kprc/nbsnetwork/file"
 )
 
 type streamrcv struct {
@@ -151,8 +152,12 @@ func Recv(rblk netcommon.RcvBlock)  error{
 	fwrite := func(arg interface{},v interface{})(ret interface{},err error) {
 		blk:=store.GetStreamBlk(v).(StreamRcv)
 		errw:=blk.write(arg.(applayer.CtrlBlk))
-		if errw!=nil{
-			fmt.Println("Write error",errw.Error())
+		if errw!=nil {
+			if errw==io.EOF {
+				fmt.Println("Write Complete")
+			}else{
+				fmt.Println("Write error", errw.Error())
+			}
 		}
 		if blk.getFinishFlag() {
 			return blk,nil
@@ -173,56 +178,6 @@ func (sr *streamrcv)SetWriter(w io.WriteCloser)  {
 	sr.w = w
 }
 
-//
-//func (sr *streamrcv)read(buf []byte) (int,error)  {
-//	if sr.finishflag == true{
-//		return 0,io.EOF
-//	}
-//	pos :=sr.lastwritepos
-//	defer func() {
-//		sr.lastwritepos = pos
-//	}()
-//	n:=0
-//	for{
-//
-//		if pos > sr.toppos{
-//			sr.finishflag = true
-//			return n,io.EOF
-//		}
-//
-//		if v,ok:=sr.udpmsgcache[pos];!ok {
-//			return n,nil
-//		}else{
-//			um:=v.(store.UdpMsg)
-//			data:=um.GetData()
-//			if len(data) ==0 {
-//				delete(sr.udpmsgcache,pos)
-//				pos ++
-//				continue
-//			}
-//			nc:=copy(buf[n:],data)
-//			n+=nc
-//			if n >= len(buf){
-//				return n,nil
-//			}
-//			if nc >=len(data){
-//				delete(sr.udpmsgcache,pos)
-//				pos ++
-//				continue
-//
-//			}else{
-//				data = data[nc:]
-//				um.SetData(data)
-//				return n,nil
-//			}
-//
-//		}
-//
-//	}
-//
-//
-//	return 0,nil
-//}
 
 func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 
@@ -231,7 +186,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 	if sr.w == nil{
 		sr.lastFreshTime = tools.GetNowMsTime()
 		abs:=applayer.GetAppBlockStore()
-		if w,err:=abs.Do(apptyp,cb,int(1));err!=nil{
+		if w,err:=abs.Do(apptyp,cb,file.OPEN_FILE);err!=nil{
 			return nbserr.NbsErr{ErrId:nbserr.FILE_CANNT_OPEN,Errmsg:"File can't open"}
 		}else{
 			sr.w = w.(io.WriteCloser)
@@ -245,7 +200,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 	//fresh
 	if tools.GetNowMsTime() - sr.lastFreshTime > 1000{
 		abs:=applayer.GetAppBlockStore()
-		abs.Do(apptyp,cb,int(3))
+		abs.Do(apptyp,cb,file.REFRESH_FILE)
 		sr.lastFreshTime = tools.GetNowMsTime()
 	}
 
@@ -264,7 +219,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 		if (pos > sr.toppos) && (sr.toppos != 0){
 			sr.finishflag = true
 			abs:=applayer.GetAppBlockStore()
-			abs.Do(apptyp,cb,int(2))
+			abs.Do(apptyp,cb,file.CLOSE_FILE)
 			fmt.Println("close file")
 			return io.EOF
 		}

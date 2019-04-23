@@ -17,9 +17,7 @@ type reliablemsg struct {
 type ReliableMsg interface {
 	ReliableSend(data []byte) (err error)
 	SetAppTyp(typ uint32)
-
 	SetTimeOut(timeout int32)
-
 }
 
 var(
