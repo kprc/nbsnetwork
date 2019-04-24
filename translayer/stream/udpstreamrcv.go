@@ -25,7 +25,6 @@ type streamrcv struct {
 
 type StreamRcv interface {
 	SetWriter(w io.WriteCloser)
-	//read(buf []byte) (int,error)
 	addData(um store.UdpMsg) error
 	constructResends(ack ackmessage.AckMessage)
 	setTopPos(pos uint64)

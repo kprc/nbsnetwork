@@ -124,8 +124,6 @@ func closeFile(key store.UdpStreamKey) error {
 	fmt.Println("close File from fdo")
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
 		blk:=GetFileBlk(v).(FileBlk)
-		//filename := blk.GetUdpFile().GetFileName()
-		//blk.GetFileOp().OpenFile(filename)
 		if blk.GetFileOp() != nil {
 			blk.GetFileOp().Close()
 		}

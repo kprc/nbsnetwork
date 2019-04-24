@@ -18,9 +18,7 @@ type block struct {
 	sn uint64
 }
 
-type BlockInter interface {
-	GetSn() uint64
-}
+
 
 type blockstore struct {
 	hashlist.HashList
@@ -45,24 +43,6 @@ var (
 	lasttimeout int64
 	timeouttv int64 = 1000 //ms
 )
-
-var fhash = func(v interface{}) uint {
-	blk:=v.(BlockInter)
-
-	return uint(blk.GetSn()&0x7F)
-}
-
-var fequals = func(v1 interface{},v2 interface{}) int{
-	blk1:=v1.(BlockInter)
-	blk2:=v2.(BlockInter)
-
-	if blk1.GetSn() == blk2.GetSn() {
-		return 0
-	}
-
-	return 1
-}
-
 
 
 func GetBlk(data interface{}, b bool) interface{}  {
@@ -104,7 +84,7 @@ func GetBlockStoreInstance()  BlockStore {
 
 func newBlockStore() BlockStore {
 
-	hl:=hashlist.NewHashList(0x80,fhash,fequals)
+	hl:=hashlist.NewHashList(0x80,FBlockHash,FBlockEquals)
 	bs:=&blockstore{HashList:hl}
 
 	bs.tick = make(chan int64,64)
