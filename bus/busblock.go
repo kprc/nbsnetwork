@@ -48,7 +48,6 @@ func (bb *busblock)GetFSendData() FSendData  {
 	return bb.f
 }
 
-
 func SendBusBlock(v interface{}) {
 	bb:=v.(BusBlock)
 	if bb.GetFSendData() !=nil{

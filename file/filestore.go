@@ -6,7 +6,6 @@ import (
 	"github.com/kprc/nbsnetwork/common/list"
 	"sync"
 	"github.com/kprc/nbsnetwork/tools"
-
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/constant"
 )

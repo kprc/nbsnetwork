@@ -45,7 +45,6 @@ func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  
 	fb.SetKey(key)
 	fb.SetUdpFile(uf)
 
-
 	fs:=GetFileStoreInstance()
 
 	if !findFileBlk(key) {

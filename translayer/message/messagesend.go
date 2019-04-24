@@ -58,7 +58,6 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	ms:=store.GetBlockStoreInstance()
 
-
 	ms.AddMessageWithParam(um,rm.timeout,store.UDP_MESSAGE)
 
 	if err:=sendUm(um,rm.conn);err!=nil {
@@ -76,7 +75,6 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 	}
 
 	return udpsenddefaulterr
-
 }
 
 func (rm *reliablemsg)SetAppTyp(typ uint32)  {

@@ -12,7 +12,7 @@ func AckRecv(rblk netcommon.RcvBlock)  error{
 	if err:=ack.Deserialize(data);err!=nil{
 		return err
 	}
-	ack.Print()
+	//ack.Print()
 
 	fdo:= func(arg interface{},blk interface{}) (v interface{},err error) {
 

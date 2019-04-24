@@ -7,4 +7,6 @@ message udpfile{
     bytes strhash = 2;
     uint64 size = 3;
     uint64 streamid = 4;
+    bool resume=5;
+    int64 startSize = 6;
 }

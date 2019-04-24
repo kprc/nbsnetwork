@@ -14,18 +14,24 @@ import (
 type udpfile struct {
 	FileHead
 	streamid uint64
+	resume bool
+	startSize int64
 }
 
 type UdpFile interface {
 	FileHead
 	SetStreamId(id uint64)
 	GetStreamId() uint64
+	SetResume(b bool)
+	GetResume() bool
+	SetStartSize(size int64)
+	GetStartSize() int64
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte)  error
 }
 
 func NewUdpFile(fh FileHead) UdpFile  {
-	return &udpfile{fh,0}
+	return &udpfile{fh,0,false,0}
 }
 
 func NewEmptyUdpFile() UdpFile  {
@@ -41,6 +47,22 @@ func (uf *udpfile)GetStreamId() uint64  {
 	return uf.streamid
 }
 
+func (uf *udpfile)SetResume(b bool)  {
+	uf.resume = b
+}
+
+func (uf *udpfile)GetResume() bool  {
+	return uf.resume
+}
+
+func (uf *udpfile)SetStartSize(size int64)  {
+	uf.startSize = size
+}
+
+func (uf *udpfile)GetStartSize() int64  {
+	return uf.startSize
+}
+
 func (uf *udpfile)Serialize() ([]byte,error)  {
 	puf := &file.Udpfile{}
 
@@ -48,6 +70,8 @@ func (uf *udpfile)Serialize() ([]byte,error)  {
 	puf.Size = uf.GetSize()
 	puf.Streamid = uf.GetStreamId()
 	puf.Strhash = []byte(uf.GetStrHash())
+	puf.Resume = uf.GetResume()
+	puf.StartSize = uf.GetStartSize()
 
 	return proto.Marshal(puf)
 }
@@ -62,6 +86,8 @@ func (uf *udpfile)DeSerialize(data []byte)  error  {
 	uf.SetName(string(puf.GetName()))
 	uf.SetStrHash(string(puf.GetStrhash()))
 	uf.SetSize(puf.GetSize())
+	uf.SetResume(puf.GetResume())
+	uf.SetStartSize(puf.GetStartSize())
 
 	return nil
 }

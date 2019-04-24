@@ -238,7 +238,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 			nc,err := sr.w.Write(data)
 
 			if nc >=len(data){
-				um.Print()
+				//um.Print()
 				delete(sr.udpmsgcache,pos)
 				pos ++
 
