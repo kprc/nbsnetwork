@@ -11,7 +11,6 @@ import (
 	"github.com/kprc/nbsnetwork/tools"
 	"fmt"
 	"github.com/kprc/nbsnetwork/common/constant"
-	"github.com/kprc/nbsnetwork/file"
 )
 
 type streamrcv struct {
@@ -186,7 +185,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 	if sr.w == nil{
 		sr.lastFreshTime = tools.GetNowMsTime()
 		abs:=applayer.GetAppBlockStore()
-		if w,err:=abs.Do(apptyp,cb,file.OPEN_FILE);err!=nil{
+		if w,err:=abs.Do(apptyp,cb,constant.OPEN_FILE);err!=nil{
 			return nbserr.NbsErr{ErrId:nbserr.FILE_CANNT_OPEN,Errmsg:"File can't open"}
 		}else{
 			sr.w = w.(io.WriteCloser)
@@ -200,7 +199,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 	//fresh
 	if tools.GetNowMsTime() - sr.lastFreshTime > 1000{
 		abs:=applayer.GetAppBlockStore()
-		abs.Do(apptyp,cb,file.REFRESH_FILE)
+		abs.Do(apptyp,cb,constant.REFRESH_FILE)
 		sr.lastFreshTime = tools.GetNowMsTime()
 	}
 
@@ -219,7 +218,7 @@ func (sr *streamrcv)write(cb applayer.CtrlBlk) error  {
 		if (pos > sr.toppos) && (sr.toppos != 0){
 			sr.finishflag = true
 			abs:=applayer.GetAppBlockStore()
-			abs.Do(apptyp,cb,file.CLOSE_FILE)
+			abs.Do(apptyp,cb,constant.CLOSE_FILE)
 			fmt.Println("close file")
 			return io.EOF
 		}

@@ -17,3 +17,12 @@ const(
 	STREAM_MAXCACHE int = 16*(1<<10)
 
 )
+
+
+
+const(
+	OPEN_FILE int = 1
+	CLOSE_FILE int = 2
+	REFRESH_FILE int = 3
+	OPEN_FILE_CONTINUE int = 4    //file continue
+)

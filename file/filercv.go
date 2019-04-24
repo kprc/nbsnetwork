@@ -1,19 +1,14 @@
 package file
 
 import (
-	"github.com/kprc/nbsnetwork/applayer"
 	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"io"
 	"fmt"
+	"github.com/kprc/nbsnetwork/applayer"
 )
 
-const(
-	OPEN_FILE int = 1
-	CLOSE_FILE int = 2
-	REFRESH_FILE int = 3
-	OPEN_FILE_CONTINUE int = 4    //file continue
-)
+
 
 func FileRegister()  {
 	fmt.Println("File Handle Register")
@@ -162,13 +157,13 @@ func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error)
 
 	h:=arg.(int)
 
-	if h == OPEN_FILE {
+	if h == constant.OPEN_FILE {
 		return openFile(key)
-	}else if h== CLOSE_FILE{
+	}else if h== constant.CLOSE_FILE{
 		closeFile(key)
-	}else if h == REFRESH_FILE{
+	}else if h == constant.REFRESH_FILE{
 		freshFile(key)
-	}else if h == OPEN_FILE_CONTINUE{
+	}else if h == constant.OPEN_FILE_CONTINUE{
 		openFileContinue(key)
 	}
 
