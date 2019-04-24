@@ -5,6 +5,7 @@ import (
 	"github.com/kprc/nbsnetwork/file"
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"github.com/kprc/nbsnetwork/translayer/recv"
+	"github.com/kprc/nbsnetwork/bus"
 )
 
 func init()  {
@@ -29,5 +30,8 @@ func runstore(){
 	ss:=store.GetStreamStoreInstance()
 
 	go ss.Run()
+
+	bs:=bus.GetBusStoreInstance()
+	go bs.Run()
 
 }
