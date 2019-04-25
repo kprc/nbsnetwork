@@ -103,7 +103,29 @@ func (rs *rpcstore)FindRpcBlockDo(blk interface{},arg interface{},do list.FDo) (
 }
 
 func (rs *rpcstore)doTimeOut()  {
+	type rpcblk2del struct {
+		arrdel []*rpcblockdesc
+	}
 
+	arr2del := &rpcblk2del{arrdel:make([]*rpcblockdesc,0)}
+
+	fdo:= func(arg interface{}, v interface{})(r interface{},err error)  {
+		rpd := v.(*rpcblockdesc)
+		l:=arg.(*rpcblk2del)
+
+		curtime:=tools.GetNowMsTime()
+		if curtime - rpd.lastAccessTime > int64(rpd.timeoutInterval){
+			RpcBlockDo(rpd.blk, true)
+			l.arrdel = append(l.arrdel,rpd)
+		}
+		return
+	}
+
+	rs.TraversAll(arr2del,fdo)
+
+	for _,rpd:=range arr2del.arrdel{
+		rs.DelRpcBlock(rpd)
+	}
 }
 
 func (rs *rpcstore)Run()  {
