@@ -11,6 +11,7 @@ type reliablemsg struct {
 	conn netcommon.UdpConn
 	apptyp uint32
 	timeout int32
+	um store.UdpMsg
 }
 
 
@@ -18,6 +19,7 @@ type ReliableMsg interface {
 	ReliableSend(data []byte) (err error)
 	SetAppTyp(typ uint32)
 	SetTimeOut(timeout int32)
+	GetSn() uint64
 }
 
 var(
@@ -29,6 +31,17 @@ var(
 func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
 	return &reliablemsg{conn:conn,timeout:int32(constant.UDP_MESSAGE_STORE_TIMEOUT)}
 }
+
+func NewReliableMsgWithDelay(conn netcommon.UdpConn, delayInit bool) ReliableMsg {
+	rm := &reliablemsg{conn:conn,timeout:int32(constant.UDP_MESSAGE_STORE_TIMEOUT)}
+	if !delayInit {
+		um:=store.NewUdpMsg(nil,0)
+		rm.um = um
+	}
+
+	return rm
+}
+
 
 func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
 
@@ -49,8 +62,14 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 	if rm.conn == nil || !rm.conn.Status() || len(data) == 0 || len(data) > 1024{
 		return udpsenddefaulterr
 	}
-
-	um:=store.NewUdpMsg(data,rm.apptyp)
+	var um store.UdpMsg
+	if rm.um !=nil{
+		um = rm.um
+		um.SetData(data)
+		um.SetAppTyp(rm.apptyp)
+	}else {
+		um = store.NewUdpMsg(data, rm.apptyp)
+	}
 
 	c:=make(chan interface{},1)
 	um.SetInform(&c)
@@ -85,3 +104,10 @@ func (rm *reliablemsg)SetTimeOut(timeout int32)  {
 	rm.timeout = timeout
 }
 
+func (rm *reliablemsg)GetSn() uint64  {
+	if rm.um != nil{
+		return rm.um.GetSn()
+	}
+
+	return 0
+}
