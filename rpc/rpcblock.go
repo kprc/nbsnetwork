@@ -7,6 +7,7 @@ type RpcDo func(data interface{},isTimeOut bool)
 type rpcblock struct {
 	sn uint64
 	data interface{}
+	response *chan interface{}
 	do RpcDo
 }
 
@@ -44,7 +45,7 @@ func (rb *rpcblock)GetRpcDo() RpcDo  {
 	return rb.do
 }
 
-func RpcBlockDo(data interface{}, isTimeOut bool)  {
+func RpcBlockDo(data interface{},isTimeOut bool)  {
 	rb:=data.(RpcBlock)
 
 	rb.GetRpcDo()(rb.GetData(),isTimeOut)
