@@ -44,10 +44,10 @@ func (rb *rpcblock)GetRpcDo() RpcDo  {
 	return rb.do
 }
 
-func DoResponse(data interface{}, b bool)  {
+func RpcBlockDo(data interface{}, isTimeOut bool)  {
 	rb:=data.(RpcBlock)
 
-	rb.GetRpcDo()(rb.GetData(),b)
+	rb.GetRpcDo()(rb.GetData(),isTimeOut)
 }
 
 

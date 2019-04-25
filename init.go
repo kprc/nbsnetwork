@@ -6,6 +6,7 @@ import (
 	"github.com/kprc/nbsnetwork/translayer/store"
 	"github.com/kprc/nbsnetwork/translayer/recv"
 	"github.com/kprc/nbsnetwork/bus"
+	"github.com/kprc/nbsnetwork/rpc"
 )
 
 func init()  {
@@ -33,5 +34,8 @@ func runstore(){
 
 	bs:=bus.GetBusStoreInstance()
 	go bs.Run()
+
+	rs:=rpc.GetRpcStore()
+	go rs.Run()
 
 }
