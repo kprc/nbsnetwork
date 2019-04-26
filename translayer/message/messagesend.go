@@ -32,7 +32,7 @@ func NewReliableMsg(conn netcommon.UdpConn) ReliableMsg {
 	return &reliablemsg{conn:conn,timeout:int32(constant.UDP_MESSAGE_STORE_TIMEOUT)}
 }
 
-func NewReliableMsgWithDelay(conn netcommon.UdpConn, delayInit bool) ReliableMsg {
+func NewReliableMsgWithDelayInit(conn netcommon.UdpConn, delayInit bool) ReliableMsg {
 	rm := &reliablemsg{conn:conn,timeout:int32(constant.UDP_MESSAGE_STORE_TIMEOUT)}
 	if !delayInit {
 		um:=store.NewUdpMsg(nil,0)

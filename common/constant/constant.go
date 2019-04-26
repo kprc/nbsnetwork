@@ -3,7 +3,8 @@ package constant
 const(
 	FILE_DESC_HANDLE uint32 = 0
 	FILE_STREAM_HANDLE uint32 = 1
-
+	FILE_START_SIZE uint = 2
+	FILE_START_SIZE_RESPONSE uint= 3
 )
 
 const(

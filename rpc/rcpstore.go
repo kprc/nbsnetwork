@@ -115,7 +115,7 @@ func (rs *rpcstore)doTimeOut()  {
 
 		curtime:=tools.GetNowMsTime()
 		if curtime - rpd.lastAccessTime > int64(rpd.timeoutInterval){
-			RpcBlockDo(rpd.blk, true)
+			RpcBlockDo(rpd.blk, nil,true)
 			l.arrdel = append(l.arrdel,rpd)
 		}
 		return

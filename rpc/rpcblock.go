@@ -2,7 +2,7 @@ package rpc
 
 import "github.com/kprc/nbsnetwork/translayer/store"
 
-type RpcDo func(data interface{},isTimeOut bool)
+type RpcDo func(data interface{},arg interface{},isTimeOut bool)
 
 type rpcblock struct {
 	sn uint64
@@ -17,8 +17,14 @@ type RpcBlock interface {
 	SetSn(sn uint64)
 	SetData(v interface{})
 	GetData() interface{}
+	GetResponseChan() *chan interface{}
+	SetResponseChan(c *chan interface{})
 	SetRpcDo(do RpcDo)
 	GetRpcDo() RpcDo
+}
+
+func NewRpcBlock() RpcBlock {
+	return &rpcblock{}
 }
 
 func (rb *rpcblock)GetSn() uint64 {
@@ -37,6 +43,14 @@ func (rb *rpcblock)GetData() interface{}  {
 	return rb.data
 }
 
+func (rb *rpcblock)GetResponseChan() *chan interface{}  {
+	return rb.response
+}
+
+func (rb *rpcblock)SetResponseChan(c *chan interface{}) {
+	rb.response = c
+}
+
 func (rb *rpcblock)SetRpcDo(do RpcDo)  {
 	rb.do = do
 }
@@ -45,10 +59,10 @@ func (rb *rpcblock)GetRpcDo() RpcDo  {
 	return rb.do
 }
 
-func RpcBlockDo(data interface{},isTimeOut bool)  {
+func RpcBlockDo(data interface{},arg interface{},isTimeOut bool)  {
 	rb:=data.(RpcBlock)
 
-	rb.GetRpcDo()(rb.GetData(),isTimeOut)
+	rb.GetRpcDo()(rb.GetData(),arg,isTimeOut)
 }
 
 
