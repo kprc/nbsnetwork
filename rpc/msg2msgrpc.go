@@ -3,6 +3,7 @@ package rpc
 import (
 	"github.com/kprc/nbsnetwork/translayer/message"
 	"github.com/kprc/nbsnetwork/netcommon"
+	"github.com/kprc/nbsdht/nbserr"
 )
 
 type m2mrpc struct {
@@ -16,6 +17,11 @@ type M2MRpc interface {
 	RPCSend(data []byte) (r interface{},err error)
 }
 
+var (
+	rpctimeouterr=nbserr.NbsErr{ErrId:nbserr.RPC_TIMEOUT_ERR,Errmsg:"rpc invoke timeout error"}
+)
+
+
 func NewM2MRpc(conn netcommon.UdpConn,apptyp uint32,arg interface{},do RpcDo) M2MRpc {
 	mr:=message.NewReliableMsgWithDelayInit(conn,false)
 
@@ -27,6 +33,11 @@ func NewM2MRpc(conn netcommon.UdpConn,apptyp uint32,arg interface{},do RpcDo) M2
 	rb.SetResponseChan(&mmr.response)
 	rb.SetSn(mmr.GetSn())
 	rb.SetData(arg)
+
+	if do ==  nil{
+		do = DefaultRpcDo
+	}
+
 	rb.SetRpcDo(do)
 
 	rs:=GetRpcStore()
@@ -36,18 +47,17 @@ func NewM2MRpc(conn netcommon.UdpConn,apptyp uint32,arg interface{},do RpcDo) M2
 }
 
 func (mmr *m2mrpc)RPCSend(data []byte)(r interface{},err error)  {
-	//sn:= mmr.GetSn()
 
-	//rb:=NewRpcBlock()
-	//rb.SetSn(sn)
-	//rb.SetResponseChan(&mmr.response)
 	if err=mmr.ReliableSend(data);err!=nil{
 		return nil,err
 	}
 
-	<-mmr.response
+	r=<-mmr.response
 
-
-
-	return
+	switch r.(type) {
+	case int64:
+		return nil,rpctimeouterr
+	default:
+		return
+	}
 }

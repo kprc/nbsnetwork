@@ -9,6 +9,7 @@ import (
 	"github.com/kprc/nbsnetwork/common/constant"
 	"os"
 	"path/filepath"
+	"github.com/kprc/nbsnetwork/rpc"
 )
 
 type udpfile struct {
@@ -101,6 +102,7 @@ type filesend struct {
 type UdpSend interface {
 	UdpFile
 	Send() error
+	ResumeSend() error
 	SetConn(conn netcommon.UdpConn)
 }
 
@@ -158,6 +160,35 @@ func (us *filesend)Send() error  {
 	us.closeFile()
 
 	return err
+}
+
+func (us *filesend)ResumeSend() error  {
+	ustream:=stream.NewUdpStream(us.conn,false)
+
+	if sid,err:=ustream.GetStreamId();err!=nil{
+		return err
+	}else{
+		us.SetStreamId(sid)
+	}
+
+	us.SetResume(true)
+
+	rpcsend := rpc.NewM2MRpc(us.conn,constant.FILE_DESC_HANDLE,nil,nil)
+
+	var r interface{}
+	var snddata []byte
+	var err error
+
+	if snddata,err=us.Serialize(); err!=nil{
+		return err
+	}
+	if r,err = rpcsend.RPCSend(snddata);err!=nil{
+		return err
+	}
+
+
+
+
 }
 
 func (us *filesend)SetConn(conn netcommon.UdpConn)  {
