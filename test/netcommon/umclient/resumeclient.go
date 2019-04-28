@@ -9,6 +9,7 @@ import (
 	"github.com/kprc/nbsnetwork/file"
 	"github.com/kprc/nbsnetwork"
 	"github.com/pkg/errors"
+	"github.com/kprc/nbsdht/dht/nbsid"
 )
 
 func main()  {
@@ -29,6 +30,9 @@ func main()  {
 	fmt.Println(abspath,ips)
 
 	fmt.Println(filepath.Dir(abspath),filepath.Base(abspath))
+
+	nid:=nbsid.GetLocalId()
+	fmt.Println("localid:",nid.String())
 
 	for{
 		if err:=sendfile(ips,abspath);err!=nil{
