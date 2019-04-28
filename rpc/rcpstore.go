@@ -81,6 +81,7 @@ func newRpcStore() RpcStore  {
 func (rs *rpcstore)addBlock(data interface{},timeinterval int32)  {
 	rbd:=&rpcblockdesc{}
 	rbd.sn = data.(store.BlockInter).GetSn()
+	rbd.blk = data
 	rbd.timeoutInterval = timeinterval
 	rbd.lastAccessTime = tools.GetNowMsTime()
 
