@@ -218,7 +218,7 @@ func (uc *udpconn)Connect() error{
 
 	defer func() {
 		if err:=recover();err!=nil{
-			fmt.Println(err)
+			fmt.Println(err,"udpconn connect")
 		}
 	}()
 
@@ -263,7 +263,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 	defer func() {
 		wg.Done()
 		if err:=recover();err!=nil{
-			fmt.Println(err)
+			fmt.Println(err,"udpconn recv")
 		}
 	}()
 
@@ -318,7 +318,7 @@ func (uc *udpconn)Close() {
 	}
 	defer func() {
 		if err:=recover();err!=nil{
-			fmt.Println(err)
+			fmt.Println(err,"udpconn close")
 		}
 	}()
 	if uc.status == CONNECTION_RUNNING {
@@ -386,7 +386,7 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 	}
 	defer func() {
 		if err:=recover();err!=nil{
-			fmt.Println(err)
+			fmt.Println(err,"udpconn send")
 		}
 	}()
 	//send d
