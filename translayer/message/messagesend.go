@@ -73,7 +73,7 @@ func (rm *reliablemsg) ReliableSend(data []byte) (err error) {
 
 	c:=make(chan interface{},1)
 	um.SetInform(&c)
-	um.SetAppTyp(rm.apptyp)
+
 
 	ms:=store.GetBlockStoreInstance()
 

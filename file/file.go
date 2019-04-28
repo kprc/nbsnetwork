@@ -60,7 +60,7 @@ func (fdesc *filedesc)SetSize(size uint64)  {
 func (fdesc *filedesc)GetFileName() string  {
 	path:=fdesc.GetPath()
 	if path == "" {
-		path = Save_file_path
+		path = GetSaveFilePath()
 	}
 	filename:=path2.Join(path,fdesc.GetName())
 

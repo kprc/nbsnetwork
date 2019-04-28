@@ -45,6 +45,12 @@ func (rbd *rpcblockdesc)GetSn() uint64  {
 	return  rbd.sn
 }
 
+func GetRpcBlock(v interface{})  RpcBlock{
+	rbd:=v.(*rpcblockdesc)
+
+	return rbd.blk.(RpcBlock)
+}
+
 func GetRpcStore() RpcStore  {
 	if rpcstoreInst == nil {
 		rpcstoreInstLock.Lock()

@@ -56,7 +56,7 @@ func main()  {
 
 	ufs := file.NewUdpFileSend(uf,uc)
 
-	err:=ufs.Send()
+	err:=ufs.ResumeSend()
 	if err!=nil{
 		fmt.Println(err.Error())
 	}

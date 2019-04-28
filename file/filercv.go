@@ -6,6 +6,10 @@ import (
 	"io"
 	"fmt"
 	"github.com/kprc/nbsnetwork/applayer"
+	"github.com/kprc/nbsnetwork/bus"
+	"github.com/kprc/nbsnetwork/netcommon"
+	"github.com/kprc/nbsnetwork/translayer/message"
+	"github.com/kprc/nbsnetwork/rpc"
 )
 
 
@@ -17,7 +21,49 @@ func FileRegister()  {
 
 	abs.Reg(constant.FILE_DESC_HANDLE,handleFileHead)
 	abs.Reg(constant.FILE_STREAM_HANDLE,handleFileStream)
+	abs.Reg(constant.FILE_START_SIZE,handleFileStartSize)
 
+}
+
+func sendResumeDesc(v interface{},uid string)  {
+	conn:=netcommon.GetConnStoreInstance().GetConn(uid)
+	if conn==nil || !conn.Status(){
+		return
+	}
+	uf:=v.(UdpFile)
+	fo:=NewFileOp(nil)
+	size:=fo.GetFileSize(uf.GetFileName())
+	uf.SetStartSize(size)
+	mr:=message.NewReliableMsg(conn)
+	mr.SetAppTyp(constant.FILE_START_SIZE)
+	if snddata,err:=uf.Serialize();err!=nil{
+		err1:=mr.ReliableSend(snddata)
+		if err1 !=nil{
+			fmt.Println(err1.Error())
+		}
+	}
+}
+
+func handleFileStartSize(rcv interface{},arg interface{}) (v interface{},err error)  {
+	cb:=rcv.(applayer.CtrlBlk)
+	um:=cb.GetUdpMsg()
+	uf:=NewEmptyUdpFile()
+	err=uf.DeSerialize(um.GetData())
+	if err!=nil{
+		return nil,err
+	}
+	sn:=uf.GetStreamId()
+	bk:=store.NewBlockKey(sn)
+	fdo:= func(arg interface{},v interface{})(r interface{},err error) {
+		rb:=rpc.GetRpcBlock(v)
+
+		rb.GetRpcDo()(rb.GetData(),arg,rb.GetResponseChan(),false)
+
+		return
+	}
+
+	rpcstore:=rpc.GetRpcStore()
+	return 	rpcstore.FindRpcBlockDo(bk,uf,fdo)
 }
 
 func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  {
@@ -36,14 +82,24 @@ func handleFileHead(rcv interface{},arg interface{}) (v interface{},err error)  
 
 	key:=store.NewUdpStreamKeyWithParam(string(uid),streamid)
 
-	fb:=NewFileBlk()
-	fb.SetKey(key)
-	fb.SetUdpFile(uf)
-
 	fs:=GetFileStoreInstance()
 
 	if !findFileBlk(key) {
+		fb:=NewFileBlk()
+		fb.SetKey(key)
+		fb.SetUdpFile(uf)
 		fs.AddFileWithParam(fb,int32(constant.FILE_STORE_TIMEOUT))
+	}
+
+	if uf.GetResume() {
+		bb:=bus.NewBusBlock()
+		bb.SetUid(string(uid))
+		n:=uf.Clone()
+		n.SetStreamId(um.GetSn())
+		bb.SetData(n)
+		bb.SetFSendData(sendResumeDesc)
+		bs:=bus.GetBusStoreInstance()
+		bs.AddBlock(bb)
 	}
 
 	return nil,nil

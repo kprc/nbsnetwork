@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"github.com/kprc/nbsnetwork/rpc"
+	"fmt"
 )
 
 type udpfile struct {
@@ -29,6 +30,7 @@ type UdpFile interface {
 	GetStartSize() int64
 	Serialize() ([]byte,error)
 	DeSerialize(data []byte)  error
+	Clone() UdpFile
 }
 
 func NewUdpFile(fh FileHead) UdpFile  {
@@ -63,6 +65,20 @@ func (uf *udpfile)SetStartSize(size int64)  {
 func (uf *udpfile)GetStartSize() int64  {
 	return uf.startSize
 }
+
+func (uf *udpfile)Clone() UdpFile  {
+    n:=NewEmptyUdpFile()
+    n.SetSize(uf.GetSize())
+    n.SetName(uf.GetName())
+    n.SetPath(uf.GetPath())
+    n.SetStrHash(uf.GetStrHash())
+    n.SetStreamId(uf.GetStreamId())
+    n.SetResume(uf.GetResume())
+    n.SetStartSize(uf.GetStartSize())
+
+	return n
+}
+
 
 func (uf *udpfile)Serialize() ([]byte,error)  {
 	puf := &file.Udpfile{}
@@ -186,9 +202,13 @@ func (us *filesend)ResumeSend() error  {
 		return err
 	}
 
+	uf:=r.(UdpFile)
+	startSize:=uf.GetStartSize()
+	fmt.Println("Get StartSize: ",startSize)
 
 
 
+	return nil
 }
 
 func (us *filesend)SetConn(conn netcommon.UdpConn)  {

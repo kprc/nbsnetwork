@@ -1,10 +1,22 @@
 package store
 
 
+type blockkey struct {
+	sn uint64
+}
+
+
 type BlockInter interface {
 	GetSn() uint64
 }
 
+func NewBlockKey(sn uint64) BlockInter  {
+	return &blockkey{sn}
+}
+
+func (bk *blockkey)GetSn() uint64 {
+	return bk.sn
+}
 
 
 var FBlockHash = func(v interface{}) uint {
