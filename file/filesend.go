@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"github.com/kprc/nbsnetwork/rpc"
-	"fmt"
 )
 
 type udpfile struct {
@@ -137,6 +136,19 @@ func (us *filesend)openFile() error {
 
 }
 
+func (us *filesend)openFileAndSeek(size int64) error  {
+	if err:=us.openFile();err!=nil{
+		return err
+	}
+
+	if _,err:=us.f.Seek(size,os.SEEK_SET);err!=nil{
+		return err
+	}
+
+	return nil
+}
+
+
 func (us *filesend)closeFile()  {
 	if us.f !=nil{
 		us.f.Close()
@@ -204,11 +216,20 @@ func (us *filesend)ResumeSend() error  {
 
 	uf:=r.(UdpFile)
 	startSize:=uf.GetStartSize()
-	fmt.Println("Get StartSize: ",startSize)
 
+	ustream.SetAppTyp(constant.FILE_STREAM_HANDLE)
+	ustream.SetTimeOut(30000)
+	if us.f == nil{
+		if err = us.openFileAndSeek(startSize);err!=nil{
+			return err
+		}
+	}
+	err=ustream.ReliableSend(us.f)
 
+	us.closeFile()
 
-	return nil
+	return err
+
 }
 
 func (us *filesend)SetConn(conn netcommon.UdpConn)  {
