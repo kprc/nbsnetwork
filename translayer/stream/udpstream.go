@@ -88,7 +88,7 @@ func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
 	if d2snd,err:=um.Serialize();err!=nil{
 		return udpsendstreamerr
 	}else{
-		if err:=conn.Send(d2snd,store.UDP_STREAM); err!=nil{
+		if err:=conn.SendAsync(d2snd,store.UDP_STREAM); err!=nil{
 			fmt.Println(err.Error())
 			return err
 		}
@@ -227,12 +227,9 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 }
 
 func (us *udpstream)doTimeOut()  int {
-	fmt.Println("stream do timeout")
-
 	if tools.GetNowMsTime() - us.lastsendtime < int64(us.resendtimetv){
 		return sendnoneerr
 	}
-	fmt.Println("stream do timeout2")
 
 	listkey:=reflect.ValueOf(us.udpmsgcache).MapKeys()
 

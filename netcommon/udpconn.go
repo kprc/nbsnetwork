@@ -216,6 +216,12 @@ func (uc *udpconn)Connect() error{
 		uc.wg.Done()
 	}
 
+	defer func() {
+		if err:=recover();err!=nil{
+			fmt.Println(err)
+		}
+	}()
+
 	for{
 		select {
 			case data2send:=<-uc.ready2send:
@@ -254,7 +260,13 @@ func (uc *udpconn)Connect() error{
 
 
 func (uc *udpconn)recv(wg *sync.WaitGroup) error{
-	defer wg.Done()
+	defer func() {
+		wg.Done()
+		if err:=recover();err!=nil{
+			fmt.Println(err)
+		}
+	}()
+
 
 	if uc.wg !=nil{
 		uc.wg.Done()
@@ -304,6 +316,11 @@ func (uc *udpconn)Close() {
 	if uc.status == BAD_CONNECTION || uc.status == STOP_CONNECTION{
 		return
 	}
+	defer func() {
+		if err:=recover();err!=nil{
+			fmt.Println(err)
+		}
+	}()
 	if uc.status == CONNECTION_RUNNING {
 		uc.stopsendsign <- 0
 		if uc.sock != nil {
@@ -367,7 +384,11 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 	if d,err=cp.Serialize();err!=nil{
 		return nil
 	}
-
+	defer func() {
+		if err:=recover();err!=nil{
+			fmt.Println(err)
+		}
+	}()
 	//send d
 	if uc.isconn {
 		if _,err1:=uc.sock.Write(d);err1!=nil{
