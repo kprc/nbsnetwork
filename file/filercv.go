@@ -40,6 +40,8 @@ func sendResumeDesc(v interface{},uid string)  {
 	mr:=message.NewReliableMsg(conn)
 	mr.SetAppTyp(constant.FILE_START_SIZE)
 	if snddata,err:=uf.Serialize();err!=nil{
+		return
+	}else{
 		err1:=mr.ReliableSend(snddata)
 		if err1 !=nil{
 			fmt.Println(err1.Error())
