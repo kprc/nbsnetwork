@@ -26,8 +26,6 @@ func FileRegister()  {
 }
 
 func sendResumeDesc(v interface{},uid string)  {
-	fmt.Println("sendResumeDesc")
-
 	conn:=netcommon.GetConnStoreInstance().GetConn(uid)
 	if conn==nil || !conn.Status(){
 		return
@@ -35,7 +33,7 @@ func sendResumeDesc(v interface{},uid string)  {
 	uf:=v.(UdpFile)
 	fo:=NewFileOp(nil)
 	size:=fo.GetFileSize(uf.GetFileName())
-	fmt.Println("filename",uf.GetFileName(),"size :",size)
+	
 	uf.SetStartSize(size)
 	mr:=message.NewReliableMsg(conn)
 	mr.SetAppTyp(constant.FILE_START_SIZE)
