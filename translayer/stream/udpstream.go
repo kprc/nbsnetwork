@@ -195,7 +195,6 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 					return udpstreamtimeouterr
 				}
 			case ackmessage.AckMessage:
-
 				ret:=us.doAck(ack.(ackmessage.AckMessage))
 				if ret == senderr{
 					return udpstreamconnerr
@@ -206,6 +205,7 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 			}
 		}else{
 			if r:=us.doTimeOut();r==senderr{
+
 				return udpstreamconnerr
 			}
 		}
@@ -227,10 +227,12 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 }
 
 func (us *udpstream)doTimeOut()  int {
+	fmt.Println("stream do timeout")
 
 	if tools.GetNowMsTime() - us.lastsendtime < int64(us.resendtimetv){
 		return sendnoneerr
 	}
+	fmt.Println("stream do timeout2")
 
 	listkey:=reflect.ValueOf(us.udpmsgcache).MapKeys()
 

@@ -131,7 +131,11 @@ func openFile(key store.UdpStreamKey) (io.WriteCloser,error) {
 			fo:=NewFileOp(nil)
 			blk.SetFileOp(fo)
 		}
-		blk.GetFileOp().CreateFile(filename,NEW_CREATE)
+		mode:=NEW_CREATE
+		if blk.GetUdpFile().GetResume(){
+			mode = APPEND_CREATE
+		}
+		blk.GetFileOp().CreateFile(filename,mode)
 
 		return blk.GetFileOp(),nil
 	}
@@ -202,9 +206,6 @@ func closeFile(key store.UdpStreamKey) error {
 	return nil
 }
 
-
-
-
 func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error) {
 	cb:=rcv.(applayer.CtrlBlk)
 	uid:=cb.GetRcvBlk().GetConnPacket().GetUid()
@@ -220,8 +221,6 @@ func handleFileStream(rcv interface{},arg interface{}) (v interface{},err error)
 		closeFile(key)
 	}else if h == constant.REFRESH_FILE{
 		freshFile(key)
-	}else if h == constant.OPEN_FILE_CONTINUE{
-		openFileContinue(key)
 	}
 
 	return
