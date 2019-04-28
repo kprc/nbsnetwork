@@ -33,7 +33,7 @@ func sendResumeDesc(v interface{},uid string)  {
 	uf:=v.(UdpFile)
 	fo:=NewFileOp(nil)
 	size:=fo.GetFileSize(uf.GetFileName())
-	
+
 	uf.SetStartSize(size)
 	mr:=message.NewReliableMsg(conn)
 	mr.SetAppTyp(constant.FILE_START_SIZE)
