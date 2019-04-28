@@ -248,7 +248,7 @@ func (uc *udpconn)Connect() error{
 					return err
 				}
 			case <-uc.stopsendsign:
-				fmt.Println("stop connection")
+				fmt.Println("stop connection",uc.addr.String())
 				uc.status = STOP_CONNECTION
 				closesign = 1
 				return nil
