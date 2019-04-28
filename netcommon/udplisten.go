@@ -123,7 +123,7 @@ func (ul *udplisten)sockRecv(conn *net.UDPConn)  {
 			continue
 		}
 		cs:=GetConnStoreInstance()
-		fmt.Println(cp.GetUid(),addr.String())
+		//fmt.Println(cp.GetUid(),addr.String())
 		cs.Update(string(cp.GetUid()),conn,addr)
 
 
