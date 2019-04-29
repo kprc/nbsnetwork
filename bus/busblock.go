@@ -1,8 +1,6 @@
 package bus
 
-
 type FSendData func(v interface{}, uid string)
-
 
 type busblock struct {
 	data interface{}

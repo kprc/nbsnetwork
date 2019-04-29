@@ -148,28 +148,6 @@ func openFile(key store.UdpStreamKey) (io.WriteCloser,error) {
 	}
 }
 
-
-func openFileContinue(key store.UdpStreamKey) (io.WriteCloser,error) {
-	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
-		blk:=GetFileBlk(v).(FileBlk)
-		filename := blk.GetUdpFile().GetFileName()
-		if blk.GetFileOp() == nil{
-			fo:=NewFileOp(nil)
-			blk.SetFileOp(fo)
-		}
-		blk.GetFileOp().CreateFile(filename,APPEND_CREATE)
-
-		return blk.GetFileOp(),nil
-	}
-
-	fs:=GetFileStoreInstance()
-	if wc,err:=fs.FindFileDo(key,nil,fdo);err!=nil{
-		return nil,err
-	}else{
-		return wc.(FileOp),nil
-	}
-}
-
 func freshFile(key store.UdpStreamKey) error  {
 	fdo:= func(arg interface{}, v interface{}) (ret interface{},err error) {
 		RefreshFSB(v)

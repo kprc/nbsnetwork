@@ -74,7 +74,7 @@ func (bs *busstore)Run()  {
 		select {
 		case v:=<-bs.bus:
 			SendBusBlock(v)
-			case <-bs.quit:
+		case <-bs.quit:
 				return
 		}
 	}

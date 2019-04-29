@@ -74,7 +74,7 @@ func RefreshFSB(v interface{}){
 	blk:=v.(*filestoreblk)
 
 	blk.lastAccessTime = tools.GetNowMsTime()
-	fmt.Println("Fresh File ", tools.GetNowMsTime())
+	//fmt.Println("Fresh File ", tools.GetNowMsTime())
 }
 
 func GetFileBlk(v interface{}) interface{} {
