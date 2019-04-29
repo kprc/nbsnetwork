@@ -11,6 +11,6 @@
 ### 5. file transfer
 ### 6. large file transfer resume
 
-##  Wait to implements:
+##  Will implements:
 ### 1. peer to peer to connection based on udp
 ### 2. if p2p failed, use a random agent to create connection
