@@ -1,7 +1,6 @@
 package message
 
 import (
-	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
 	"github.com/kprc/nbsnetwork/translayer/store"
@@ -9,9 +8,6 @@ import (
 	"fmt"
 )
 
-var (
-	dataerr=nbserr.NbsErr{Errmsg:"No Data"}
-)
 
 func Recv(rblk netcommon.RcvBlock)error  {
 	data:= rblk.GetConnPacket().GetData()

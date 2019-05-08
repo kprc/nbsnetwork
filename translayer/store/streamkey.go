@@ -56,9 +56,6 @@ func (usk *udpstreamkey)Equals(key UdpStreamKey) bool  {
 	return false
 }
 
-
-
-
 var StreamKeyHash = func(v interface{}) uint {
 	sk:=v.(StreamKeyInter)
 	s := fnv.New64()

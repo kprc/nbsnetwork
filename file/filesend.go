@@ -67,6 +67,7 @@ func (uf *udpfile)GetStartSize() int64  {
 
 func (uf *udpfile)Clone() UdpFile  {
     n:=NewEmptyUdpFile()
+
     n.SetSize(uf.GetSize())
     n.SetName(uf.GetName())
     n.SetPath(uf.GetPath())

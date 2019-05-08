@@ -41,5 +41,5 @@ func GetTypFromPos(pos uint64) uint32  {
 	typ := (pos >> 32) & 0xFFFFFFFF
 
 	return uint32(typ)
-
 }
+

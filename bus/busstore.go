@@ -47,7 +47,6 @@ func GetBusStoreInstance() BusStore  {
 
 	}
 
-
 	return busstoreInstance
 }
 
