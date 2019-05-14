@@ -8,7 +8,24 @@ import (
 	"strings"
 	"os/user"
 	"errors"
+	"log"
+	"github.com/kprc/nbsdht/nbserr"
+	"io/ioutil"
 )
+
+var filenotfind = nbserr.NbsErr{ErrId:nbserr.FILE_NOT_FOUND,Errmsg:"File Not Found"}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
+}
+
 
 func Home() (string, error) {
 	user, err := user.Current()
@@ -60,4 +77,39 @@ func homeWindows() (string, error) {
 	}
 
 	return home, nil
+}
+
+func Save2File(data []byte,filename string) error {
+
+
+	f,err:=os.OpenFile(filename,os.O_CREATE|os.O_WRONLY,0755)
+	if err!=nil{
+		log.Fatal(err)
+	}
+
+
+	if _,err:=f.Write(data);err!=nil{
+		f.Close()
+		log.Fatal(err)
+	}
+
+
+	f.Close()
+
+
+	return nil
+}
+
+func OpenAndReadAll(filename string) (data []byte,err error)  {
+	if !FileExists(filename){
+		return nil,filenotfind
+	}
+
+	f,err:=os.OpenFile(filename,os.O_RDONLY,0755)
+	if err!=nil{
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	return ioutil.ReadAll(f)
 }
