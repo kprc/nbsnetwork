@@ -81,7 +81,6 @@ func homeWindows() (string, error) {
 
 func Save2File(data []byte,filename string) error {
 
-
 	f,err:=os.OpenFile(filename,os.O_CREATE|os.O_WRONLY,0755)
 	if err!=nil{
 		log.Fatal(err)
@@ -92,7 +91,6 @@ func Save2File(data []byte,filename string) error {
 		f.Close()
 		log.Fatal(err)
 	}
-
 
 	f.Close()
 

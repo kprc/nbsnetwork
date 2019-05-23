@@ -1,6 +1,9 @@
 package tools
 
-import "time"
+import (
+	"time"
+	"net"
+)
 
 func ResizeHash(hash uint) uint {
 	cnt := 0
@@ -43,3 +46,12 @@ func GetTypFromPos(pos uint64) uint32  {
 	return uint32(typ)
 }
 
+func CheckPortUsed(iptyp string,port uint16) bool{
+	netaddr:= &net.UDPAddr{IP:net.ParseIP("0.0.0.0"),Port:int(port)}
+	if c,err:=net.ListenUDP(iptyp,netaddr);err!=nil{
+		return true
+	}else {
+		c.Close()
+		return false
+	}
+}
