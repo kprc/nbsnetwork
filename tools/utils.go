@@ -3,6 +3,7 @@ package tools
 import (
 	"time"
 	"net"
+	"strings"
 )
 
 func ResizeHash(hash uint) uint {
@@ -47,11 +48,21 @@ func GetTypFromPos(pos uint64) uint32  {
 }
 
 func CheckPortUsed(iptyp string,port uint16) bool{
-	netaddr:= &net.UDPAddr{IP:net.ParseIP("0.0.0.0"),Port:int(port)}
-	if c,err:=net.ListenUDP(iptyp,netaddr);err!=nil{
-		return true
-	}else {
-		c.Close()
-		return false
+	if strings.Contains(strings.ToLower(iptyp),"udp"){
+		netaddr:= &net.UDPAddr{IP:net.ParseIP("0.0.0.0"),Port:int(port)}
+		if c,err:=net.ListenUDP(iptyp,netaddr);err!=nil{
+			return true
+		}else {
+			c.Close()
+			return false
+		}
+	}else{
+		netaddr:=&net.TCPAddr{IP:net.ParseIP("0.0.0.0"),Port:int(port)}
+		if c,err:=net.ListenTCP(iptyp,netaddr);err!=nil{
+			return true
+		}else{
+			c.Close()
+			return false
+		}
 	}
 }
