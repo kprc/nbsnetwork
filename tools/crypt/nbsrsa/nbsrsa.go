@@ -22,9 +22,13 @@ func GenerateKeyPair(bitsCnt int)(*rsa.PrivateKey,*rsa.PublicKey)  {
 
 }
 
-func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey,pubKey *rsa.PublicKey)  error{
+func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
 	if savePath == "" {
 		return errors.New("Path is none")
+	}
+
+	if privKey != nil{
+		return errors.New("Private key is none")
 	}
 
 	keypath:=savePath
@@ -40,12 +44,33 @@ func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey,pubKey *rsa.PublicK
 		os.MkdirAll(keypath,0755)
 	}
 
-	if privKey != nil{
-		pembyte := x509.MarshalPKCS1PrivateKey(privKey)
-		block := pem.Block{Type:"Priv",Bytes:pembyte}
-		tools.Save2File()
+	//save private key
+	pembyte := x509.MarshalPKCS1PrivateKey(privKey)
+	block := &pem.Block{Type:"Priv",Bytes:pembyte}
+	if f,err:=os.OpenFile(path.Join(savePath,"priv.key"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0755);err!=nil{
+		return err
+	}else{
+		if err=pem.Encode(f,block);err!=nil{
+			return err
+		}
+	}
+
+	//save public key
+	pubKey := &privKey.PublicKey
+	pubbytes:= x509.MarshalPKCS1PublicKey(pubKey)
+	block=&pem.Block{Type:"Pub",Bytes:pubbytes}
+	if f,err:=os.OpenFile(path.Join(savePath,"pub.key"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0755);err!=nil{
+		return err
+	}else{
+		if err=pem.Encode(f,block);err!=nil{
+			return err
+		}
 	}
 
 	return nil
+}
+
+func LoadRSAKey(savePath string) (*rsa.PrivateKey,*rsa.PublicKey,error)  {
+	x509.ParsePKCS1PrivateKey()
 }
 
