@@ -10,8 +10,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"io/ioutil"
-	"encoding/base64"
-	"fmt"
 )
 
 func GenerateKeyPair(bitsCnt int)(*rsa.PrivateKey,*rsa.PublicKey)  {
@@ -91,9 +89,9 @@ func LoadRSAKey(savePath string) (priv *rsa.PrivateKey,pub *rsa.PublicKey,err er
 
 	pub = &priv.PublicKey
 
-	fmt.Println("privkey:",base64.StdEncoding.EncodeToString(block.Bytes))
-	pubbytes:=x509.MarshalPKCS1PublicKey(pub)
-	fmt.Println("pubkey:",base64.StdEncoding.EncodeToString(pubbytes))
+	//fmt.Println("privkey:",len(block.Bytes),base64.StdEncoding.EncodeToString(block.Bytes))
+	//pubbytes:=x509.MarshalPKCS1PublicKey(pub)
+	//fmt.Println("pubkey:",len(pubbytes),base64.StdEncoding.EncodeToString(pubbytes))
 
 	if pubkey,err:=ioutil.ReadFile(path.Join(savePath,"pub.key"));err!=nil{
 		return nil,nil,errors.New("read pub.key error")
@@ -102,15 +100,13 @@ func LoadRSAKey(savePath string) (priv *rsa.PrivateKey,pub *rsa.PublicKey,err er
 		if block == nil{
 			return nil,nil,errors.New("recover pubKey error")
 		}
-		fmt.Println("pubkey:",base64.StdEncoding.EncodeToString(block.Bytes))
+		//fmt.Println("pubkey:",base64.StdEncoding.EncodeToString(block.Bytes))
+
 	}
 
 	if pub,err = x509.ParsePKCS1PublicKey(block.Bytes);err!=nil{
 		return nil,nil,errors.New("Parse PubKey error")
 	}
-
-
-
 
 	return
 
