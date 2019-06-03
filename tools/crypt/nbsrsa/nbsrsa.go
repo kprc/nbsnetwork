@@ -9,6 +9,9 @@ import (
 	"os"
 	"crypto/x509"
 	"encoding/pem"
+	"io/ioutil"
+	"encoding/base64"
+	"fmt"
 )
 
 func GenerateKeyPair(bitsCnt int)(*rsa.PrivateKey,*rsa.PublicKey)  {
@@ -27,7 +30,7 @@ func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
 		return errors.New("Path is none")
 	}
 
-	if privKey != nil{
+	if privKey == nil{
 		return errors.New("Private key is none")
 	}
 
@@ -47,7 +50,8 @@ func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
 	//save private key
 	pembyte := x509.MarshalPKCS1PrivateKey(privKey)
 	block := &pem.Block{Type:"Priv",Bytes:pembyte}
-	if f,err:=os.OpenFile(path.Join(savePath,"priv.key"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0755);err!=nil{
+
+	if f,err:=os.OpenFile(path.Join(keypath,"priv.key"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0755);err!=nil{
 		return err
 	}else{
 		if err=pem.Encode(f,block);err!=nil{
@@ -59,7 +63,7 @@ func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
 	pubKey := &privKey.PublicKey
 	pubbytes:= x509.MarshalPKCS1PublicKey(pubKey)
 	block=&pem.Block{Type:"Pub",Bytes:pubbytes}
-	if f,err:=os.OpenFile(path.Join(savePath,"pub.key"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0755);err!=nil{
+	if f,err:=os.OpenFile(path.Join(keypath,"pub.key"),os.O_CREATE|os.O_TRUNC|os.O_WRONLY,0755);err!=nil{
 		return err
 	}else{
 		if err=pem.Encode(f,block);err!=nil{
@@ -70,7 +74,45 @@ func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
 	return nil
 }
 
-func LoadRSAKey(savePath string) (*rsa.PrivateKey,*rsa.PublicKey,error)  {
-	x509.ParsePKCS1PrivateKey()
+func LoadRSAKey(savePath string) (priv *rsa.PrivateKey,pub *rsa.PublicKey,err error)  {
+	//load privKey
+	var block *pem.Block
+	if privKey,err:=ioutil.ReadFile(path.Join(savePath,"priv.key"));err!=nil{
+		return nil,nil,errors.New("read priv.key error")
+	}else {
+		block, _ = pem.Decode(privKey)
+		if block == nil{
+			return nil,nil,errors.New("recover privKey error")
+		}
+	}
+	if priv,err = x509.ParsePKCS1PrivateKey(block.Bytes);err!=nil{
+		return nil,nil,errors.New("Parse privKey error")
+	}
+
+	pub = &priv.PublicKey
+
+	fmt.Println("privkey:",base64.StdEncoding.EncodeToString(block.Bytes))
+	pubbytes:=x509.MarshalPKCS1PublicKey(pub)
+	fmt.Println("pubkey:",base64.StdEncoding.EncodeToString(pubbytes))
+
+	if pubkey,err:=ioutil.ReadFile(path.Join(savePath,"pub.key"));err!=nil{
+		return nil,nil,errors.New("read pub.key error")
+	}else {
+		block, _ = pem.Decode(pubkey)
+		if block == nil{
+			return nil,nil,errors.New("recover pubKey error")
+		}
+		fmt.Println("pubkey:",base64.StdEncoding.EncodeToString(block.Bytes))
+	}
+
+	if pub,err = x509.ParsePKCS1PublicKey(block.Bytes);err!=nil{
+		return nil,nil,errors.New("Parse PubKey error")
+	}
+
+
+
+
+	return
+
 }
 
