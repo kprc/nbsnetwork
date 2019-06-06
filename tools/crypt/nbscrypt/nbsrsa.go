@@ -1,4 +1,4 @@
-package nbsrsa
+package nbscrypt
 
 import (
 	"crypto/rsa"
@@ -21,6 +21,14 @@ func GenerateKeyPair(bitsCnt int)(*rsa.PrivateKey,*rsa.PublicKey)  {
 
 	return priv,&priv.PublicKey
 
+}
+
+func RsaKeyIsExists(savaPath string) bool  {
+	if tools.FileExists(path.Join(savaPath,"priv.key")){
+		return true
+	}
+
+	return false
 }
 
 func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
@@ -89,7 +97,7 @@ func LoadRSAKey(savePath string) (priv *rsa.PrivateKey,pub *rsa.PublicKey,err er
 
 	pub = &priv.PublicKey
 
-	//fmt.Println("privkey:",len(block.Bytes),base64.StdEncoding.EncodeToString(block.Bytes))
+	//fmt.Println("privkey:",len(block.Bytes),base58.FastBase58Encoding(block.Bytes))
 	//pubbytes:=x509.MarshalPKCS1PublicKey(pub)
 	//fmt.Println("pubkey:",len(pubbytes),base64.StdEncoding.EncodeToString(pubbytes))
 
@@ -111,4 +119,13 @@ func LoadRSAKey(savePath string) (priv *rsa.PrivateKey,pub *rsa.PublicKey,err er
 	return
 
 }
+
+func EncryptRSA(data []byte,pub *rsa.PublicKey) (encData []byte ,err error)  {
+	return rsa.EncryptPKCS1v15(rand.Reader,pub,data)
+}
+
+func DecryptRsa(encData []byte,priv *rsa.PrivateKey) (data []byte ,err error)   {
+	return rsa.DecryptPKCS1v15(rand.Reader,priv,encData)
+}
+
 
