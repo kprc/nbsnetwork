@@ -97,10 +97,6 @@ func LoadRSAKey(savePath string) (priv *rsa.PrivateKey,pub *rsa.PublicKey,err er
 
 	pub = &priv.PublicKey
 
-	//fmt.Println("privkey:",len(block.Bytes),base58.FastBase58Encoding(block.Bytes))
-	//pubbytes:=x509.MarshalPKCS1PublicKey(pub)
-	//fmt.Println("pubkey:",len(pubbytes),base64.StdEncoding.EncodeToString(pubbytes))
-
 	if pubkey,err:=ioutil.ReadFile(path.Join(savePath,"pub.key"));err!=nil{
 		return nil,nil,errors.New("read pub.key error")
 	}else {
@@ -108,7 +104,6 @@ func LoadRSAKey(savePath string) (priv *rsa.PrivateKey,pub *rsa.PublicKey,err er
 		if block == nil{
 			return nil,nil,errors.New("recover pubKey error")
 		}
-		//fmt.Println("pubkey:",base64.StdEncoding.EncodeToString(block.Bytes))
 
 	}
 

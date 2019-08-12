@@ -49,7 +49,7 @@ func GetTypFromPos(pos uint64) uint32  {
 
 func CheckPortUsed(iptyp string,port uint16) bool{
 	if strings.Contains(strings.ToLower(iptyp),"udp"){
-		netaddr:= &net.UDPAddr{IP:net.ParseIP("0.0.0.0"),Port:int(port)}
+		netaddr:= &net.UDPAddr{IP:net.ParseIP("127.0.0.1"),Port:int(port)}
 		if c,err:=net.ListenUDP(iptyp,netaddr);err!=nil{
 			return true
 		}else {
@@ -57,7 +57,7 @@ func CheckPortUsed(iptyp string,port uint16) bool{
 			return false
 		}
 	}else{
-		netaddr:=&net.TCPAddr{IP:net.ParseIP("0.0.0.0"),Port:int(port)}
+		netaddr:=&net.TCPAddr{IP:net.ParseIP("127.0.0.1"),Port:int(port)}
 		if c,err:=net.ListenTCP(iptyp,netaddr);err!=nil{
 			return true
 		}else{
