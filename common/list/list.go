@@ -83,6 +83,9 @@ func (l *list)ListIterator(cnt int) *ListCusor  {
 	lc:=&ListCusor{}
 	lc.arrv = make([]interface{},0)
 
+	if l.root == nil{
+		return lc
+	}
 	root:=l.root
 	node := l.root
 
