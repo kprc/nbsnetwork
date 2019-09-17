@@ -4,6 +4,7 @@ import (
 	"strings"
 	"net"
 	"bytes"
+	"sync"
 )
 
 //address from https://en.wikipedia.org/wiki/Reserved_IP_addresses
@@ -34,11 +35,19 @@ type NetworkIP struct {
 
 
 var gNetworkArr []*NetworkIP
+var gNetworkArrLock sync.Mutex
 
 func init()  {
 	if gNetworkArr != nil{
 		return
 	}
+
+	gNetworkArrLock.Lock()
+	defer gNetworkArrLock.Unlock()
+	if gNetworkArr != nil{
+		return
+	}
+
 	gNetworkArr = make([]*NetworkIP,0)
 
 	for _,sip:=range NetWorkIPs{
@@ -68,6 +77,9 @@ func convertP(sip string) *NetworkIP {
 }
 
 func IsPrivateIP(ip net.IP) bool  {
+	if nil == ip{
+		return false
+	}
 	for _,ni:=range gNetworkArr{
 		netip:=ip.Mask(*ni.mask)
 		if bytes.Compare([]byte(netip.To4()),[]byte((*ni.netIP).To4())) == 0{
@@ -78,6 +90,7 @@ func IsPrivateIP(ip net.IP) bool  {
 }
 
 func IsPrivateIPStr(ips string) bool {
+
 	ip:=net.ParseIP(ips)
 
 	return IsPrivateIP(ip)

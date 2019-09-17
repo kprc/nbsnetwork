@@ -4,6 +4,8 @@ import (
 	"time"
 	"net"
 	"strings"
+	"github.com/pkg/errors"
+	"strconv"
 )
 
 func ResizeHash(hash uint) uint {
@@ -47,9 +49,9 @@ func GetTypFromPos(pos uint64) uint32  {
 	return uint32(typ)
 }
 
-func CheckPortUsed(iptyp string,port uint16) bool{
+func CheckPortUsed(iptyp,ipaddr string,port uint16) bool{
 	if strings.Contains(strings.ToLower(iptyp),"udp"){
-		netaddr:= &net.UDPAddr{IP:net.ParseIP("127.0.0.1"),Port:int(port)}
+		netaddr:= &net.UDPAddr{IP:net.ParseIP(ipaddr),Port:int(port)}
 		if c,err:=net.ListenUDP(iptyp,netaddr);err!=nil{
 			return true
 		}else {
@@ -57,7 +59,7 @@ func CheckPortUsed(iptyp string,port uint16) bool{
 			return false
 		}
 	}else{
-		netaddr:=&net.TCPAddr{IP:net.ParseIP("127.0.0.1"),Port:int(port)}
+		netaddr:=&net.TCPAddr{IP:net.ParseIP(ipaddr),Port:int(port)}
 		if c,err:=net.ListenTCP(iptyp,netaddr);err!=nil{
 			return true
 		}else{
@@ -65,4 +67,26 @@ func CheckPortUsed(iptyp string,port uint16) bool{
 			return false
 		}
 	}
+}
+
+func GetIPPort(addr string) (ip string,port int,err error)  {
+	arraddr:= strings.Split(addr,":")
+	if len(arraddr) != 2{
+		return "",0,errors.New("address error")
+	}
+
+	ip = arraddr[0]
+	port,err = strconv.Atoi(arraddr[1])
+	if err!=nil{
+		return "",0,err
+	}
+	if port <1024 || port >65535{
+		return "",0,errors.New("port error")
+	}
+
+	if _,err=net.ResolveIPAddr("ip4",ip);err!=nil{
+		return "",0,err
+	}
+
+	return ip,port,nil
 }
