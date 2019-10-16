@@ -42,13 +42,13 @@ func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
 
 	keypath:=savePath
 
-	if !path.IsAbs(savePath){
-		if homedir,err:=tools.Home();err!=nil{
-			return errors.New("Cant get work home directory")
-		}else {
-			keypath = path.Join(homedir,savePath)
-		}
-	}
+	//if !path.IsAbs(savePath){
+	//	if homedir,err:=tools.Home();err!=nil{
+	//		return errors.New("Cant get work home directory")
+	//	}else {
+	//		keypath = path.Join(homedir,savePath)
+	//	}
+	//}
 	if !tools.FileExists(keypath) {
 		os.MkdirAll(keypath,0755)
 	}
