@@ -5,7 +5,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"fmt"
 )
 
 type nbsticker struct {
@@ -116,7 +115,7 @@ func (nt *nbsticker)delTicker(arr []*tickV)  {
 }
 
 func (nt *nbsticker)Run(){
-	fmt.Println("Global Ticker is Running")
+	//fmt.Println("Global Ticker is Running")
 	if nt.wg !=nil{
 		defer nt.wg.Done()
 	}

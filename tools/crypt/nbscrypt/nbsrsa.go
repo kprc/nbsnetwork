@@ -42,6 +42,7 @@ func Save2FileRSAKey(savePath string,privKey *rsa.PrivateKey)  error{
 
 	keypath:=savePath
 
+	//note: windows not support, comment it
 	//if !path.IsAbs(savePath){
 	//	if homedir,err:=tools.Home();err!=nil{
 	//		return errors.New("Cant get work home directory")
