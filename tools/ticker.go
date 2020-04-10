@@ -13,6 +13,8 @@ type nbsticker struct {
 	l list.List
 	stop chan int
 	wg *sync.WaitGroup
+	runing bool
+	runinglock sync.Mutex
 }
 
 
@@ -102,6 +104,19 @@ func (nt *nbsticker)UnReg(c *chan int64)  {
 }
 
 func (nt *nbsticker)Stop()  {
+
+	if !nt.runing{
+		return
+	}
+
+	nt.runinglock.Lock()
+	defer nt.runinglock.Unlock()
+	if !nt.runing{
+		return
+	}
+
+	nt.runing = false
+
 	nt.stop <- 0
 	if nt.wg !=nil {
 		nt.wg.Wait()
@@ -115,6 +130,21 @@ func (nt *nbsticker)delTicker(arr []*tickV)  {
 }
 
 func (nt *nbsticker)Run(){
+
+	if nt.runing == true{
+		return
+	}
+	nt.runinglock.Lock()
+	defer nt.runinglock.Unlock()
+
+	if nt.runing {
+		return
+	}
+
+	nt.runing = true
+
+
+
 	//fmt.Println("Global Ticker is Running")
 	if nt.wg !=nil{
 		defer nt.wg.Done()

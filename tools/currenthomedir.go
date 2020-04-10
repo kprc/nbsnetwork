@@ -85,15 +85,12 @@ func Save2File(data []byte,filename string) error {
 	if err!=nil{
 		log.Fatal(err)
 	}
-
+	defer f.Close()
 
 	if _,err:=f.Write(data);err!=nil{
 		f.Close()
 		log.Fatal(err)
 	}
-
-	f.Close()
-
 
 	return nil
 }

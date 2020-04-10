@@ -25,11 +25,13 @@ type ListCusor struct {
 
 type List interface {
 	Add(node *nbslink.LinkNode)
+	Append(node *nbslink.LinkNode)
 	Del(node *nbslink.LinkNode)
 	UpdateValueOrder(v interface{})
 	Find(v interface{}) *nbslink.LinkNode
 	FindDo(arg interface{},do FDo) (ret interface{},err error)
 	AddValue(v interface{})
+	AppendValue(v interface{})
 	DelValue(v interface{})
 	Count() int32
 	Traverse(arg interface{},fDo FDo)
@@ -45,6 +47,10 @@ type List interface {
 	GetSortFunc() (sort func(v1 interface{},v2 interface{}) int )
 	ListIterator(cnt int) *ListCusor
 	Sort()
+	GetFirst() (v interface{},err error)
+	GetLast()  (v interface{},err error)
+	InsertBefore(v interface{},before interface{}) error
+	InsertAfter(v interface{},after interface{}) error
 }
 
 func NewList(cmp func(v1 interface{},v2 interface{}) int) List  {
@@ -77,6 +83,77 @@ func Cmp(v1 interface{},v2 interface{})  int {
 	}else {
 		return -1
 	}
+}
+
+func (l *list)GetFirst() (v interface{},err error)  {
+
+	if l.root == nil{
+		return nil,errors.New("list is empty")
+	}
+
+	return l.root.Value,nil
+}
+
+func (l *list)GetLast() (v interface{},err error){
+	if l.root == nil{
+		return nil,errors.New("list is empty")
+	}
+	return l.root.Prev().Value,nil
+}
+
+func (l *list)InsertBefore(v interface{},before interface{}) error {
+	if v==nil || before == nil{
+		return errors.New("parameter error")
+	}
+	n:=l.Find(before)
+	if n == nil{
+		return errors.New("before not found")
+	}
+	nv:= nbslink.NewLink(v)
+	n.Insert(nv)
+	if n == l.root{
+		l.root = nv
+	}
+	l.incCnt()
+
+	return nil
+}
+
+func (l *list)InsertAfter(v interface{},after interface{}) error {
+	if v==nil || after == nil{
+		return errors.New("parameter error")
+	}
+	n:=l.Find(after)
+	if n == nil{
+		return errors.New("after not found")
+	}
+	nv:= nbslink.NewLink(v)
+	n.Add(nv)
+
+	l.incCnt()
+
+	return nil
+}
+
+func (l *list)Append(node *nbslink.LinkNode)  {
+	if node == nil{
+		return
+	}
+	if l.root == nil{
+		node.Init()
+		l.root = node
+	}else{
+		l.root.Add(node)
+		l.incCnt()
+	}
+}
+
+func (l *list)AppendValue(v interface{})  {
+	if v == nil{
+		return
+	}
+	n:= nbslink.NewLink(v)
+	l.Append(n)
 }
 
 func (l *list)ListIterator(cnt int) *ListCusor  {
@@ -125,6 +202,10 @@ func (it *ListCusor)Next() interface{} {
 
 func (it *ListCusor)Reset() {
 	it.cursor = 0
+}
+
+func (it *ListCusor)Count() int {
+	return len(it.arrv)
 }
 
 func (l *list)Sort()  {
