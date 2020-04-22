@@ -46,6 +46,7 @@ type List interface {
 	GetClone() (clone func(v1 interface{}) (r interface{}))
 	GetSortFunc() (sort func(v1 interface{},v2 interface{}) int )
 	ListIterator(cnt int) *ListCusor
+	ListIteratorB(start,end int) *ListCusor
 	Sort()
 	GetFirst() (v interface{},err error)
 	GetLast()  (v interface{},err error)
@@ -188,6 +189,50 @@ func (l *list)ListIterator(cnt int) *ListCusor  {
 	return lc
 
 }
+
+func (l *list)ListIteratorB(start,end int) *ListCusor  {
+	lc:=&ListCusor{}
+	lc.arrv = make([]interface{},0)
+
+	if start >= end{
+		return lc
+	}
+
+	if l.root == nil{
+		return lc
+	}
+	root:=l.root
+	node := l.root
+
+	curcnt:=0
+
+	for  {
+		if curcnt>=start && curcnt < end{
+			v:=node.Value
+			if l.clone != nil{
+				v=l.clone(node.Value)
+			}
+			lc.arrv = append(lc.arrv,v)
+
+		}
+
+		if curcnt>=end{
+			break
+		}
+
+		curcnt ++
+		node = node.Next()
+		if node == root {
+			break
+		}
+
+
+
+	}
+
+	return lc
+}
+
 
 func (it *ListCusor)Next() interface{} {
 	if it.cursor >= len(it.arrv){
