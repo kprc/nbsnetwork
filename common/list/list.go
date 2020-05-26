@@ -50,8 +50,11 @@ type List interface {
 	Sort()
 	GetFirst() (v interface{},err error)
 	GetLast()  (v interface{},err error)
+	GetLastNode() (node *nbslink.LinkNode,err error)
 	InsertBefore(v interface{},before interface{}) error
 	InsertAfter(v interface{},after interface{}) error
+	Insert(node *nbslink.LinkNode)
+	InsertValue(v interface{})
 }
 
 func NewList(cmp func(v1 interface{},v2 interface{}) int) List  {
@@ -102,6 +105,15 @@ func (l *list)GetLast() (v interface{},err error){
 	return l.root.Prev().Value,nil
 }
 
+func (l *list)GetLastNode() (node *nbslink.LinkNode,err error)  {
+	if l.root == nil{
+		return nil,errors.New("list is empty")
+	}
+
+	return l.root.Prev(),nil
+
+}
+
 func (l *list)InsertBefore(v interface{},before interface{}) error {
 	if v==nil || before == nil{
 		return errors.New("parameter error")
@@ -148,6 +160,8 @@ func (l *list)Append(node *nbslink.LinkNode)  {
 		l.incCnt()
 	}
 }
+
+
 
 func (l *list)AppendValue(v interface{})  {
 	if v == nil{
@@ -406,6 +420,28 @@ func (l *list)Add(node *nbslink.LinkNode)  {
 	l.incCnt()
 	l.root.Insert(node)
 }
+
+func (l *list)Insert(node *nbslink.LinkNode)  {
+	if node == nil {
+		return
+	}
+	if l.root == nil {
+		node.Init()
+		l.root = node
+		l.incCnt()
+		return
+	}else{
+		l.incCnt()
+		l.root.Insert(node)
+		l.root = node
+	}
+}
+
+func (l *list)InsertValue(v interface{})  {
+	n:= nbslink.NewLink(v)
+	l.Insert(n)
+}
+
 
 func (l *list)Del(node *nbslink.LinkNode)  {
 	if l.root == nil{

@@ -13,7 +13,7 @@ import (
 	"sync"
 )
 
-type filedbkev struct {
+type filedbkv struct {
 	Key   string `json:"k"`
 	Value string `json:"v"`
 }
@@ -101,7 +101,7 @@ func (fdb *filedb) load() {
 
 func (fdb *filedb) tomap(line []byte) {
 
-	k := &filedbkev{}
+	k := &filedbkv{}
 
 	var delflag bool
 
@@ -133,10 +133,12 @@ func (fdb *filedb) Insert(key string, value string) error {
 }
 
 func (fdb *filedb) Delete(key string) {
-	v:=fdb.mkey[key]
-
-	delete(fdb.mkey, key)
-	fdb.AppendSave(key,v,true)
+	if v,ok:=fdb.mkey[key];!ok{
+		return
+	}else{
+		delete(fdb.mkey, key)
+		fdb.AppendSave(key,v,true)
+	}
 }
 
 func (fdb *filedb) Find(key string) (string, error) {
@@ -178,7 +180,7 @@ func (fdb *filedb) Save() {
 	for _, key := range listkey {
 		k := key.Interface().(string)
 
-		fk := &filedbkev{}
+		fk := &filedbkv{}
 
 		fk.Key = k
 		fk.Value = fdb.mkey[k]
@@ -220,7 +222,7 @@ func (fdb *filedb)AppendSave(key,value string,del bool)  {
 		}
 	}
 
-	fk := &filedbkev{}
+	fk := &filedbkv{}
 
 	fk.Key = key
 	fk.Value = value
