@@ -1,46 +1,45 @@
 package netcommon
 
 import (
+	"fmt"
 	"github.com/kprc/nbsdht/dht/nbsid"
 	"github.com/kprc/nbsdht/nbserr"
 	"github.com/kprc/nbsnetwork/common/address"
+	"github.com/kprc/nbsnetwork/common/constant"
 	"github.com/kprc/nbsnetwork/tools"
 	"net"
-	"sync"
-	"fmt"
-	"time"
 	"strings"
-	"github.com/kprc/nbsnetwork/common/constant"
+	"sync"
+	"time"
 )
 
-
 type udpconn struct {
-	dialAddr address.UdpAddresser
-	localAddr address.UdpAddresser
-	realAddr address.UdpAddresser
-	addr *net.UDPAddr
-	sock *net.UDPConn
-	isconn bool     //if conn from listen, isconn is false
-	ready2send chan interface{}
-	tick chan int64
-	statuslock sync.Mutex
-	status int32 //0 not set, 1 stopped, 2 bad connection, 3 connecting
-	stopsendsign chan int
-	closesign chan int
-	lastrcvtime int64
+	dialAddr       address.UdpAddresser
+	localAddr      address.UdpAddresser
+	realAddr       address.UdpAddresser
+	addr           *net.UDPAddr
+	sock           *net.UDPConn
+	isconn         bool //if conn from listen, isconn is false
+	ready2send     chan interface{}
+	tick           chan int64
+	statuslock     sync.Mutex
+	status         int32 //0 not set, 1 stopped, 2 bad connection, 3 connecting
+	stopsendsign   chan int
+	closesign      chan int
+	lastrcvtime    int64
 	lastSendKaTime int64
-	timeouttv int
-	wg *sync.WaitGroup
-	tickrcv chan int64
-	rcv chan int
+	timeouttv      int
+	wg             *sync.WaitGroup
+	tickrcv        chan int64
+	rcv            chan int
 }
 
 type UdpConn interface {
 	Dial() error
 	ConnSync()
 	Connect() error
-	Send(data [] byte,typ uint32) error
-	SendAsync(data [] byte, typ uint32) error  //unblocking
+	Send(data []byte, typ uint32) error
+	SendAsync(data []byte, typ uint32) error //unblocking
 	SetTimeout(tv int)
 	Status() bool
 	Close()
@@ -51,38 +50,37 @@ type UdpConn interface {
 	UpdateLastAccessTime()
 }
 
-
 //======= For Send Buffer Define Begin ======
 
 type senddata struct {
-	data []byte
+	data   []byte
 	msgtyp uint32
 }
 
 //=======For Send Buffer Define End  =====
 
 var (
-	CONNECTION_INIT int32 = 0
-	STOP_CONNECTION int32 = 1
-	BAD_CONNECTION int32 = 2
+	CONNECTION_INIT    int32 = 0
+	STOP_CONNECTION    int32 = 1
+	BAD_CONNECTION     int32 = 2
 	CONNECTION_RUNNING int32 = 3
 )
 
 var (
-	dialerr  = nbserr.NbsErr{ErrId:nbserr.UDP_DIAL_ERR,Errmsg:"Dial UDP Connection Error"}
-	baderr = nbserr.NbsErr{ErrId:nbserr.UDP_BAD_CONN,Errmsg:"Bad Connection"}
-	notreadyerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_NOTREADY,Errmsg:"Connection not ready!"}
-	nodataerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_NODATA,Errmsg:"Connection have no data arrived"}
-	bufferoverflowerr = nbserr.NbsErr{ErrId:nbserr.UDP_BUFFOVERFLOW,Errmsg:"Buffer overflow"}
-	listenconnerr = nbserr.NbsErr{ErrId:nbserr.UDP_CONN_LISTEN,Errmsg:"Connection is received"}
+	dialerr           = nbserr.NbsErr{ErrId: nbserr.UDP_DIAL_ERR, Errmsg: "Dial UDP Connection Error"}
+	baderr            = nbserr.NbsErr{ErrId: nbserr.UDP_BAD_CONN, Errmsg: "Bad Connection"}
+	notreadyerr       = nbserr.NbsErr{ErrId: nbserr.UDP_CONN_NOTREADY, Errmsg: "Connection not ready!"}
+	nodataerr         = nbserr.NbsErr{ErrId: nbserr.UDP_CONN_NODATA, Errmsg: "Connection have no data arrived"}
+	bufferoverflowerr = nbserr.NbsErr{ErrId: nbserr.UDP_BUFFOVERFLOW, Errmsg: "Buffer overflow"}
+	listenconnerr     = nbserr.NbsErr{ErrId: nbserr.UDP_CONN_LISTEN, Errmsg: "Connection is received"}
 )
 
-func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
-	uc:= &udpconn{}
+func NewUdpConnFromListen(addr *net.UDPAddr, sock *net.UDPConn) UdpConn {
+	uc := &udpconn{}
 
-	uc.ready2send = make(chan interface{},1024)
+	uc.ready2send = make(chan interface{}, 1024)
 
-	uc.tick = make(chan int64,8)
+	uc.tick = make(chan int64, 8)
 	uc.stopsendsign = make(chan int)
 	uc.closesign = make(chan int)
 
@@ -92,29 +90,29 @@ func NewUdpConnFromListen(addr *net.UDPAddr,sock *net.UDPConn) UdpConn {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	uc.timeouttv = constant.UDP_CONNECTION_TIMEOUT   //ms
+	uc.timeouttv = constant.UDP_CONNECTION_TIMEOUT //ms
 
 	return uc
 
 }
 
-func NewUdpCreateConnection(rip,lip string,rport,lport uint16) UdpConn  {
-	if rip == ""{
+func NewUdpCreateConnection(rip, lip string, rport, lport uint16) UdpConn {
+	if rip == "" {
 		return nil
 	}
-	uc:= &udpconn{}
+	uc := &udpconn{}
 	uc.dialAddr = address.NewUdpAddress()
-	uc.dialAddr.AddIP4(rip,rport)
+	uc.dialAddr.AddIP4(rip, rport)
 	if lip != "" {
 		uc.localAddr = address.NewUdpAddress()
-		uc.localAddr.AddIP4(lip,lport)
-	}else if lport != 0{
-		uc.localAddr.AddIP4("0.0.0.0",lport)
+		uc.localAddr.AddIP4(lip, lport)
+	} else if lport != 0 {
+		uc.localAddr.AddIP4("0.0.0.0", lport)
 	}
 
-	uc.ready2send = make(chan interface{},1024)
+	uc.ready2send = make(chan interface{}, 1024)
 	//uc.recvFromConn = make(chan interface{},1024)
-	uc.tick = make(chan int64,8)
+	uc.tick = make(chan int64, 8)
 	uc.stopsendsign = make(chan int)
 	uc.closesign = make(chan int)
 	uc.rcv = make(chan int)
@@ -123,38 +121,36 @@ func NewUdpCreateConnection(rip,lip string,rport,lport uint16) UdpConn  {
 
 	nt := tools.GetNbsTickerInstance()
 	nt.Reg(&uc.tick)
-	nt.RegWithTimeOut(&uc.tickrcv,1000)
-	uc.timeouttv = constant.UDP_CONNECTION_TIMEOUT   //ms
-
+	nt.RegWithTimeOut(&uc.tickrcv, 1000)
+	uc.timeouttv = constant.UDP_CONNECTION_TIMEOUT //ms
 
 	return uc
 }
 
-
-func assembleUdpAddr(addr address.UdpAddresser) *net.UDPAddr  {
+func assembleUdpAddr(addr address.UdpAddresser) *net.UDPAddr {
 	if addr == nil {
 		return nil
 	}
-	ipstr,port := addr.FirstS()
+	ipstr, port := addr.FirstS()
 	if ipstr == "" {
 		return nil
 	}
-	return &net.UDPAddr{IP:net.ParseIP(ipstr),Port:int(port)}
+	return &net.UDPAddr{IP: net.ParseIP(ipstr), Port: int(port)}
 }
 
-func (uc *udpconn)Dial() error  {
-	if uc.isconn == false{
+func (uc *udpconn) Dial() error {
+	if uc.isconn == false {
 		return listenconnerr
 	}
 	la := assembleUdpAddr(uc.localAddr)
 	ra := assembleUdpAddr(uc.dialAddr)
 
-	conn,err:=net.DialUDP("udp4",la,ra)
-	if err!=nil{
+	conn, err := net.DialUDP("udp4", la, ra)
+	if err != nil {
 		return dialerr
 	}
 
-	if la != nil{
+	if la != nil {
 		uc.realAddr = address.NewUdpAddress()
 		uc.realAddr.AddIP4Str(la.String())
 	}
@@ -164,21 +160,19 @@ func (uc *udpconn)Dial() error  {
 
 	return nil
 
-
 }
 
-func (uc *udpconn)SetTimeout(tv int)  {
+func (uc *udpconn) SetTimeout(tv int) {
 	uc.timeouttv = tv
 }
 
-func (uc *udpconn)Connect() error{
+func (uc *udpconn) Connect() error {
 
 	var closesign int = 0
 
 	uc.statuslock.Lock()
 
-
-	if uc.status == BAD_CONNECTION{
+	if uc.status == BAD_CONNECTION {
 		uc.statuslock.Unlock()
 		return baderr
 	}
@@ -191,7 +185,6 @@ func (uc *udpconn)Connect() error{
 	uc.status = CONNECTION_RUNNING
 
 	uc.statuslock.Unlock()
-
 
 	if uc.isconn {
 		wg := &sync.WaitGroup{}
@@ -212,83 +205,80 @@ func (uc *udpconn)Connect() error{
 		}()
 	}
 
-	if uc.wg !=nil {
+	if uc.wg != nil {
 		uc.wg.Done()
 	}
 
 	defer func() {
-		if err:=recover();err!=nil{
-			fmt.Println(err,"udpconn connect")
+		if err := recover(); err != nil {
+			fmt.Println(err, "udpconn connect")
 		}
 	}()
 
-	for{
+	for {
 		select {
-			case data2send:=<-uc.ready2send:
-				d2s := data2send.(senddata)
-				if err := uc.send(d2s.data,CONN_PACKET_TYP_DATA,d2s.msgtyp);err!=nil{
+		case data2send := <-uc.ready2send:
+			d2s := data2send.(senddata)
+			if err := uc.send(d2s.data, CONN_PACKET_TYP_DATA, d2s.msgtyp); err != nil {
 
-					uc.status = BAD_CONNECTION
-					if uc.isconn == true {
+				uc.status = BAD_CONNECTION
+				if uc.isconn == true {
+					uc.sock.Close()
+				}
+				uc.sock = nil
+				return err
+			}
+
+		case <-uc.tick:
+			if err := uc.sendKAPacket(); err != nil {
+				uc.status = BAD_CONNECTION
+				if uc.isconn == true {
+					if uc.sock != nil {
 						uc.sock.Close()
 					}
-					uc.sock = nil
-					return err
 				}
-
-			case <-uc.tick:
-				if err := uc.sendKAPacket();err!=nil{
-					uc.status = BAD_CONNECTION
-					if uc.isconn == true {
-						if uc.sock != nil{
-							uc.sock.Close()
-						}
-					}
-					uc.sock = nil
-					return err
-				}
-			case <-uc.stopsendsign:
-				fmt.Println("stop connection",uc.addr.String())
-				uc.status = STOP_CONNECTION
-				closesign = 1
-				return nil
+				uc.sock = nil
+				return err
+			}
+		case <-uc.stopsendsign:
+			fmt.Println("stop connection", uc.addr.String())
+			uc.status = STOP_CONNECTION
+			closesign = 1
+			return nil
 
 		}
 	}
 }
 
-
-
-func (uc *udpconn)recv(wg *sync.WaitGroup) error{
+func (uc *udpconn) recv(wg *sync.WaitGroup) error {
 	defer func() {
 		wg.Done()
-		if err:=recover();err!=nil{
-			fmt.Println(err,"udpconn recv")
+		if err := recover(); err != nil {
+			fmt.Println(err, "udpconn recv")
 		}
 	}()
 
-
-	if uc.wg !=nil{
+	if uc.wg != nil {
 		uc.wg.Done()
 	}
 
 	for {
-		buf := make([]byte,2048)
+		buf := make([]byte, 2048)
 
 		var err error
 		var nr int
-		if  nr,err = uc.sock.Read(buf); err!=nil{
+		if nr, err = uc.sock.Read(buf); err != nil {
 			return baderr
 		}
 
 		uc.UpdateLastAccessTime()
 
-		cp:=NewConnPacket()
-		if err=cp.DeSerialize(buf[0:nr]);err!=nil{
+		cp := NewConnPacket()
+		if err = cp.DeSerialize(buf[0:nr]); err != nil {
 			continue
 		}
 
-		if cp.GetTyp() == CONN_PACKET_TYP_KA{
+		if cp.GetTyp() == CONN_PACKET_TYP_KA {
 			continue
 		}
 
@@ -299,7 +289,7 @@ func (uc *udpconn)recv(wg *sync.WaitGroup) error{
 
 }
 
-func (uc *udpconn)UpdateLastAccessTime()  {
+func (uc *udpconn) UpdateLastAccessTime() {
 
 	if uc.isconn {
 		if uc.lastrcvtime == 0 {
@@ -310,15 +300,14 @@ func (uc *udpconn)UpdateLastAccessTime()  {
 	uc.lastrcvtime = tools.GetNowMsTime()
 }
 
+func (uc *udpconn) Close() {
 
-func (uc *udpconn)Close() {
-
-	if uc.status == BAD_CONNECTION || uc.status == STOP_CONNECTION{
+	if uc.status == BAD_CONNECTION || uc.status == STOP_CONNECTION {
 		return
 	}
 	defer func() {
-		if err:=recover();err!=nil{
-			fmt.Println(err,"udpconn close")
+		if err := recover(); err != nil {
+			fmt.Println(err, "udpconn close")
 		}
 	}()
 	if uc.status == CONNECTION_RUNNING {
@@ -332,7 +321,7 @@ func (uc *udpconn)Close() {
 			<-uc.closesign
 		}
 
-	}else {
+	} else {
 		if uc.sock != nil {
 			if uc.isconn == true {
 				uc.sock.Close()
@@ -344,72 +333,68 @@ func (uc *udpconn)Close() {
 	uc.sock = nil
 }
 
-func (uc *udpconn)sendKAPacket() error {
+func (uc *udpconn) sendKAPacket() error {
 
+	tv := tools.GetNowMsTime() - uc.lastrcvtime
 
-	tv:=tools.GetNowMsTime() - uc.lastrcvtime
-
-	if tv > int64(uc.timeouttv) && uc.lastrcvtime != 0{
+	if tv > int64(uc.timeouttv) && uc.lastrcvtime != 0 {
 		fmt.Println("connection timeout, return bad connection")
 		return baderr
 	}
 
-	tv=tools.GetNowMsTime() - uc.lastSendKaTime
+	tv = tools.GetNowMsTime() - uc.lastSendKaTime
 
-	if  tv> int64(uc.timeouttv)/10 {
-		return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA,0)
+	if tv > int64(uc.timeouttv)/10 {
+		return uc.send([]byte("ka message"), CONN_PACKET_TYP_KA, 0)
 	}
-
 
 	return nil
 }
 
+func (uc *udpconn) send(v interface{}, typ uint32, msgtyp uint32) error {
 
+	data := v.([]byte)
 
-func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
-
-	data:=v.([]byte)
-
-	cp:=NewConnPacket()
+	cp := NewConnPacket()
 
 	cp.SetTyp(typ)
 	cp.SetMsgTyp(msgtyp)
 	cp.SetData(data)
-	id:=nbsid.GetLocalId()
+	id := nbsid.GetLocalId()
 	cp.SetUid(id.Bytes())
 
 	var d []byte
 	var err error
 
-	if d,err=cp.Serialize();err!=nil{
+	if d, err = cp.Serialize(); err != nil {
 		return nil
 	}
 	defer func() {
-		if err:=recover();err!=nil{
-			fmt.Println(err,"udpconn send")
+		if err := recover(); err != nil {
+			fmt.Println(err, "udpconn send")
 		}
 	}()
 	//send d
 	if uc.isconn {
-		if _,err1:=uc.sock.Write(d);err1!=nil{
-			if strings.Contains(err.Error(),"no buffer space available"){
+		if _, err1 := uc.sock.Write(d); err1 != nil {
+			if strings.Contains(err.Error(), "no buffer space available") {
 				fmt.Println(err1.Error(), 376, "udpconn send")
 				time.Sleep(time.Millisecond * 200)
 				uc.lastSendKaTime = tools.GetNowMsTime()
 				return nil
 			}
-			fmt.Println("other conn error",err1.Error())
+			fmt.Println("other conn error", err1.Error())
 			return baderr
 		}
-	}else {
-		if _,err1:=uc.sock.WriteToUDP(d,uc.addr);err1!=nil{
-			if strings.Contains(err.Error(),"no buffer space available"){
+	} else {
+		if _, err1 := uc.sock.WriteToUDP(d, uc.addr); err1 != nil {
+			if strings.Contains(err.Error(), "no buffer space available") {
 				fmt.Println(err1.Error(), 386, "udpconn send")
 				time.Sleep(time.Millisecond * 200)
 				uc.lastSendKaTime = tools.GetNowMsTime()
 				return nil
 			}
-			fmt.Println("listen other conn error",err1.Error())
+			fmt.Println("listen other conn error", err1.Error())
 			return baderr
 		}
 	}
@@ -418,7 +403,7 @@ func (uc *udpconn)send(v interface{}, typ uint32,msgtyp uint32) error {
 	return nil
 }
 
-func (uc *udpconn)Send(data []byte,typ uint32) error  {
+func (uc *udpconn) Send(data []byte, typ uint32) error {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return notreadyerr
 	}
@@ -427,14 +412,14 @@ func (uc *udpconn)Send(data []byte,typ uint32) error  {
 		return baderr
 	}
 	//copy?
-	snddata:=senddata{data,typ}
+	snddata := senddata{data, typ}
 
 	uc.ready2send <- snddata
 
 	return nil
 }
 
-func (uc *udpconn)SendAsync(data []byte,typ uint32) error  {
+func (uc *udpconn) SendAsync(data []byte, typ uint32) error {
 	if uc.status == CONNECTION_INIT || uc.status == STOP_CONNECTION {
 		return notreadyerr
 	}
@@ -443,7 +428,7 @@ func (uc *udpconn)SendAsync(data []byte,typ uint32) error  {
 		return baderr
 	}
 
-	snddata := senddata{data,typ}
+	snddata := senddata{data, typ}
 
 	select {
 	case uc.ready2send <- snddata:
@@ -453,7 +438,7 @@ func (uc *udpconn)SendAsync(data []byte,typ uint32) error  {
 	}
 }
 
-func (uc *udpconn)Status() bool  {
+func (uc *udpconn) Status() bool {
 	if uc.status == CONNECTION_RUNNING {
 		return true
 	}
@@ -461,21 +446,20 @@ func (uc *udpconn)Status() bool  {
 	return false
 }
 
-func (uc *udpconn)GetAddr() address.UdpAddresser  {
-	addr:=address.NewUdpAddress()
+func (uc *udpconn) GetAddr() address.UdpAddresser {
+	addr := address.NewUdpAddress()
 
 	addr.AddIP4Str(uc.addr.String())
 
 	return addr
 }
 
-func (uc *udpconn)IsConnectTo(addr *net.UDPAddr) bool {
+func (uc *udpconn) IsConnectTo(addr *net.UDPAddr) bool {
 	ipstr := uc.addr.String()
 
 	ipstr2 := addr.String()
 
-
-	if ipstr == ipstr2{
+	if ipstr == ipstr2 {
 		return true
 	}
 
@@ -483,15 +467,15 @@ func (uc *udpconn)IsConnectTo(addr *net.UDPAddr) bool {
 
 }
 
-func (uc *udpconn)Push(v interface{})  {
-	cs:=GetConnStoreInstance()
+func (uc *udpconn) Push(v interface{}) {
+	cs := GetConnStoreInstance()
 
-	rb:=NewRcvBlock(v.(ConnPacket),uc)
+	rb := NewRcvBlock(v.(ConnPacket), uc)
 
 	cs.Push(rb)
 }
 
-func (uc *udpconn)ConnSync() {
+func (uc *udpconn) ConnSync() {
 	uc.wg = &sync.WaitGroup{}
 	if uc.isconn {
 		uc.wg.Add(2)
@@ -501,13 +485,13 @@ func (uc *udpconn)ConnSync() {
 
 }
 
-func (uc *udpconn)WaitConnReady() bool {
+func (uc *udpconn) WaitConnReady() bool {
 	uc.wg.Wait()
 	uc.wg = nil
 
 	if uc.isconn {
 		defer func() {
-			nt:=tools.GetNbsTickerInstance()
+			nt := tools.GetNbsTickerInstance()
 			nt.UnReg(&uc.tickrcv)
 		}()
 		select {
@@ -520,4 +504,3 @@ func (uc *udpconn)WaitConnReady() bool {
 
 	return true
 }
-

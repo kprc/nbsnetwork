@@ -7,7 +7,7 @@ import (
 
 type ctrlblk struct {
 	rcvblk netcommon.RcvBlock
-	um store.UdpMsg
+	um     store.UdpMsg
 }
 
 type CtrlBlk interface {
@@ -15,15 +15,14 @@ type CtrlBlk interface {
 	GetUdpMsg() store.UdpMsg
 }
 
-func NewCtrlBlk(rb netcommon.RcvBlock,um store.UdpMsg) CtrlBlk {
-	return &ctrlblk{rcvblk:rb,um:um}
+func NewCtrlBlk(rb netcommon.RcvBlock, um store.UdpMsg) CtrlBlk {
+	return &ctrlblk{rcvblk: rb, um: um}
 }
 
-func (cb *ctrlblk)GetRcvBlk() netcommon.RcvBlock  {
+func (cb *ctrlblk) GetRcvBlk() netcommon.RcvBlock {
 	return cb.rcvblk
 }
 
-func (cb *ctrlblk)GetUdpMsg() store.UdpMsg  {
+func (cb *ctrlblk) GetUdpMsg() store.UdpMsg {
 	return cb.um
 }
-

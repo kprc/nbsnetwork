@@ -1,19 +1,19 @@
 package tools
 
 import (
-	"runtime"
-	"os"
 	"bytes"
-	"os/exec"
-	"strings"
-	"os/user"
 	"errors"
-	"log"
 	"github.com/kprc/nbsdht/nbserr"
 	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"os/user"
+	"runtime"
+	"strings"
 )
 
-var filenotfind = nbserr.NbsErr{ErrId:nbserr.FILE_NOT_FOUND,Errmsg:"File Not Found"}
+var filenotfind = nbserr.NbsErr{ErrId: nbserr.FILE_NOT_FOUND, Errmsg: "File Not Found"}
 
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
@@ -25,7 +25,6 @@ func FileExists(path string) bool {
 	}
 	return true
 }
-
 
 func Home() (string, error) {
 	user, err := user.Current()
@@ -79,15 +78,15 @@ func homeWindows() (string, error) {
 	return home, nil
 }
 
-func Save2File(data []byte,filename string) error {
+func Save2File(data []byte, filename string) error {
 
-	f,err:=os.OpenFile(filename,os.O_CREATE|os.O_WRONLY|os.O_TRUNC,0755)
-	if err!=nil{
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
 
-	if _,err:=f.Write(data);err!=nil{
+	if _, err := f.Write(data); err != nil {
 		f.Close()
 		log.Fatal(err)
 	}
@@ -95,13 +94,13 @@ func Save2File(data []byte,filename string) error {
 	return nil
 }
 
-func OpenAndReadAll(filename string) (data []byte,err error)  {
-	if !FileExists(filename){
-		return nil,filenotfind
+func OpenAndReadAll(filename string) (data []byte, err error) {
+	if !FileExists(filename) {
+		return nil, filenotfind
 	}
 
-	f,err:=os.OpenFile(filename,os.O_RDONLY,0755)
-	if err!=nil{
+	f, err := os.OpenFile(filename, os.O_RDONLY, 0755)
+	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()

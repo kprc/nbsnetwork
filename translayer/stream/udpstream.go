@@ -1,44 +1,41 @@
 package stream
 
 import (
-	"github.com/kprc/nbsnetwork/netcommon"
+	"fmt"
 	"github.com/kprc/nbsdht/nbserr"
-	"io"
-	"github.com/kprc/nbsnetwork/translayer/store"
+	"github.com/kprc/nbsnetwork/common/constant"
+	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork/tools"
 	"github.com/kprc/nbsnetwork/translayer/ackmessage"
+	"github.com/kprc/nbsnetwork/translayer/store"
+	"io"
 	"reflect"
 	"sort"
-	"fmt"
-	"github.com/kprc/nbsnetwork/common/constant"
 )
-
 
 type cacheblock struct {
 	store.UdpMsg
-	cnt int
+	cnt          int
 	lastSendTime int64
 }
 
-
 type udpstream struct {
-	conn netcommon.UdpConn
-	apptyp uint32
-	mtu int32
-	timeout int32
-	maxcache int32
-	maxcnt int32
-	curcnt int32
+	conn         netcommon.UdpConn
+	apptyp       uint32
+	mtu          int32
+	timeout      int32
+	maxcache     int32
+	maxcnt       int32
+	curcnt       int32
 	resendtimetv int32
-	lastAckPos uint64
+	lastAckPos   uint64
 	lastsendtime int64
-	try2snd uint64
-	udpmsgcache map[uint64]*cacheblock
-	parent store.UdpMsg
-	um store.UdpMsg
-	ackchan chan interface{}
+	try2snd      uint64
+	udpmsgcache  map[uint64]*cacheblock
+	parent       store.UdpMsg
+	um           store.UdpMsg
+	ackchan      chan interface{}
 }
-
 
 type UdpStream interface {
 	ReliableSend(reader io.Reader) error
@@ -47,26 +44,26 @@ type UdpStream interface {
 	SetTimeOut(tv int32)
 	SetMaxCache(cache int32)
 	SetResendTimeOut(tv int32)
-	GetStreamId() (uint64,error)
+	GetStreamId() (uint64, error)
 }
 
 var (
-	udpsendstreamerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_STREAM_DEFAULT_ERR,Errmsg:"Send Stream Error"}
-	udpstreamreadererr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_STREAM_READER_ERR,Errmsg:"Send Stream reader Error"}
-	udpstreamconnerr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_STREAM_CONN_ERR,Errmsg:"Send Stream connection Error"}
-	udpstreamtimeouterr = nbserr.NbsErr{ErrId:nbserr.UDP_SND_TIMEOUT_ERR,Errmsg:"Send Stream Time Out Error"}
+	udpsendstreamerr    = nbserr.NbsErr{ErrId: nbserr.UDP_SND_STREAM_DEFAULT_ERR, Errmsg: "Send Stream Error"}
+	udpstreamreadererr  = nbserr.NbsErr{ErrId: nbserr.UDP_SND_STREAM_READER_ERR, Errmsg: "Send Stream reader Error"}
+	udpstreamconnerr    = nbserr.NbsErr{ErrId: nbserr.UDP_SND_STREAM_CONN_ERR, Errmsg: "Send Stream connection Error"}
+	udpstreamtimeouterr = nbserr.NbsErr{ErrId: nbserr.UDP_SND_TIMEOUT_ERR, Errmsg: "Send Stream Time Out Error"}
 )
 
-func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
-	us:=&udpstream{conn:conn}
+func NewUdpStream(conn netcommon.UdpConn, delayInit bool) UdpStream {
+	us := &udpstream{conn: conn}
 	us.mtu = int32(constant.STREAM_MTU)
 	us.timeout = int32(constant.UDP_STREAM_STORE_TIMEOUT)
 	us.maxcache = int32(constant.STREAM_MAXCACHE)
 	us.resendtimetv = 1000
 	us.udpmsgcache = make(map[uint64]*cacheblock)
 
-	if !delayInit{
-		us.um = store.NewUdpMsg(nil,0)
+	if !delayInit {
+		us.um = store.NewUdpMsg(nil, 0)
 	}
 
 	return us
@@ -74,21 +71,20 @@ func NewUdpStream(conn netcommon.UdpConn,delayInit bool) UdpStream  {
 
 var (
 	sendnoneerr int = 0
-	overmaxcnt int = 1
-	readfinish int = 2
-	readerr int = 3
-	senderr int = 4
-	sendfinish = 5
+	overmaxcnt  int = 1
+	readfinish  int = 2
+	readerr     int = 3
+	senderr     int = 4
+	sendfinish      = 5
 )
 
-
-func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
+func sendUm(um store.UdpMsg, conn netcommon.UdpConn) error {
 
 	//um.Print()
-	if d2snd,err:=um.Serialize();err!=nil{
+	if d2snd, err := um.Serialize(); err != nil {
 		return udpsendstreamerr
-	}else{
-		if err:=conn.SendAsync(d2snd,store.UDP_STREAM); err!=nil{
+	} else {
+		if err := conn.SendAsync(d2snd, store.UDP_STREAM); err != nil {
 			fmt.Println(err.Error())
 			return err
 		}
@@ -97,77 +93,77 @@ func sendUm(um store.UdpMsg,conn netcommon.UdpConn) error {
 	return nil
 }
 
-func (us *udpstream)sendBlk(reader io.Reader) int{
+func (us *udpstream) sendBlk(reader io.Reader) int {
 
-	for{
-		if us.curcnt >= us.maxcnt{
+	for {
+		if us.curcnt >= us.maxcnt {
 			return overmaxcnt
 		}
-		buf:=make([]byte,us.mtu+1)
-		n,err:=reader.Read(buf)
-		if n>0 || (n==0 && err!=nil && err==io.EOF){
+		buf := make([]byte, us.mtu+1)
+		n, err := reader.Read(buf)
+		if n > 0 || (n == 0 && err != nil && err == io.EOF) {
 			var um store.UdpMsg
 			if us.parent == nil {
 				if us.um == nil {
 					um = store.NewUdpMsg(buf[:n], us.apptyp)
-				}else {
+				} else {
 					um = us.um
 					um.SetData(buf[:n])
 					um.SetAppTyp(us.apptyp)
 				}
 				us.parent = um
 				um.SetLastPos()
-				us.ackchan=make(chan interface{},us.maxcnt+1)
+				us.ackchan = make(chan interface{}, us.maxcnt+1)
 				um.SetInform(&us.ackchan)
-				ms:=store.GetBlockStoreInstance()
-				ms.AddMessageWithParam(um,us.timeout,store.UDP_STREAM)
-			}else{
+				ms := store.GetBlockStoreInstance()
+				ms.AddMessageWithParam(um, us.timeout, store.UDP_STREAM)
+			} else {
 				um = us.parent.NxtPos(buf[:n])
 			}
-			if err!=nil && err==io.EOF {
+			if err != nil && err == io.EOF {
 				um.SetLastFlag(true)
 			}
-			if err:=sendUm(um,us.conn);err!=nil {
+			if err := sendUm(um, us.conn); err != nil {
 				return senderr
 			}
-			us.curcnt ++
+			us.curcnt++
 			us.try2snd += uint64(n)
 			us.lastsendtime = tools.GetNowMsTime()
 
-			us.udpmsgcache[um.GetPos()] = &cacheblock{um,0,tools.GetNowMsTime()}
+			us.udpmsgcache[um.GetPos()] = &cacheblock{um, 0, tools.GetNowMsTime()}
 
 		}
-		if err!=nil{
-			if err==io.EOF{
+		if err != nil {
+			if err == io.EOF {
 				return readfinish
-			}else{
+			} else {
 				return readerr
 			}
 		}
 	}
 }
 
-func (us *udpstream)ReliableSend(reader io.Reader) error  {
-	if us.conn == nil || !us.conn.Status(){
+func (us *udpstream) ReliableSend(reader io.Reader) error {
+	if us.conn == nil || !us.conn.Status() {
 		return udpsendstreamerr
 	}
 
-	if us.mtu <512{
+	if us.mtu < 512 {
 		us.mtu = 512
 	}
 
-	us.maxcnt = us.maxcache/us.mtu
+	us.maxcnt = us.maxcache / us.mtu
 	if us.maxcnt < 16 {
 		us.maxcnt = 16
 	}
 
 	//us.maxcnt = 3
 
-	r:=us.sendBlk(reader)
+	r := us.sendBlk(reader)
 	finishflag := false
 	switch r {
 	case senderr:
-		return 	udpstreamconnerr
+		return udpstreamconnerr
 	case overmaxcnt:
 		//nothing todo...
 	case readfinish:
@@ -177,9 +173,9 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 
 	}
 
-	ctick:=make(chan int64,8)
-	ts:=tools.GetNbsTickerInstance()
-	ts.RegWithTimeOut(&ctick,500)
+	ctick := make(chan int64, 8)
+	ts := tools.GetNbsTickerInstance()
+	ts.RegWithTimeOut(&ctick, 500)
 
 	var ack interface{}
 	for {
@@ -188,32 +184,32 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 		case ack = <-us.ackchan:
 		case <-ctick:
 		}
-		if ack!=nil {
+		if ack != nil {
 			switch ack.(type) {
 			case int64:
-				if ack == store.UDP_INFORM_TIMEOUT{
+				if ack == store.UDP_INFORM_TIMEOUT {
 					return udpstreamtimeouterr
 				}
 			case ackmessage.AckMessage:
-				ret:=us.doAck(ack.(ackmessage.AckMessage))
-				if ret == senderr{
+				ret := us.doAck(ack.(ackmessage.AckMessage))
+				if ret == senderr {
 					return udpstreamconnerr
 				}
-				if ret== sendfinish{
+				if ret == sendfinish {
 					return nil
 				}
 			}
-		}else{
-			if r:=us.doTimeOut();r==senderr{
+		} else {
+			if r := us.doTimeOut(); r == senderr {
 
 				return udpstreamconnerr
 			}
 		}
-		if !finishflag{
+		if !finishflag {
 			ret := us.sendBlk(reader)
 			switch ret {
 			case senderr:
-				return 	udpstreamconnerr
+				return udpstreamconnerr
 			case overmaxcnt:
 				//nothing todo...
 			case readfinish:
@@ -226,22 +222,22 @@ func (us *udpstream)ReliableSend(reader io.Reader) error  {
 	return nil
 }
 
-func (us *udpstream)doTimeOut()  int {
-	if tools.GetNowMsTime() - us.lastsendtime < int64(us.resendtimetv){
+func (us *udpstream) doTimeOut() int {
+	if tools.GetNowMsTime()-us.lastsendtime < int64(us.resendtimetv) {
 		return sendnoneerr
 	}
 
-	listkey:=reflect.ValueOf(us.udpmsgcache).MapKeys()
+	listkey := reflect.ValueOf(us.udpmsgcache).MapKeys()
 
-	for _,key:=range listkey{
-		idx:=key.Uint()
-		v:=us.udpmsgcache[idx]
-		curtime:=tools.GetNowMsTime()
-		if curtime - v.lastSendTime > int64(constant.STREAM_BLOCK_RESEND_TIMEOUT) && v.cnt < constant.STREAM_BLOCK_RESEND_TIMES{
+	for _, key := range listkey {
+		idx := key.Uint()
+		v := us.udpmsgcache[idx]
+		curtime := tools.GetNowMsTime()
+		if curtime-v.lastSendTime > int64(constant.STREAM_BLOCK_RESEND_TIMEOUT) && v.cnt < constant.STREAM_BLOCK_RESEND_TIMES {
 			v.lastSendTime = tools.GetNowMsTime()
-			v.cnt ++
+			v.cnt++
 			um := *v
-			if err:=sendUm(um,us.conn);err!=nil {
+			if err := sendUm(um, us.conn); err != nil {
 				return senderr
 			}
 			us.try2snd += uint64(len(um.GetData()))
@@ -251,99 +247,99 @@ func (us *udpstream)doTimeOut()  int {
 	return sendnoneerr
 }
 
-func (us *udpstream)deleteCache(resends []uint64,curpos uint64)  {
-	keys:=reflect.ValueOf(us.udpmsgcache).MapKeys()
+func (us *udpstream) deleteCache(resends []uint64, curpos uint64) {
+	keys := reflect.ValueOf(us.udpmsgcache).MapKeys()
 
 	sort.Slice(keys, func(i, j int) bool {
-		if keys[i].Uint() < keys[j].Uint(){
+		if keys[i].Uint() < keys[j].Uint() {
 			return true
-		}else {
+		} else {
 			return false
 		}
 	})
 
-	notin:= func(k uint64, rsd []uint64) bool {
-		for _,r:=range rsd{
-			if k == r{
+	notin := func(k uint64, rsd []uint64) bool {
+		for _, r := range rsd {
+			if k == r {
 				return false
 			}
 		}
 		return true
 	}
 
-	for _,key:=range keys{
-		if key.Uint() < curpos{
-			if notin(key.Uint(),resends){
-				delete(us.udpmsgcache,key.Uint())
-				us.curcnt --
+	for _, key := range keys {
+		if key.Uint() < curpos {
+			if notin(key.Uint(), resends) {
+				delete(us.udpmsgcache, key.Uint())
+				us.curcnt--
 			}
-		}else {
+		} else {
 			break
 		}
 	}
 
 }
 
-func (us *udpstream)doAck(ack ackmessage.AckMessage) int{
-	pos:=ack.GetPos()
+func (us *udpstream) doAck(ack ackmessage.AckMessage) int {
+	pos := ack.GetPos()
 
-	if us.lastAckPos < pos{
+	if us.lastAckPos < pos {
 		us.lastAckPos = pos
 	}
-	if _,ok:=us.udpmsgcache[pos];ok{
-		delete(us.udpmsgcache,pos)
-		us.curcnt --
+	if _, ok := us.udpmsgcache[pos]; ok {
+		delete(us.udpmsgcache, pos)
+		us.curcnt--
 	}
 
-	if len(us.udpmsgcache)==0{
+	if len(us.udpmsgcache) == 0 {
 		return sendfinish
 	}
 
-	resendpos:=ack.GetResendPos()
+	resendpos := ack.GetResendPos()
 
-	us.deleteCache(resendpos,pos)
+	us.deleteCache(resendpos, pos)
 
-	for _,idx:=range resendpos{
-		if v,ok:=us.udpmsgcache[idx];ok{
+	for _, idx := range resendpos {
+		if v, ok := us.udpmsgcache[idx]; ok {
 			um := *v
-			if err:=sendUm(um,us.conn);err!=nil {
+			if err := sendUm(um, us.conn); err != nil {
 				return senderr
 			}
 			us.try2snd += uint64(len(um.GetData()))
 		}
 	}
 
-	if len(resendpos) > 0{
+	if len(resendpos) > 0 {
 		us.lastsendtime = tools.GetNowMsTime()
 	}
 
 	return sendnoneerr
 }
 
-func (us *udpstream)SetAppTyp(typ uint32)  {
+func (us *udpstream) SetAppTyp(typ uint32) {
 	us.apptyp = typ
 }
 
-func (us *udpstream)SetMtu(mtu int32)  {
+func (us *udpstream) SetMtu(mtu int32) {
 	us.mtu = mtu
 }
 
-func (us *udpstream)SetTimeOut(tv int32)  {
+func (us *udpstream) SetTimeOut(tv int32) {
 	us.timeout = tv
 }
 
-func (us *udpstream)SetMaxCache(cache int32)  {
+func (us *udpstream) SetMaxCache(cache int32) {
 	us.maxcache = cache
 }
 
-func (us *udpstream)SetResendTimeOut(tv int32)  {
+func (us *udpstream) SetResendTimeOut(tv int32) {
 	us.resendtimetv = tv
 }
 
-func (us *udpstream)GetStreamId() (uint64,error)  {
-	if us.um !=nil{
-		return us.um.GetSn(),nil
+func (us *udpstream) GetStreamId() (uint64, error) {
+	if us.um != nil {
+		return us.um.GetSn(), nil
 	}
 
-	return 0,udpsendstreamerr
+	return 0, udpsendstreamerr
 }

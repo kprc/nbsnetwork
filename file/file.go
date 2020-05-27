@@ -21,57 +21,54 @@ type FileDesc interface {
 var Save_file_path = ""
 
 func GetSaveFilePath() string {
-	if Save_file_path == ""{
+	if Save_file_path == "" {
 		return "/Users/rickey/umfile"
-	}else {
+	} else {
 		return Save_file_path
 	}
 }
 
-func SetSaveFilePath(p string)  {
+func SetSaveFilePath(p string) {
 	Save_file_path = p
 }
 
-
-func (fdesc *filedesc)GetPath() string  {
+func (fdesc *filedesc) GetPath() string {
 	return fdesc.path
 }
 
-func (fdesc *filedesc)SetPath(path string)  {
+func (fdesc *filedesc) SetPath(path string) {
 	fdesc.path = path
 }
 
-func (fdesc *filedesc)GetName() string {
+func (fdesc *filedesc) GetName() string {
 	return fdesc.name
 }
 
-func (fdesc *filedesc)SetName(name string)  {
+func (fdesc *filedesc) SetName(name string) {
 	fdesc.name = name
 }
 
-func (fdesc *filedesc)GetSize() uint64  {
+func (fdesc *filedesc) GetSize() uint64 {
 	return fdesc.size
 }
 
-func (fdesc *filedesc)SetSize(size uint64)  {
+func (fdesc *filedesc) SetSize(size uint64) {
 	fdesc.size = size
 }
 
-func (fdesc *filedesc)GetFileName() string  {
-	path:=fdesc.GetPath()
+func (fdesc *filedesc) GetFileName() string {
+	path := fdesc.GetPath()
 	if path == "" {
 		path = GetSaveFilePath()
 	}
-	filename:=path2.Join(path,fdesc.GetName())
+	filename := path2.Join(path, fdesc.GetName())
 
 	return filename
 }
 
-
 func NewFileDesc() FileDesc {
 	return &filedesc{}
 }
-
 
 type filehead struct {
 	FileDesc
@@ -84,22 +81,19 @@ type FileHead interface {
 	SetStrHash(sh string)
 }
 
-func (fh *filehead)GetStrHash() string  {
+func (fh *filehead) GetStrHash() string {
 	return fh.strhash
 }
 
-func (fh *filehead)SetStrHash(sh string)  {
+func (fh *filehead) SetStrHash(sh string) {
 	fh.strhash = sh
 }
 
 func NewFileHead(desc FileDesc) FileHead {
-	return &filehead{desc,""}
+	return &filehead{desc, ""}
 }
 
-func NewEmptyFileHead() FileHead  {
-	fdesc:=NewFileDesc()
+func NewEmptyFileHead() FileHead {
+	fdesc := NewFileDesc()
 	return NewFileHead(fdesc)
 }
-
-
-

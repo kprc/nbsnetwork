@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	CONN_PACKET_TYP_KA uint32 = 1
+	CONN_PACKET_TYP_KA   uint32 = 1
 	CONN_PACKET_TYP_DATA uint32 = 2
 )
 
 type connpacket struct {
-	typ uint32    //ka packet or data packet
-	uid []byte
+	typ  uint32 //ka packet or data packet
+	uid  []byte
 	data []byte
 }
 
@@ -25,7 +25,7 @@ type ConnPacket interface {
 	GetMsgTyp() uint32
 	SetData(data []byte)
 	GetData() []byte
-	Serialize() ([]byte,error)
+	Serialize() ([]byte, error)
 	DeSerialize(data []byte) error
 }
 
@@ -33,22 +33,22 @@ func NewConnPacket() ConnPacket {
 	return &connpacket{}
 }
 
-func (cp *connpacket)SetUid(uid []byte)  {
+func (cp *connpacket) SetUid(uid []byte) {
 	cp.uid = uid
 }
 
-func (cp *connpacket)GetUid() []byte  {
+func (cp *connpacket) GetUid() []byte {
 	return cp.uid
 }
 
-func (cp *connpacket)SetTyp(typ uint32)  {
-	var typ1,typ2 uint32
+func (cp *connpacket) SetTyp(typ uint32) {
+	var typ1, typ2 uint32
 	typ1 = cp.typ & 0x00FFFFFF
 	typ2 = ((typ << 24) & 0xFF000000) | typ1
 	cp.typ = typ2
 }
 
-func (cp *connpacket)GetTyp() uint32  {
+func (cp *connpacket) GetTyp() uint32 {
 	typ1 := cp.typ
 
 	typ1 = (typ1 >> 24) & 0x000000FF
@@ -56,42 +56,40 @@ func (cp *connpacket)GetTyp() uint32  {
 	return typ1
 }
 
-func (cp *connpacket)SetMsgTyp(typ uint32)  {
-	var typ1,typ2 uint32
+func (cp *connpacket) SetMsgTyp(typ uint32) {
+	var typ1, typ2 uint32
 	typ1 = cp.typ & 0xFF000000
 	typ2 = typ & 0x00FFFFFF
 
 	cp.typ = typ1 | typ2
 }
 
-func (cp *connpacket)GetMsgTyp() uint32  {
+func (cp *connpacket) GetMsgTyp() uint32 {
 	return cp.typ & 0x00FFFFFF
 }
 
-
-
-func (cp *connpacket)SetData(data []byte)  {
+func (cp *connpacket) SetData(data []byte) {
 	cp.data = data
 }
 
-func (cp *connpacket)GetData() []byte  {
+func (cp *connpacket) GetData() []byte {
 	return cp.data
 }
 
-func (cp *connpacket)Serialize() ([]byte,error)  {
-	p:=&packet.UdpConnMsg{}
+func (cp *connpacket) Serialize() ([]byte, error) {
+	p := &packet.UdpConnMsg{}
 
 	p.Typ = cp.typ
 	p.Data = cp.data
 	p.Uid = cp.uid
 
-	return  proto.Marshal(p)
+	return proto.Marshal(p)
 }
 
-func (cp *connpacket)DeSerialize(data []byte) error {
+func (cp *connpacket) DeSerialize(data []byte) error {
 	p := &packet.UdpConnMsg{}
 
-	if err:=proto.Unmarshal(data,p); err!=nil{
+	if err := proto.Unmarshal(data, p); err != nil {
 		return err
 	}
 

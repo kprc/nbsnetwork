@@ -11,20 +11,16 @@ type peerstore struct {
 }
 
 type PeerStore interface {
-
 }
-
 
 var (
 	psinstancelock sync.Mutex
-	psinstance PeerStore
-	lasttimeout int64
-	timeouttv int64 = 1000   //ms
+	psinstance     PeerStore
+	lasttimeout    int64
+	timeouttv      int64 = 1000 //ms
 )
-
 
 var fhash = func(v interface{}) {
 	p := v.(Peer)
 	uid := p.GetUid()
 }
-

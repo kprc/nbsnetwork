@@ -1,21 +1,21 @@
 package main
 
 import (
-	_ "github.com/kprc/nbsnetwork"
-	"github.com/kprc/nbsnetwork/netcommon"
 	"github.com/kprc/nbsnetwork"
-	"os"
+	_ "github.com/kprc/nbsnetwork"
 	"github.com/kprc/nbsnetwork/file"
+	"github.com/kprc/nbsnetwork/netcommon"
+	"os"
 )
 
-func main()  {
+func main() {
 
-	if len(os.Args)>1{
+	if len(os.Args) > 1 {
 		file.SetSaveFilePath(os.Args[1])
 	}
 
-	server:=netcommon.GetUpdListenInstance()
-	server.Run("0.0.0.0",22113)
+	server := netcommon.GetUpdListenInstance()
+	server.Run("0.0.0.0", 22113)
 
 	server.Close()
 

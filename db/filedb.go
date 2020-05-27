@@ -3,13 +3,13 @@ package db
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/kprc/nbsnetwork/tools"
 	"github.com/pkg/errors"
 	"io"
 	"log"
 	"os"
 	"reflect"
-	"fmt"
 	"sync"
 )
 
@@ -20,23 +20,23 @@ type filedbkv struct {
 
 type filedb struct {
 	filepath string
-	flock *sync.Mutex
+	flock    *sync.Mutex
 	f        *os.File
 	mkey     map[string]string
 }
 
 func NewFileDb(filepath string) NbsDbInter {
-	return &filedb{filepath: filepath, mkey: make(map[string]string),flock:&sync.Mutex{}}
+	return &filedb{filepath: filepath, mkey: make(map[string]string), flock: &sync.Mutex{}}
 }
 
-func (fdb *filedb)Print()  {
-	for k,v:=range fdb.mkey{
-		fmt.Println(k,v)
+func (fdb *filedb) Print() {
+	for k, v := range fdb.mkey {
+		fmt.Println(k, v)
 	}
 }
 
-func (fdb *filedb)DBIterator() *DBCusor {
-	return &DBCusor{keys:reflect.ValueOf(fdb.mkey).MapKeys(),db:fdb}
+func (fdb *filedb) DBIterator() *DBCusor {
+	return &DBCusor{keys: reflect.ValueOf(fdb.mkey).MapKeys(), db: fdb}
 }
 
 func (fdb *filedb) Load() NbsDbInter {
@@ -52,7 +52,6 @@ func (fdb *filedb) Load() NbsDbInter {
 	if !tools.FileExists(fdb.filepath) {
 		flag |= os.O_CREATE
 	}
-
 
 	if f, err := os.OpenFile(fdb.filepath, flag, 0755); err != nil {
 		log.Fatal("Can't open file")
@@ -105,7 +104,7 @@ func (fdb *filedb) tomap(line []byte) {
 
 	var delflag bool
 
-	if line[0]=='-'{
+	if line[0] == '-' {
 		delflag = true
 		line = line[1:]
 	}
@@ -113,10 +112,10 @@ func (fdb *filedb) tomap(line []byte) {
 	if err := json.Unmarshal(line, k); err != nil {
 		return
 	} else {
-		if delflag{
-			delete(fdb.mkey,k.Key)
-		}else{
-			fdb.mkey[k.Key]= k.Value
+		if delflag {
+			delete(fdb.mkey, k.Key)
+		} else {
+			fdb.mkey[k.Key] = k.Value
 		}
 	}
 }
@@ -124,7 +123,7 @@ func (fdb *filedb) tomap(line []byte) {
 func (fdb *filedb) Insert(key string, value string) error {
 	if _, ok := fdb.mkey[key]; !ok {
 		fdb.mkey[key] = value
-		fdb.AppendSave(key,value,false)
+		fdb.AppendSave(key, value, false)
 	} else {
 		return errors.New("Duplicate key")
 	}
@@ -133,11 +132,11 @@ func (fdb *filedb) Insert(key string, value string) error {
 }
 
 func (fdb *filedb) Delete(key string) {
-	if v,ok:=fdb.mkey[key];!ok{
+	if v, ok := fdb.mkey[key]; !ok {
 		return
-	}else{
+	} else {
 		delete(fdb.mkey, key)
-		fdb.AppendSave(key,v,true)
+		fdb.AppendSave(key, v, true)
 	}
 }
 
@@ -151,11 +150,11 @@ func (fdb *filedb) Find(key string) (string, error) {
 func (fdb *filedb) Update(key string, value string) {
 
 	fdb.mkey[key] = value
-	fdb.AppendSave(key,value,false)
+	fdb.AppendSave(key, value, false)
 }
 
 func (fdb *filedb) write(data []byte) {
-	if fdb.f == nil  {
+	if fdb.f == nil {
 		flag := os.O_WRONLY | os.O_TRUNC
 
 		if !tools.FileExists(fdb.filepath) {
@@ -200,15 +199,13 @@ func (fdb *filedb) Save() {
 
 	fdb.f = nil
 
-
 }
 
-
-func (fdb *filedb)AppendSave(key,value string,del bool)  {
+func (fdb *filedb) AppendSave(key, value string, del bool) {
 	fdb.flock.Lock()
 	defer fdb.flock.Unlock()
 
-	if fdb.f == nil  {
+	if fdb.f == nil {
 		flag := os.O_WRONLY | os.O_APPEND
 
 		if !tools.FileExists(fdb.filepath) {

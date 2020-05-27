@@ -3,11 +3,10 @@ package db
 import "reflect"
 
 type DBCusor struct {
-	keys []reflect.Value
+	keys   []reflect.Value
 	cursor int
-	db NbsDbInter
+	db     NbsDbInter
 }
-
 
 type NbsDbInter interface {
 	Load() NbsDbInter
@@ -20,13 +19,13 @@ type NbsDbInter interface {
 	Print()
 }
 
-func (dbc *DBCusor)Next() (k,v string){
-	if dbc.cursor >= len(dbc.keys){
+func (dbc *DBCusor) Next() (k, v string) {
+	if dbc.cursor >= len(dbc.keys) {
 		return
 	}
 	k = dbc.keys[dbc.cursor].Interface().(string)
 
-	v,_ = dbc.db.Find(k)
+	v, _ = dbc.db.Find(k)
 
 	dbc.cursor++
 

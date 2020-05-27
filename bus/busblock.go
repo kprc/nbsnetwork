@@ -4,8 +4,8 @@ type FSendData func(v interface{}, uid string)
 
 type busblock struct {
 	data interface{}
-	uid string
-	f FSendData
+	uid  string
+	f    FSendData
 }
 
 type BusBlock interface {
@@ -21,35 +21,33 @@ func NewBusBlock() BusBlock {
 	return &busblock{}
 }
 
-
-func (bb *busblock)SetData(data interface{})  {
+func (bb *busblock) SetData(data interface{}) {
 	bb.data = data
 }
 
-func (bb *busblock)GetData() interface{}  {
+func (bb *busblock) GetData() interface{} {
 	return bb.data
 }
 
-func (bb *busblock)SetUid(uid string)  {
-	bb.uid  = uid
+func (bb *busblock) SetUid(uid string) {
+	bb.uid = uid
 }
 
-func (bb *busblock)GetUid() string  {
+func (bb *busblock) GetUid() string {
 	return bb.uid
 }
 
-func (bb *busblock)SetFSendData(f FSendData)  {
+func (bb *busblock) SetFSendData(f FSendData) {
 	bb.f = f
 }
 
-func (bb *busblock)GetFSendData() FSendData  {
+func (bb *busblock) GetFSendData() FSendData {
 	return bb.f
 }
 
 func SendBusBlock(v interface{}) {
-	bb:=v.(BusBlock)
-	if bb.GetFSendData() !=nil{
-		bb.GetFSendData()(bb.GetData(),bb.GetUid())
+	bb := v.(BusBlock)
+	if bb.GetFSendData() != nil {
+		bb.GetFSendData()(bb.GetData(), bb.GetUid())
 	}
 }
-

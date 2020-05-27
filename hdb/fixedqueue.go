@@ -9,18 +9,18 @@ type FixedQueueIntf interface {
 	Iterator() *list.ListCusor
 	QSize() int
 	CurSize() int
-	GetTopN(begin,topn int) []interface{}
+	GetTopN(begin, topn int) []interface{}
 }
 
 type FixedQueue struct {
-	qSize int
+	qSize   int
 	curSize int
-	qV list.List
+	qV      list.List
 }
 
-func NewFixedQueue(size int,cmp func(v1 interface{},v2 interface{}) int) FixedQueueIntf {
-	fq:=&FixedQueue{}
-	if size <=0{
+func NewFixedQueue(size int, cmp func(v1 interface{}, v2 interface{}) int) FixedQueueIntf {
+	fq := &FixedQueue{}
+	if size <= 0 {
 		size = 100
 	}
 	fq.qSize = size
@@ -30,47 +30,46 @@ func NewFixedQueue(size int,cmp func(v1 interface{},v2 interface{}) int) FixedQu
 	return fq
 }
 
-func (fq *FixedQueue)EnQueue(v interface{})  {
+func (fq *FixedQueue) EnQueue(v interface{}) {
 	fq.qV.InsertValue(v)
-	fq.curSize ++
-	for{
-		if fq.curSize > fq.qSize{
-			node,_:= fq.qV.GetLastNode()
+	fq.curSize++
+	for {
+		if fq.curSize > fq.qSize {
+			node, _ := fq.qV.GetLastNode()
 			fq.qV.Del(node)
-			fq.curSize --
-		}else{
+			fq.curSize--
+		} else {
 			break
 		}
 	}
 }
 
-func (fq *FixedQueue)Iterator() *list.ListCusor  {
+func (fq *FixedQueue) Iterator() *list.ListCusor {
 	return fq.qV.ListIterator(fq.curSize)
 }
 
-func (fq *FixedQueue)QSize() int  {
+func (fq *FixedQueue) QSize() int {
 	return fq.qSize
 }
 
-func (fq *FixedQueue)CurSize() int  {
+func (fq *FixedQueue) CurSize() int {
 	return fq.curSize
 }
 
-func (fq *FixedQueue)GetTopN(begin,topn int) []interface{}  {
+func (fq *FixedQueue) GetTopN(begin, topn int) []interface{} {
 
 	type arrinterface struct {
-		arr []interface{}
-		begin,topn int
+		arr         []interface{}
+		begin, topn int
 	}
 
 	var arg *arrinterface = &arrinterface{}
 
 	fq.qV.Traverse(arg, func(arg interface{}, v interface{}) (ret interface{}, err error) {
-		parr:=arg.(*arrinterface)
+		parr := arg.(*arrinterface)
 
-
-		if v.(*HDBV).Cnt >= parr.begin && v.(*HDBV).Cnt < parr.begin+parr.topn{
-			parr.arr = append(parr.arr,v)
+		if v.(*HDBV).Cnt >= parr.begin && v.(*HDBV).Cnt < parr.begin+parr.topn {
+			parr.arr = append(parr.arr, v)
 		}
 
 		return
@@ -80,4 +79,3 @@ func (fq *FixedQueue)GetTopN(begin,topn int) []interface{}  {
 	return arg.arr
 
 }
-

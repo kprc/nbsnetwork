@@ -1,16 +1,16 @@
 package nbsnetwork
 
 import (
-	"github.com/kprc/nbsnetwork/tools"
-	"github.com/kprc/nbsnetwork/file"
-	"github.com/kprc/nbsnetwork/translayer/store"
-	"github.com/kprc/nbsnetwork/translayer/recv"
 	"github.com/kprc/nbsnetwork/bus"
+	"github.com/kprc/nbsnetwork/file"
 	"github.com/kprc/nbsnetwork/rpc"
+	"github.com/kprc/nbsnetwork/tools"
+	"github.com/kprc/nbsnetwork/translayer/recv"
+	"github.com/kprc/nbsnetwork/translayer/store"
 )
 
-func init()  {
-	tick:=tools.GetNbsTickerInstance()
+func init() {
+	tick := tools.GetNbsTickerInstance()
 	go tick.Run()
 
 	file.FileRegister()
@@ -20,22 +20,21 @@ func init()  {
 	go recv.ReceiveFromUdpConn()
 }
 
-
-func runstore(){
-	fs:=file.GetFileStoreInstance()
+func runstore() {
+	fs := file.GetFileStoreInstance()
 	go fs.Run()
 
-	msgstore:=store.GetBlockStoreInstance()
+	msgstore := store.GetBlockStoreInstance()
 	go msgstore.Run()
 
-	ss:=store.GetStreamStoreInstance()
+	ss := store.GetStreamStoreInstance()
 
 	go ss.Run()
 
-	bs:=bus.GetBusStoreInstance()
+	bs := bus.GetBusStoreInstance()
 	go bs.Run()
 
-	rs:=rpc.GetRpcStore()
+	rs := rpc.GetRpcStore()
 	go rs.Run()
 
 }

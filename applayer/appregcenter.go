@@ -5,12 +5,11 @@ import (
 	"sync"
 )
 
-type Appdo func(rcv interface{},arg interface{}) (v interface{},err error)
+type Appdo func(rcv interface{}, arg interface{}) (v interface{}, err error)
 
 type appblock struct {
 	do Appdo
 }
-
 
 type appblockstore struct {
 	handle map[uint32]*appblock
@@ -18,13 +17,13 @@ type appblockstore struct {
 
 type AppBlockStore interface {
 	Reg(apptyp uint32, do Appdo)
-	Do(apptyp uint32,rcv interface{}, arg interface{}) (v interface{},err error)
+	Do(apptyp uint32, rcv interface{}, arg interface{}) (v interface{}, err error)
 }
 
 var (
 	appblockstoreinstance AppBlockStore
-	pbsinstancelock sync.Mutex
-	appparamerr=nbserr.NbsErr{ErrId:nbserr.APP_TYP_ERR,Errmsg:"Not found apptyp"}
+	pbsinstancelock       sync.Mutex
+	appparamerr           = nbserr.NbsErr{ErrId: nbserr.APP_TYP_ERR, Errmsg: "Not found apptyp"}
 )
 
 func GetAppBlockStore() AppBlockStore {
@@ -33,7 +32,7 @@ func GetAppBlockStore() AppBlockStore {
 	}
 	pbsinstancelock.Lock()
 	defer pbsinstancelock.Unlock()
-	if appblockstoreinstance ==nil{
+	if appblockstoreinstance == nil {
 		appblockstoreinstance = newAppBlockStore()
 	}
 
@@ -41,28 +40,20 @@ func GetAppBlockStore() AppBlockStore {
 
 }
 
-func newAppBlockStore() AppBlockStore  {
-	return &appblockstore{handle:make(map[uint32]*appblock)}
+func newAppBlockStore() AppBlockStore {
+	return &appblockstore{handle: make(map[uint32]*appblock)}
 }
 
-func (aps *appblockstore)Reg(apptyp uint32, do Appdo) {
-	ab:=&appblock{do:do}
+func (aps *appblockstore) Reg(apptyp uint32, do Appdo) {
+	ab := &appblock{do: do}
 
 	aps.handle[apptyp] = ab
 }
 
-func (aps *appblockstore)Do(apptyp uint32,rcv interface{}, arg interface{}) (v interface{},err error) {
-	if pb,ok:=aps.handle[apptyp];!ok{
-		return nil,appparamerr
-	}else {
-		return pb.do(rcv,arg)
+func (aps *appblockstore) Do(apptyp uint32, rcv interface{}, arg interface{}) (v interface{}, err error) {
+	if pb, ok := aps.handle[apptyp]; !ok {
+		return nil, appparamerr
+	} else {
+		return pb.do(rcv, arg)
 	}
 }
-
-
-
-
-
-
-
-

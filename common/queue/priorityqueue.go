@@ -5,7 +5,7 @@ import (
 	"github.com/kprc/nbsdht/nbslink"
 )
 
-var(
+var (
 	LEVEL0 = 0
 	LEVEL1 = 1
 	LEVEL2 = 2
@@ -14,37 +14,34 @@ var(
 	LEVEL5 = 5
 )
 
-
 type priorityQueue struct {
 	pq [6]Queue
 }
 
-
 type PriorityQueue interface {
-	EnQueue(level int,node *nbslink.LinkNode) error
+	EnQueue(level int, node *nbslink.LinkNode) error
 	DeQueue() *nbslink.LinkNode
-	EnQueueValue(level int,v interface{}) error
+	EnQueueValue(level int, v interface{}) error
 	DeQueueValue() interface{}
-	Traverse(arg interface{},fDo func(arg interface{},data interface{}))
+	Traverse(arg interface{}, fDo func(arg interface{}, data interface{}))
 }
 
-func NewPriorityQueue() PriorityQueue  {
+func NewPriorityQueue() PriorityQueue {
 	pq := &priorityQueue{}
 
 	return pq
 }
 
-func (pq *priorityQueue) EnQueue(level int,node *nbslink.LinkNode) error {
-	if level < 0 || level >=len(pq.pq) {
-		return nbserr.NbsErr{ErrId:nbserr.ERROR_DEFAULT,Errmsg:"level error"}
+func (pq *priorityQueue) EnQueue(level int, node *nbslink.LinkNode) error {
+	if level < 0 || level >= len(pq.pq) {
+		return nbserr.NbsErr{ErrId: nbserr.ERROR_DEFAULT, Errmsg: "level error"}
 	}
 
-	if pq.pq[level] == nil{
+	if pq.pq[level] == nil {
 		pq.pq[level] = NewQueue()
 	}
 
-	q:=pq.pq[level]
-
+	q := pq.pq[level]
 
 	q.EnQueue(node)
 
@@ -52,8 +49,8 @@ func (pq *priorityQueue) EnQueue(level int,node *nbslink.LinkNode) error {
 }
 
 func (pq *priorityQueue) DeQueue() *nbslink.LinkNode {
-	for i:=0; i<len(pq.pq) ;i++  {
-		q:=pq.pq[i]
+	for i := 0; i < len(pq.pq); i++ {
+		q := pq.pq[i]
 		node := q.DeQueue()
 		if node != nil {
 			return node
@@ -63,16 +60,16 @@ func (pq *priorityQueue) DeQueue() *nbslink.LinkNode {
 	return nil
 }
 
-func (pq *priorityQueue) EnQueueValue(level int,v interface{}) error {
-	if level < 0 || level >=len(pq.pq) {
-		return nbserr.NbsErr{ErrId:nbserr.ERROR_DEFAULT,Errmsg:"level error"}
+func (pq *priorityQueue) EnQueueValue(level int, v interface{}) error {
+	if level < 0 || level >= len(pq.pq) {
+		return nbserr.NbsErr{ErrId: nbserr.ERROR_DEFAULT, Errmsg: "level error"}
 	}
 
-	if pq.pq[level] == nil{
+	if pq.pq[level] == nil {
 		pq.pq[level] = NewQueue()
 	}
 
-	q:=pq.pq[level]
+	q := pq.pq[level]
 
 	q.EnQueueValue(v)
 
@@ -90,13 +87,10 @@ func (pq *priorityQueue) DeQueueValue() interface{} {
 	return node.Value
 }
 
-func (pq *priorityQueue) Traverse(arg interface{},fDo func(arg interface{},data interface{})) {
-	for i:=0;i<len(pq.pq); i++{
-		q:=pq.pq[i]
+func (pq *priorityQueue) Traverse(arg interface{}, fDo func(arg interface{}, data interface{})) {
+	for i := 0; i < len(pq.pq); i++ {
+		q := pq.pq[i]
 		//fmt.Println(q.Count())
-		q.Traverse(arg,fDo)
+		q.Traverse(arg, fDo)
 	}
 }
-
-
-

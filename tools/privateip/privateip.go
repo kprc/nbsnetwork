@@ -1,9 +1,9 @@
 package privateip
 
 import (
-	"strings"
-	"net"
 	"bytes"
+	"net"
+	"strings"
 	"sync"
 )
 
@@ -27,62 +27,60 @@ var NetWorkIPs = []string{
 	"255.255.255.255/32",
 }
 
-
 type NetworkIP struct {
 	netIP *net.IP
-	mask *net.IPMask
+	mask  *net.IPMask
 }
-
 
 var gNetworkArr []*NetworkIP
 var gNetworkArrLock sync.Mutex
 
-func init()  {
-	if gNetworkArr != nil{
+func init() {
+	if gNetworkArr != nil {
 		return
 	}
 
 	gNetworkArrLock.Lock()
 	defer gNetworkArrLock.Unlock()
-	if gNetworkArr != nil{
+	if gNetworkArr != nil {
 		return
 	}
 
-	gNetworkArr = make([]*NetworkIP,0)
+	gNetworkArr = make([]*NetworkIP, 0)
 
-	for _,sip:=range NetWorkIPs{
+	for _, sip := range NetWorkIPs {
 		r := convertP(sip)
-		if r == nil{
+		if r == nil {
 			continue
 		}
 
-		gNetworkArr = append(gNetworkArr,r)
+		gNetworkArr = append(gNetworkArr, r)
 	}
 }
 
 func convertP(sip string) *NetworkIP {
-	siparr:=strings.Split(sip,"/")
+	siparr := strings.Split(sip, "/")
 
-	if len(siparr) != 2{
+	if len(siparr) != 2 {
 		return nil
 	}
-	ip,ipnet,err:=net.ParseCIDR(sip)
-	if err!=nil{
+	ip, ipnet, err := net.ParseCIDR(sip)
+	if err != nil {
 		return nil
 	}
 
-	r:=&NetworkIP{netIP:&ip,mask:&ipnet.Mask}
+	r := &NetworkIP{netIP: &ip, mask: &ipnet.Mask}
 
 	return r
 }
 
-func IsPrivateIP(ip net.IP) bool  {
-	if nil == ip{
+func IsPrivateIP(ip net.IP) bool {
+	if nil == ip {
 		return false
 	}
-	for _,ni:=range gNetworkArr{
-		netip:=ip.Mask(*ni.mask)
-		if bytes.Compare([]byte(netip.To4()),[]byte((*ni.netIP).To4())) == 0{
+	for _, ni := range gNetworkArr {
+		netip := ip.Mask(*ni.mask)
+		if bytes.Compare([]byte(netip.To4()), []byte((*ni.netIP).To4())) == 0 {
 			return true
 		}
 	}
@@ -91,13 +89,7 @@ func IsPrivateIP(ip net.IP) bool  {
 
 func IsPrivateIPStr(ips string) bool {
 
-	ip:=net.ParseIP(ips)
+	ip := net.ParseIP(ips)
 
 	return IsPrivateIP(ip)
 }
-
-
-
-
-
-

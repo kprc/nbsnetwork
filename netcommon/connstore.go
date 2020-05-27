@@ -10,15 +10,14 @@ type connblock struct {
 }
 
 type connstore struct {
-	store map[string]*connblock
+	store     map[string]*connblock
 	rcvpacket chan interface{}
-	wg *sync.WaitGroup
+	wg        *sync.WaitGroup
 }
 
-
 type ConnStore interface {
-	Add(uid string,conn UdpConn)
-	Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)
+	Add(uid string, conn UdpConn)
+	Update(uid string, sock *net.UDPConn, addr *net.UDPAddr)
 	Del(uid string)
 	GetConn(uid string) UdpConn
 	Push(v interface{}) error
@@ -26,35 +25,31 @@ type ConnStore interface {
 	Read() RcvBlock
 	RDone()
 	RWait()
-	ReadAsync() (RcvBlock,error)
-
+	ReadAsync() (RcvBlock, error)
 }
-
 
 var (
 	storeinstance ConnStore
-	glock sync.Mutex
-
+	glock         sync.Mutex
 )
-
 
 func newConnStore() ConnStore {
 	cs := &connstore{}
 	cs.store = make(map[string]*connblock)
-	cs.rcvpacket = make(chan interface{},1024)
+	cs.rcvpacket = make(chan interface{}, 1024)
 	cs.wg = &sync.WaitGroup{}
 
 	return cs
 }
 
-func GetConnStoreInstance() ConnStore  {
-	if storeinstance != nil{
+func GetConnStoreInstance() ConnStore {
+	if storeinstance != nil {
 		return storeinstance
 	}
 
 	glock.Lock()
 	defer glock.Unlock()
-	if storeinstance != nil{
+	if storeinstance != nil {
 		return storeinstance
 	}
 
@@ -64,33 +59,32 @@ func GetConnStoreInstance() ConnStore  {
 
 }
 
-
-func (cs *connstore)Add(uid string,conn UdpConn)  {
-	v,ok:=cs.store[uid]
-	if !ok{
-		cs.store[uid] = &connblock{conn:conn}
+func (cs *connstore) Add(uid string, conn UdpConn) {
+	v, ok := cs.store[uid]
+	if !ok {
+		cs.store[uid] = &connblock{conn: conn}
 		return
 	}
 
-	if !v.conn.Status(){
-		cs.store[uid] = &connblock{conn:conn}
+	if !v.conn.Status() {
+		cs.store[uid] = &connblock{conn: conn}
 		return
 	}
 
 	addr1 := v.conn.GetAddr()
 	addr2 := conn.GetAddr()
 
-	if addr1.Equals(addr2){
+	if addr1.Equals(addr2) {
 		return
 	}
 
 	v.conn.Close()
 
-	cs.store[uid] = &connblock{conn:conn}
+	cs.store[uid] = &connblock{conn: conn}
 }
 
-func NewConn(sock *net.UDPConn,addr *net.UDPAddr) UdpConn {
-	uc:=NewUdpConnFromListen(addr,sock)
+func NewConn(sock *net.UDPConn, addr *net.UDPAddr) UdpConn {
+	uc := NewUdpConnFromListen(addr, sock)
 	uc.ConnSync()
 	go uc.Connect()
 	uc.WaitConnReady()
@@ -98,44 +92,41 @@ func NewConn(sock *net.UDPConn,addr *net.UDPAddr) UdpConn {
 	return uc
 }
 
-func (cs *connstore)Update(uid string, sock *net.UDPConn,addr *net.UDPAddr)  {
-	v,ok:=cs.store[uid]
-	if !ok{
-		cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
+func (cs *connstore) Update(uid string, sock *net.UDPConn, addr *net.UDPAddr) {
+	v, ok := cs.store[uid]
+	if !ok {
+		cs.store[uid] = &connblock{conn: NewConn(sock, addr)}
 		return
 	}
 
-	if !v.conn.Status(){
-		cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
+	if !v.conn.Status() {
+		cs.store[uid] = &connblock{conn: NewConn(sock, addr)}
 		return
 	}
 
-	if v.conn.IsConnectTo(addr){
+	if v.conn.IsConnectTo(addr) {
 		v.conn.UpdateLastAccessTime()
 		return
 	}
 
 	v.conn.Close()
 
-
-	cs.store[uid] = &connblock{conn:NewConn(sock,addr)}
-
+	cs.store[uid] = &connblock{conn: NewConn(sock, addr)}
 
 }
 
-
-func (cs *connstore)Del(uid string)  {
-	v,ok:=cs.store[uid]
-	if !ok{
+func (cs *connstore) Del(uid string) {
+	v, ok := cs.store[uid]
+	if !ok {
 		return
 	}
 	v.conn.Close()
-	delete(cs.store,uid)
+	delete(cs.store, uid)
 }
 
-func (cs *connstore)GetConn(uid string) UdpConn {
+func (cs *connstore) GetConn(uid string) UdpConn {
 
-	if v,ok:=cs.store[uid];ok{
+	if v, ok := cs.store[uid]; ok {
 
 		return v.conn
 	}
@@ -143,47 +134,45 @@ func (cs *connstore)GetConn(uid string) UdpConn {
 	return nil
 }
 
-
-
-func (cs *connstore)Push(v interface{}) error{
+func (cs *connstore) Push(v interface{}) error {
 	select {
-		case cs.rcvpacket <-v:
-			return nil
-		default:
-			return bufferoverflowerr
+	case cs.rcvpacket <- v:
+		return nil
+	default:
+		return bufferoverflowerr
 	}
 }
 
-func (cs *connstore)RSync()  {
-	if cs.wg !=nil{
+func (cs *connstore) RSync() {
+	if cs.wg != nil {
 		cs.wg.Add(1)
 	}
 }
 
-func (cs *connstore)Read() RcvBlock{
-	cp:=<-cs.rcvpacket
+func (cs *connstore) Read() RcvBlock {
+	cp := <-cs.rcvpacket
 
 	return cp.(RcvBlock)
 }
 
-func (cs *connstore)RDone()  {
-	if cs.wg !=nil{
+func (cs *connstore) RDone() {
+	if cs.wg != nil {
 		cs.wg.Done()
 	}
 }
 
-func (cs *connstore)RWait()  {
-	if cs.wg !=nil{
+func (cs *connstore) RWait() {
+	if cs.wg != nil {
 		cs.wg.Wait()
 	}
 }
 
-func (cs *connstore)ReadAsync() (RcvBlock,error){
+func (cs *connstore) ReadAsync() (RcvBlock, error) {
 	select {
-		case cp:=<-cs.rcvpacket:
-			return cp.(RcvBlock),nil
-	    default:
-			return nil,nodataerr
+	case cp := <-cs.rcvpacket:
+		return cp.(RcvBlock), nil
+	default:
+		return nil, nodataerr
 
 	}
 }

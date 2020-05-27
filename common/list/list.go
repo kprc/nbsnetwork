@@ -3,23 +3,23 @@ package list
 import (
 	"fmt"
 	"github.com/kprc/nbsdht/nbslink"
-	"sync/atomic"
 	"github.com/pkg/errors"
+	"sync/atomic"
 )
 
 type list struct {
-	root *nbslink.LinkNode
-	cnt int32
-	cmp func(v1 interface{},v2 interface{}) int   //return 0 is equal, for get node
-	clone func(v1 interface{}) (r interface{})		//for copy
-	sort func(v1 interface{},v2 interface{}) int    //for sort
+	root  *nbslink.LinkNode
+	cnt   int32
+	cmp   func(v1 interface{}, v2 interface{}) int //return 0 is equal, for get node
+	clone func(v1 interface{}) (r interface{})     //for copy
+	sort  func(v1 interface{}, v2 interface{}) int //for sort
 }
 
-type FDel func(arg interface{}, v interface{}) bool  // if true, delete the node
-type FDo func(arg interface{}, v interface{}) (ret interface{},err error)
+type FDel func(arg interface{}, v interface{}) bool // if true, delete the node
+type FDo func(arg interface{}, v interface{}) (ret interface{}, err error)
 
 type ListCusor struct {
-	arrv []interface{}
+	arrv   []interface{}
 	cursor int
 }
 
@@ -29,102 +29,101 @@ type List interface {
 	Del(node *nbslink.LinkNode)
 	UpdateValueOrder(v interface{})
 	Find(v interface{}) *nbslink.LinkNode
-	FindDo(arg interface{},do FDo) (ret interface{},err error)
+	FindDo(arg interface{}, do FDo) (ret interface{}, err error)
 	AddValue(v interface{})
 	AppendValue(v interface{})
 	DelValue(v interface{})
 	Count() int32
-	Traverse(arg interface{},fDo FDo)
-	TraverseDel(arg interface{},fDel FDel)
+	Traverse(arg interface{}, fDo FDo)
+	TraverseDel(arg interface{}, fDel FDel)
 	Clone() List
-	DeepClone() (List,error)
-	ConCat(l List,sort bool)
+	DeepClone() (List, error)
+	ConCat(l List, sort bool)
 	DeepConCat(l List, sort bool) error
 	SetCloneFunc(clone func(v1 interface{}) (r interface{}))
-	SetSortFunc(sort func(v1 interface{},v2 interface{}) int )
+	SetSortFunc(sort func(v1 interface{}, v2 interface{}) int)
 	AddValueOrder(v interface{})
 	GetClone() (clone func(v1 interface{}) (r interface{}))
-	GetSortFunc() (sort func(v1 interface{},v2 interface{}) int )
+	GetSortFunc() (sort func(v1 interface{}, v2 interface{}) int)
 	ListIterator(cnt int) *ListCusor
-	ListIteratorB(start,end int) *ListCusor
+	ListIteratorB(start, end int) *ListCusor
 	Sort()
-	GetFirst() (v interface{},err error)
-	GetLast()  (v interface{},err error)
-	GetLastNode() (node *nbslink.LinkNode,err error)
-	InsertBefore(v interface{},before interface{}) error
-	InsertAfter(v interface{},after interface{}) error
+	GetFirst() (v interface{}, err error)
+	GetLast() (v interface{}, err error)
+	GetLastNode() (node *nbslink.LinkNode, err error)
+	InsertBefore(v interface{}, before interface{}) error
+	InsertAfter(v interface{}, after interface{}) error
 	Insert(node *nbslink.LinkNode)
 	InsertValue(v interface{})
 }
 
-func NewList(cmp func(v1 interface{},v2 interface{}) int) List  {
+func NewList(cmp func(v1 interface{}, v2 interface{}) int) List {
 	if cmp == nil {
 		return nil
 	}
-	return &list{cmp:cmp}
+	return &list{cmp: cmp}
 }
 
-func Print(arg interface{},data interface{}) (ret interface{},err error) {
-	s:=arg.(string)
-	idata:=data.(int)
+func Print(arg interface{}, data interface{}) (ret interface{}, err error) {
+	s := arg.(string)
+	idata := data.(int)
 
-	fmt.Println(s,idata)
-
+	fmt.Println(s, idata)
 
 	return
 }
 
-func Cmp(v1 interface{},v2 interface{})  int {
+func Cmp(v1 interface{}, v2 interface{}) int {
 	i1 := v1.(int)
 	i2 := v2.(int)
 
-	if i1==i2 {
+	if i1 == i2 {
 		return 0
 	}
 
 	if i1 > i2 {
 		return 1
-	}else {
+	} else {
 		return -1
 	}
 }
 
-func (l *list)GetFirst() (v interface{},err error)  {
+func (l *list) GetFirst() (v interface{}, err error) {
 
-	if l.root == nil{
-		return nil,errors.New("list is empty")
+	if l.root == nil {
+		return nil, errors.New("list is empty")
 	}
 
-	return l.root.Value,nil
+	return l.root.Value, nil
 }
 
-func (l *list)GetLast() (v interface{},err error){
-	if l.root == nil{
-		return nil,errors.New("list is empty")
+func (l *list) GetLast() (v interface{}, err error) {
+	if l.root == nil {
+		return nil, errors.New("list is empty")
 	}
-	return l.root.Prev().Value,nil
+	return l.root.Prev().Value, nil
 }
 
-func (l *list)GetLastNode() (node *nbslink.LinkNode,err error)  {
-	if l.root == nil{
-		return nil,errors.New("list is empty")
+func (l *list) GetLastNode() (node *nbslink.LinkNode, err error) {
+	if l.root == nil {
+		return nil, errors.New("list is empty")
 	}
 
-	return l.root.Prev(),nil
+	return l.root.Prev(), nil
 
 }
 
-func (l *list)InsertBefore(v interface{},before interface{}) error {
-	if v==nil || before == nil{
+func (l *list) InsertBefore(v interface{}, before interface{}) error {
+	if v == nil || before == nil {
 		return errors.New("parameter error")
 	}
-	n:=l.Find(before)
-	if n == nil{
+	n := l.Find(before)
+	if n == nil {
 		return errors.New("before not found")
 	}
-	nv:= nbslink.NewLink(v)
+	nv := nbslink.NewLink(v)
 	n.Insert(nv)
-	if n == l.root{
+	if n == l.root {
 		l.root = nv
 	}
 	l.incCnt()
@@ -132,15 +131,15 @@ func (l *list)InsertBefore(v interface{},before interface{}) error {
 	return nil
 }
 
-func (l *list)InsertAfter(v interface{},after interface{}) error {
-	if v==nil || after == nil{
+func (l *list) InsertAfter(v interface{}, after interface{}) error {
+	if v == nil || after == nil {
 		return errors.New("parameter error")
 	}
-	n:=l.Find(after)
-	if n == nil{
+	n := l.Find(after)
+	if n == nil {
 		return errors.New("after not found")
 	}
-	nv:= nbslink.NewLink(v)
+	nv := nbslink.NewLink(v)
 	n.Add(nv)
 
 	l.incCnt()
@@ -148,50 +147,48 @@ func (l *list)InsertAfter(v interface{},after interface{}) error {
 	return nil
 }
 
-func (l *list)Append(node *nbslink.LinkNode)  {
-	if node == nil{
+func (l *list) Append(node *nbslink.LinkNode) {
+	if node == nil {
 		return
 	}
-	if l.root == nil{
+	if l.root == nil {
 		node.Init()
 		l.root = node
-	}else{
+	} else {
 		l.root.Add(node)
 		l.incCnt()
 	}
 }
 
-
-
-func (l *list)AppendValue(v interface{})  {
-	if v == nil{
+func (l *list) AppendValue(v interface{}) {
+	if v == nil {
 		return
 	}
-	n:= nbslink.NewLink(v)
+	n := nbslink.NewLink(v)
 	l.Append(n)
 }
 
-func (l *list)ListIterator(cnt int) *ListCusor  {
-	lc:=&ListCusor{}
-	lc.arrv = make([]interface{},0)
+func (l *list) ListIterator(cnt int) *ListCusor {
+	lc := &ListCusor{}
+	lc.arrv = make([]interface{}, 0)
 
-	if l.root == nil{
+	if l.root == nil {
 		return lc
 	}
-	root:=l.root
+	root := l.root
 	node := l.root
 
-	curcnt:=0
+	curcnt := 0
 
-	for  {
-		if cnt <= 0 || curcnt < cnt{
-			v:=node.Value
-			if l.clone != nil{
-				v=l.clone(node.Value)
+	for {
+		if cnt <= 0 || curcnt < cnt {
+			v := node.Value
+			if l.clone != nil {
+				v = l.clone(node.Value)
 			}
-			lc.arrv = append(lc.arrv,v)
-			curcnt ++
-		}else{
+			lc.arrv = append(lc.arrv, v)
+			curcnt++
+		} else {
 			break
 		}
 		node = node.Next()
@@ -204,172 +201,166 @@ func (l *list)ListIterator(cnt int) *ListCusor  {
 
 }
 
-func (l *list)ListIteratorB(start,end int) *ListCusor  {
-	lc:=&ListCusor{}
-	lc.arrv = make([]interface{},0)
+func (l *list) ListIteratorB(start, end int) *ListCusor {
+	lc := &ListCusor{}
+	lc.arrv = make([]interface{}, 0)
 
-	if start >= end{
+	if start >= end {
 		return lc
 	}
 
-	if l.root == nil{
+	if l.root == nil {
 		return lc
 	}
-	root:=l.root
+	root := l.root
 	node := l.root
 
-	curcnt:=0
+	curcnt := 0
 
-	for  {
-		if curcnt>=start && curcnt < end{
-			v:=node.Value
-			if l.clone != nil{
-				v=l.clone(node.Value)
+	for {
+		if curcnt >= start && curcnt < end {
+			v := node.Value
+			if l.clone != nil {
+				v = l.clone(node.Value)
 			}
-			lc.arrv = append(lc.arrv,v)
+			lc.arrv = append(lc.arrv, v)
 
 		}
 
-		if curcnt>=end{
+		if curcnt >= end {
 			break
 		}
 
-		curcnt ++
+		curcnt++
 		node = node.Next()
 		if node == root {
 			break
 		}
-
-
 
 	}
 
 	return lc
 }
 
-
-func (it *ListCusor)Next() interface{} {
-	if it.cursor >= len(it.arrv){
+func (it *ListCusor) Next() interface{} {
+	if it.cursor >= len(it.arrv) {
 		return nil
 	}
 
-	v:=it.arrv[it.cursor]
-	it.cursor ++
+	v := it.arrv[it.cursor]
+	it.cursor++
 
 	return v
 }
 
-func (it *ListCusor)Reset() {
+func (it *ListCusor) Reset() {
 	it.cursor = 0
 }
 
-func (it *ListCusor)Count() int {
+func (it *ListCusor) Count() int {
 	return len(it.arrv)
 }
 
-func (l *list)Sort()  {
-	lnew:=NewList(l.cmp)
+func (l *list) Sort() {
+	lnew := NewList(l.cmp)
 	lnew.SetCloneFunc(l.clone)
 	lnew.SetSortFunc(l.sort)
 
-	lnew.ConCat(l,true)
+	lnew.ConCat(l, true)
 
 	*l = *(lnew.(*list))
 }
 
-
-
-func (l *list)incCnt()  {
-	atomic.AddInt32(&l.cnt,1)
+func (l *list) incCnt() {
+	atomic.AddInt32(&l.cnt, 1)
 }
 
-func (l *list)decCnt()  {
-	atomic.AddInt32(&l.cnt,-1)
+func (l *list) decCnt() {
+	atomic.AddInt32(&l.cnt, -1)
 }
 
-func (l *list)GetClone() (clone func(v1 interface{}) (r interface{})) {
+func (l *list) GetClone() (clone func(v1 interface{}) (r interface{})) {
 	return l.clone
 }
 
-func (l *list)GetSortFunc() (sort func(v1 interface{},v2 interface{}) int )  {
+func (l *list) GetSortFunc() (sort func(v1 interface{}, v2 interface{}) int) {
 	return l.sort
 }
 
-func (l *list)SetCloneFunc(clone func(v1 interface{}) (r interface{}))  {
+func (l *list) SetCloneFunc(clone func(v1 interface{}) (r interface{})) {
 	l.clone = clone
 }
 
-func (l *list)SetSortFunc(sort func(v1 interface{},v2 interface{}) int ) {
+func (l *list) SetSortFunc(sort func(v1 interface{}, v2 interface{}) int) {
 	l.sort = sort
 }
 
-func (l *list)ConCat(nl List,sort bool)  {
-	if nl==nil || nl.Count() == 0{
+func (l *list) ConCat(nl List, sort bool) {
+	if nl == nil || nl.Count() == 0 {
 		return
 	}
 
-	nnl:=nl.(*list)
+	nnl := nl.(*list)
 
-	root:=nnl.root
-	node:=nnl.root
+	root := nnl.root
+	node := nnl.root
 
-	for{
-		if sort{
+	for {
+		if sort {
 			l.AddValueOrder(node.Value)
-		}else{
+		} else {
 			l.AddValue(node.Value)
 		}
-		node=node.Next()
-		if node == root{
+		node = node.Next()
+		if node == root {
 			break
 		}
 	}
 }
 
-func (l *list)UpdateValueOrder(v interface{})  {
+func (l *list) UpdateValueOrder(v interface{}) {
 	l.DelValue(v)
 	l.AddValueOrder(v)
 }
 
-
-func (l *list)DeepConCat(nl List, sort bool) error  {
-	if nl==nil || nl.Count() == 0 {
+func (l *list) DeepConCat(nl List, sort bool) error {
+	if nl == nil || nl.Count() == 0 {
 		return nil
 	}
-	if nl.GetClone() == nil{
+	if nl.GetClone() == nil {
 		return errors.New("No clone function")
 	}
 
-	nnl:=nl.(*list)
+	nnl := nl.(*list)
 
-	root:=nnl.root
-	node:=nnl.root
+	root := nnl.root
+	node := nnl.root
 
-	for{
+	for {
 		if sort {
 			l.AddValueOrder(nnl.clone(node.Value))
-		}else{
+		} else {
 			l.AddValue(nnl.clone(node.Value))
 		}
-		node=node.Next()
-		if node == root{
+		node = node.Next()
+		if node == root {
 			break
 		}
 	}
 	return nil
 }
 
-func (l *list)Clone() List  {
-	newl:=NewList(l.cmp)
+func (l *list) Clone() List {
+	newl := NewList(l.cmp)
 
-	if l.root == nil{
+	if l.root == nil {
 		return newl
 	}
 
-	root:=l.root
+	root := l.root
 	node := l.root
 
-	for  {
+	for {
 		newl.AddValue(node.Value)
 		node = node.Next()
 		if node == root {
@@ -380,20 +371,20 @@ func (l *list)Clone() List  {
 	return newl
 }
 
-func (l *list)DeepClone() (List,error)  {
-	if l.clone == nil{
-		return nil,errors.New("need clone function, please set it")
+func (l *list) DeepClone() (List, error) {
+	if l.clone == nil {
+		return nil, errors.New("need clone function, please set it")
 	}
 
-	newl:=NewList(l.cmp)
-	if l.root == nil{
-		return newl,nil
+	newl := NewList(l.cmp)
+	if l.root == nil {
+		return newl, nil
 	}
 
-	root:=l.root
+	root := l.root
 	node := l.root
 
-	for  {
+	for {
 		newl.AddValue(l.clone(node.Value))
 		node = node.Next()
 		if node == root {
@@ -401,12 +392,10 @@ func (l *list)DeepClone() (List,error)  {
 		}
 	}
 
-	return newl,nil
+	return newl, nil
 }
 
-
-
-func (l *list)Add(node *nbslink.LinkNode)  {
+func (l *list) Add(node *nbslink.LinkNode) {
 	if node == nil {
 		return
 	}
@@ -421,7 +410,7 @@ func (l *list)Add(node *nbslink.LinkNode)  {
 	l.root.Insert(node)
 }
 
-func (l *list)Insert(node *nbslink.LinkNode)  {
+func (l *list) Insert(node *nbslink.LinkNode) {
 	if node == nil {
 		return
 	}
@@ -430,32 +419,31 @@ func (l *list)Insert(node *nbslink.LinkNode)  {
 		l.root = node
 		l.incCnt()
 		return
-	}else{
+	} else {
 		l.incCnt()
 		l.root.Insert(node)
 		l.root = node
 	}
 }
 
-func (l *list)InsertValue(v interface{})  {
-	n:= nbslink.NewLink(v)
+func (l *list) InsertValue(v interface{}) {
+	n := nbslink.NewLink(v)
 	l.Insert(n)
 }
 
-
-func (l *list)Del(node *nbslink.LinkNode)  {
-	if l.root == nil{
+func (l *list) Del(node *nbslink.LinkNode) {
+	if l.root == nil {
 		return
 	}
-	root:=l.root
-	n:=l.root
+	root := l.root
+	n := l.root
 
 	for {
-		if n==node {
+		if n == node {
 			nxt := n.Next()
-			if n == root{
-				l.root =nxt
-				if nxt == n{
+			if n == root {
+				l.root = nxt
+				if nxt == n {
 					l.root = nil
 					l.decCnt()
 					return
@@ -474,13 +462,13 @@ func (l *list)Del(node *nbslink.LinkNode)  {
 
 }
 
-func (l *list)AddValue(v interface{})  {
-	n:= nbslink.NewLink(v)
+func (l *list) AddValue(v interface{}) {
+	n := nbslink.NewLink(v)
 	l.Add(n)
 }
 
-func (l *list)AddValueOrder(v interface{})  {
-	node:= nbslink.NewLink(v)
+func (l *list) AddValueOrder(v interface{}) {
+	node := nbslink.NewLink(v)
 
 	if l.root == nil {
 		node.Init()
@@ -488,26 +476,26 @@ func (l *list)AddValueOrder(v interface{})  {
 		l.incCnt()
 		return
 	}
-	nxt:=l.root
-	prev:=nxt
+	nxt := l.root
+	prev := nxt
 
-	for{
-		d:=l.sort(v,nxt.Value)
-		if d==0{
+	for {
+		d := l.sort(v, nxt.Value)
+		if d == 0 {
 			break
 		}
-		if d<0{
+		if d < 0 {
 			nxt.Insert(node)
 			l.incCnt()
-			if nxt==l.root{
+			if nxt == l.root {
 				l.root = node
 			}
 			break
 		}
-		prev=nxt
-		nxt=nxt.Next()
+		prev = nxt
+		nxt = nxt.Next()
 
-		if nxt == l.root{
+		if nxt == l.root {
 			prev.Add(node)
 			l.incCnt()
 			break
@@ -515,20 +503,20 @@ func (l *list)AddValueOrder(v interface{})  {
 	}
 }
 
-func (l *list)DelValue(v interface{})  {
+func (l *list) DelValue(v interface{}) {
 
-	if l.root == nil{
+	if l.root == nil {
 		return
 	}
-	root:=l.root
-	n:=l.root
+	root := l.root
+	n := l.root
 
 	for {
-		nxt:=n.Next()
-		if 0 == l.cmp(v,n.Value) {
-			if n == root{
-				l.root =nxt
-				if nxt == n{
+		nxt := n.Next()
+		if 0 == l.cmp(v, n.Value) {
+			if n == root {
+				l.root = nxt
+				if nxt == n {
 					l.root = nil
 					l.decCnt()
 					return
@@ -547,20 +535,20 @@ func (l *list)DelValue(v interface{})  {
 	}
 }
 
-func (l *list)Count() int32 {
+func (l *list) Count() int32 {
 	return atomic.LoadInt32(&l.cnt)
 }
 
-func (l *list)Traverse(arg interface{},fDo FDo)  {
-	if l.root == nil{
+func (l *list) Traverse(arg interface{}, fDo FDo) {
+	if l.root == nil {
 		return
 	}
 
-	root:=l.root
+	root := l.root
 	node := l.root
 
-	for  {
-		fDo(arg,node.Value)
+	for {
+		fDo(arg, node.Value)
 		node = node.Next()
 		if node == root {
 			break
@@ -568,17 +556,16 @@ func (l *list)Traverse(arg interface{},fDo FDo)  {
 	}
 }
 
-func (l *list)Find(v interface{}) *nbslink.LinkNode  {
-	if l.root == nil{
+func (l *list) Find(v interface{}) *nbslink.LinkNode {
+	if l.root == nil {
 		return nil
 	}
 
-	root:=l.root
-	n:=l.root
-
+	root := l.root
+	n := l.root
 
 	for {
-		if 0 == l.cmp(v,n.Value){
+		if 0 == l.cmp(v, n.Value) {
 			return n
 		}
 		n = n.Next()
@@ -590,18 +577,17 @@ func (l *list)Find(v interface{}) *nbslink.LinkNode  {
 	return nil
 }
 
-func (l *list)FindDo(arg interface{},do FDo) (ret interface{},err error)  {
-	if l.root == nil{
-		return nil,errors.New("list is none")
+func (l *list) FindDo(arg interface{}, do FDo) (ret interface{}, err error) {
+	if l.root == nil {
+		return nil, errors.New("list is none")
 	}
 
-	root:=l.root
-	n:=l.root
-
+	root := l.root
+	n := l.root
 
 	for {
-		if 0 == l.cmp(arg,n.Value){
-			return do(arg,n.Value)
+		if 0 == l.cmp(arg, n.Value) {
+			return do(arg, n.Value)
 		}
 		n = n.Next()
 		if n == root {
@@ -609,20 +595,20 @@ func (l *list)FindDo(arg interface{},do FDo) (ret interface{},err error)  {
 		}
 
 	}
-	return nil,errors.New("not found node")
+	return nil, errors.New("not found node")
 }
 
-func (l *list)TraverseDel(arg interface{},fDel FDel)  {
-	root:=l.root
-	n:=l.root
+func (l *list) TraverseDel(arg interface{}, fDel FDel) {
+	root := l.root
+	n := l.root
 
 	for {
-		nxt:=n.Next()
-		if fDel(arg,n.Value) {
+		nxt := n.Next()
+		if fDel(arg, n.Value) {
 
-			if n == root{
-				l.root =nxt
-				if nxt == n{
+			if n == root {
+				l.root = nxt
+				if nxt == n {
 					l.root = nil
 					l.decCnt()
 					return
