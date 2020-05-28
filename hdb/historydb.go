@@ -58,7 +58,7 @@ func New(cnt int, dbpath string) HistoryDBIntf {
 	return hfdb
 }
 
-func (hv *HDBV)GetCnt() int  {
+func (hv *HDBV) GetCnt() int {
 	return hv.Cnt
 }
 
