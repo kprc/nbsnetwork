@@ -58,6 +58,10 @@ func New(cnt int, dbpath string) HistoryDBIntf {
 	return hfdb
 }
 
+func (hv *HDBV)GetCnt() int  {
+	return hv.Cnt
+}
+
 func (fv *FileHDBV) appendSave(v *HDBV) {
 	fv.SaveLock.Lock()
 	defer fv.SaveLock.Unlock()

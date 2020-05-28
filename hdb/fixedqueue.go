@@ -4,6 +4,10 @@ import (
 	"github.com/kprc/nbsnetwork/common/list"
 )
 
+type QItemInterface interface {
+	GetCnt() int
+}
+
 type FixedQueueIntf interface {
 	EnQueue(v interface{})
 	Iterator() *list.ListCusor
@@ -68,7 +72,7 @@ func (fq *FixedQueue) GetTopN(begin, topn int) []interface{} {
 	fq.qV.Traverse(arg, func(arg interface{}, v interface{}) (ret interface{}, err error) {
 		parr := arg.(*arrinterface)
 
-		if v.(*HDBV).Cnt >= parr.begin && v.(*HDBV).Cnt < parr.begin+parr.topn {
+		if v.(QItemInterface).GetCnt() >= parr.begin && v.(QItemInterface).GetCnt() < parr.begin+parr.topn {
 			parr.arr = append(parr.arr, v)
 		}
 
