@@ -67,7 +67,7 @@ func (fq *FixedQueue) GetTopN(begin, topn int) []interface{} {
 		begin, topn int
 	}
 
-	var arg *arrinterface = &arrinterface{}
+	arg := &arrinterface{}
 
 	fq.qV.Traverse(arg, func(arg interface{}, v interface{}) (ret interface{}, err error) {
 		parr := arg.(*arrinterface)

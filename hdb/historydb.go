@@ -328,7 +328,7 @@ func (hfdb *HistoryFileDB) Save() {
 	hfdb.indexFile = nil
 }
 
-func (hfdb *HistoryFileDB) Find(key string, start int, topn int) ([]*HDBV, error) {
+func (hfdb *HistoryFileDB) FindMem(key string, start int, topn int) ([]*HDBV, error) {
 
 	if start < 0 {
 		start = 0
@@ -343,7 +343,7 @@ func (hfdb *HistoryFileDB) Find(key string, start int, topn int) ([]*HDBV, error
 		return nil, errors.New("no key in db")
 	}
 
-	if start > v.TotalCnt {
+	if start >= v.TotalCnt {
 		return nil, errors.New("start pos error")
 	}
 
@@ -363,6 +363,115 @@ func (hfdb *HistoryFileDB) Find(key string, start int, topn int) ([]*HDBV, error
 	}
 
 	return as, nil
+}
+
+func (fv *FileHDBV)readFromFile(start, topn int) ([]*HDBV,error)  {
+	fv.SaveLock.Lock()
+	defer fv.SaveLock.Unlock()
+
+	if !tools.FileExists(fv.TimeFileName){
+		return nil,errors.New("no file exists")
+	}
+
+	var (
+		r []*HDBV
+		counter int
+	)
+
+	flag := os.O_RDONLY
+
+	f, err := os.OpenFile(fv.TimeFileName, flag, 0755)
+	if err != nil {
+		return nil,errors.New("Open file failed")
+	}
+	defer f.Close()
+
+	bf := bufio.NewReader(f)
+
+	for {
+		if line, _, err := bf.ReadLine(); err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			if err == bufio.ErrBufferFull {
+				return nil,err
+			}
+
+		} else {
+			if len(line) > 0 {
+				if start > counter{
+					counter ++
+					continue
+				}
+				counter ++
+				v:=&HDBV{}
+
+				err = json.Unmarshal(line,v)
+				if err!=nil{
+					continue
+				}
+
+				r = append(r,v)
+
+				if start + topn <=counter{
+					break
+				}
+			}
+		}
+	}
+
+	return r,nil
+}
+
+
+func (hfdb *HistoryFileDB)Find(key string, start, topn int)([]*HDBV, error)  {
+	if start < 0{
+		start = 0
+	}
+
+	if topn <= 0{
+		topn = hfdb.MemHistoryCnt
+	}
+
+	v,ok:=hfdb.Mem[key]
+	if !ok{
+		return nil,errors.New("not found")
+	}
+
+	if start >= v.TotalCnt{
+		return nil,errors.New("start pos error")
+	}
+
+	var arr []interface{}
+
+	onlyStoragePos := v.TotalCnt - hfdb.MemHistoryCnt
+	if onlyStoragePos <= 0{
+		//all value in memory
+		arr = v.Dbv.GetTopN(start,topn)
+	}else{
+		if start < onlyStoragePos{
+			//read from file
+			if r,err := v.readFromFile(start,topn);err!=nil{
+				return nil,err
+			}else{
+				return r,nil
+			}
+
+
+		}else{
+			arr = v.Dbv.GetTopN(start,topn)
+		}
+	}
+
+	var as []*HDBV
+
+	for _, i := range arr {
+		as = append(as, i.(*HDBV))
+	}
+
+	return as,nil
+
 }
 
 func (hfdb *HistoryFileDB) FindBlock(key string) (*FileHDBV, error) {
