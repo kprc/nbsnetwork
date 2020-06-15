@@ -25,6 +25,7 @@ type FileHDBV struct {
 	SaveLock     sync.Mutex
 	TimeFileName string
 	Dbv          FixedQueueIntf
+	StartIdx     int
 	TotalCnt     int
 	hfdb         *HistoryFileDB
 }
@@ -70,8 +71,14 @@ func (fv *FileHDBV) appendSave(v *HDBV) {
 	if !tools.FileExists(fv.TimeFileName) {
 		flag |= os.O_CREATE
 	}
+
+	fp := path.Dir(fv.TimeFileName)
+	if !tools.FileExists(fp) {
+		os.MkdirAll(fp, 0755)
+	}
+
 	if f, err := os.OpenFile(fv.TimeFileName, flag, 0755); err != nil {
-		log.Fatal("can't open file", fv.TimeFileName)
+		log.Fatal("can't open file", fv.TimeFileName, err)
 		return
 	} else {
 		if bj, err := json.Marshal(*v); err != nil {
@@ -105,6 +112,15 @@ func (hfdb *HistoryFileDB) loadIndex() {
 				break
 			}
 		} else {
+			delflag := false
+			if line[0] == '-' {
+				delflag = true
+				line = line[1:]
+			}
+			if delflag {
+				delete(hfdb.Mem, string(line))
+				continue
+			}
 			if len(line) > 0 {
 				hfdb.Mem[string(line)] = &FileHDBV{TimeFileName: hfdb.GetTimeFileName(string(line)), hfdb: hfdb}
 			}
@@ -136,9 +152,15 @@ func (fv *FileHDBV) loadFile() {
 		err error
 	)
 
+	fp := path.Dir(fv.TimeFileName)
+	if !tools.FileExists(fp) {
+		os.MkdirAll(fp, 0755)
+	}
+
 	f, err = os.OpenFile(fv.TimeFileName, flag, 0755)
 	if err != nil {
-		log.Fatal("Can't open file")
+		log.Fatal("Can't open file", err)
+		return
 	}
 	defer f.Close()
 
@@ -152,6 +174,8 @@ func (fv *FileHDBV) loadFile() {
 	})
 
 	bf := bufio.NewReader(f)
+
+	firstFlag := true
 
 	for {
 		if line, _, err := bf.ReadLine(); err != nil {
@@ -171,11 +195,17 @@ func (fv *FileHDBV) loadFile() {
 
 		} else {
 			if len(line) > 0 {
+
 				dbv := &HDBV{}
 				err := json.Unmarshal([]byte(line), dbv)
 				if err != nil {
 					log.Println("unmarshall message failed", line)
 					continue
+				}
+				if firstFlag {
+					fv.StartIdx = dbv.Cnt
+					fv.TotalCnt = fv.StartIdx
+					firstFlag = false
 				}
 				fv.Dbv.EnQueue(dbv)
 				fv.TotalCnt++
@@ -297,6 +327,23 @@ func (hfdb *HistoryFileDB) Delete(key string) {
 
 }
 
+//
+//func (hfdb *HistoryFileDB)TrimHeadCount(key string, n int)  {
+//	dbv,ok:=hfdb.Mem[key]
+//	if !ok{
+//		return
+//	}
+//
+//
+//
+//
+//
+//}
+//
+//func (hfdb *HistoryFileDB)TrimHeadPosition(key string, pos int)  {
+//
+//}
+
 func (hfdb *HistoryFileDB) write(data []byte) {
 	if hfdb.indexFile == nil {
 		flag := os.O_WRONLY | os.O_TRUNC
@@ -328,14 +375,14 @@ func (hfdb *HistoryFileDB) Save() {
 	hfdb.indexFile = nil
 }
 
-func (hfdb *HistoryFileDB) FindMem(key string, start int, topn int) ([]*HDBV, error) {
+func (hfdb *HistoryFileDB) FindMem(key string, start int, n int) ([]*HDBV, error) {
 
 	if start < 0 {
 		start = 0
 	}
 
-	if topn <= 0 {
-		topn = hfdb.MemHistoryCnt
+	if n <= 0 {
+		n = hfdb.MemHistoryCnt
 	}
 
 	v, ok := hfdb.Mem[key]
@@ -347,6 +394,10 @@ func (hfdb *HistoryFileDB) FindMem(key string, start int, topn int) ([]*HDBV, er
 		return nil, errors.New("start pos error")
 	}
 
+	if start < v.StartIdx {
+		start = v.StartIdx
+	}
+
 	spos := v.TotalCnt - hfdb.MemHistoryCnt
 	if spos > 0 {
 		if start < spos {
@@ -354,12 +405,14 @@ func (hfdb *HistoryFileDB) FindMem(key string, start int, topn int) ([]*HDBV, er
 		}
 	}
 
-	arr := v.Dbv.GetTopN(start, topn)
+	//fmt.Println(start,n)
+
+	arr := v.Dbv.GetTopN(start, n)
 
 	var as []*HDBV
 
-	for _, i := range arr {
-		as = append(as, i.(*HDBV))
+	for i := len(arr); i > 0; i-- {
+		as = append(as, arr[i-1].(*HDBV))
 	}
 
 	return as, nil
@@ -387,6 +440,8 @@ func (fv *FileHDBV) readFromFile(start, topn int) ([]*HDBV, error) {
 	defer f.Close()
 
 	bf := bufio.NewReader(f)
+
+	counter = fv.StartIdx
 
 	for {
 		if line, _, err := bf.ReadLine(); err != nil {
@@ -442,6 +497,10 @@ func (hfdb *HistoryFileDB) Find(key string, start, topn int) ([]*HDBV, error) {
 		return nil, errors.New("start pos error")
 	}
 
+	if start < v.StartIdx {
+		start = v.StartIdx
+	}
+
 	var arr []interface{}
 
 	onlyStoragePos := v.TotalCnt - hfdb.MemHistoryCnt
@@ -464,8 +523,8 @@ func (hfdb *HistoryFileDB) Find(key string, start, topn int) ([]*HDBV, error) {
 
 	var as []*HDBV
 
-	for _, i := range arr {
-		as = append(as, i.(*HDBV))
+	for i := len(arr); i > 0; i-- {
+		as = append(as, arr[i-1].(*HDBV))
 	}
 
 	return as, nil

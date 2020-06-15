@@ -68,9 +68,13 @@ func (fq *FixedQueue) GetTopN(begin, topn int) []interface{} {
 	}
 
 	arg := &arrinterface{}
+	arg.begin = begin
+	arg.topn = topn
 
 	fq.qV.Traverse(arg, func(arg interface{}, v interface{}) (ret interface{}, err error) {
 		parr := arg.(*arrinterface)
+
+		//fmt.Println(v.(QItemInterface).GetCnt(),parr.begin,parr.topn)
 
 		if v.(QItemInterface).GetCnt() >= parr.begin && v.(QItemInterface).GetCnt() < parr.begin+parr.topn {
 			parr.arr = append(parr.arr, v)

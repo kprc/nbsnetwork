@@ -1,6 +1,8 @@
 package hdb
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type DBCusor struct {
 	keys   []reflect.Value
@@ -12,8 +14,11 @@ type HistoryDBIntf interface {
 	Load() HistoryDBIntf
 	Insert(key string, value string) error
 	Delete(key string)
-	FindMem(key string, start int, topn int) ([]*HDBV, error)
+	FindMem(key string, start int, n int) ([]*HDBV, error)
+	Find(key string, start, n int) ([]*HDBV, error)
 	FindBlock(key string) (*FileHDBV, error)
+	//TrimHeadCount(key string, n int)
+	//TrimHeadPosition(key string, pos int)
 	Save()
 	DBIterator() *DBCusor
 }
@@ -23,8 +28,13 @@ func (dbc *DBCusor) Next() (k string, v []*HDBV) {
 		return
 	}
 
+	//var err error
+
 	k = dbc.keys[dbc.cursor].Interface().(string)
 	v, _ = dbc.hdb.FindMem(k, 0, 0)
+	//if err!=nil{
+	//	fmt.Println(err)
+	//}
 
 	dbc.cursor++
 
