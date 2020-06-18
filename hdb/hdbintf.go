@@ -12,7 +12,7 @@ type DBCusor struct {
 
 type HistoryDBIntf interface {
 	Load() HistoryDBIntf
-	Insert(key string, value string) error
+	Insert(key string, value string) (int,error)
 	Delete(key string)
 	FindMem(key string, start int, n int) ([]*HDBV, error)
 	Find(key string, start, n int) ([]*HDBV, error)
