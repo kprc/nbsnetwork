@@ -285,7 +285,7 @@ func (hfdb *HistoryFileDB) appendInex(key string, del bool) {
 
 }
 
-func (hfdb *HistoryFileDB) Insert(key string, value string) (int,error) {
+func (hfdb *HistoryFileDB) Insert(key string, value string) (int, error) {
 	_, ok := hfdb.Mem[key]
 	if !ok {
 		hfdb.insertIndex(key)
@@ -293,7 +293,7 @@ func (hfdb *HistoryFileDB) Insert(key string, value string) (int,error) {
 
 	dbv := hfdb.Mem[key]
 
-	idx:=dbv.TotalCnt
+	idx := dbv.TotalCnt
 
 	v := &HDBV{V: value, Time: tools.GetNowMsTime(), Cnt: dbv.TotalCnt}
 	dbv.appendSave(v)
@@ -310,7 +310,7 @@ func (hfdb *HistoryFileDB) Insert(key string, value string) (int,error) {
 	dbv.Dbv.EnQueue(v)
 	dbv.TotalCnt++
 
-	return idx,nil
+	return idx, nil
 }
 
 func (hfdb *HistoryFileDB) Delete(key string) {
