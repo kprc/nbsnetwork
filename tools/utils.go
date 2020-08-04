@@ -34,6 +34,21 @@ func GetRealPos(pos uint64) uint64 {
 	return (pos & 0xFFFFFFFF)
 }
 
+func Moth2Expire(nowExpire int64, month int64)  int64 {
+
+	if month == 0{
+		return nowExpire
+	}
+
+	if nowExpire == 0{
+		nowtm := time.Now().AddDate(0, int(month), 0)
+		return nowtm.UnixNano() / 1e6
+	}
+	sec := nowExpire / 1000
+	nsec := (nowExpire - sec*1000) * 1e6
+	return (time.Unix(sec, nsec).AddDate(0, int(month), 0).UnixNano()) / 1e6
+}
+
 func AssemblePos(pos uint64, typ uint32) uint64 {
 	var typ1 uint64
 
