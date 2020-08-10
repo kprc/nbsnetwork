@@ -2,6 +2,7 @@ package tools
 
 import (
 	"github.com/pkg/errors"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -108,4 +109,34 @@ func GetIPPort(addr string) (ip string, port int, err error) {
 	}
 
 	return ip, port, nil
+}
+
+func SafeRead(reader io.Reader,buf []byte) (n int, err error)  {
+
+	total := 0
+	buflen:=len(buf)
+
+	for {
+		n, err := reader.Read(buf[total:])
+		if err != nil {
+			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+				total += n
+				continue
+			} else if err != io.EOF {
+				return total, err
+			}
+			total += n
+		} else {
+			total += n
+		}
+		if n == 0 && err == io.EOF {
+			return total, io.EOF
+		}
+		if total >= buflen {
+			break
+		}
+	}
+
+	return total,nil
+
 }
