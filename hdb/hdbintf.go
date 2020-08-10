@@ -15,7 +15,7 @@ type HistoryDBIntf interface {
 	Insert(key string, value string) (int, error)
 	Delete(key string)
 	FindMem(key string, start int, n int) ([]*HDBV, error)
-	FindLatest(key string) (*HDBV,error)
+	FindLatest(key string) (*HDBV, error)
 	Find(key string, start, n int) ([]*HDBV, error)
 	FindBlock(key string) (*FileHDBV, error)
 	//TrimHeadCount(key string, n int)

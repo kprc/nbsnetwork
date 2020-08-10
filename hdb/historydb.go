@@ -419,22 +419,21 @@ func (hfdb *HistoryFileDB) FindMem(key string, start int, n int) ([]*HDBV, error
 	return as, nil
 }
 
-func (hfdb *HistoryFileDB)FindLatest(key string) (*HDBV,error)  {
+func (hfdb *HistoryFileDB) FindLatest(key string) (*HDBV, error) {
 	v, ok := hfdb.Mem[key]
 	if !ok {
 		return nil, errors.New("no key in db")
 	}
-	if v.Dbv.CurSize() == 0{
-		return nil,errors.New("no value in queue")
+	if v.Dbv.CurSize() == 0 {
+		return nil, errors.New("no value in queue")
 	}
 
-	dbv,err:=v.Dbv.GetFrist()
-	if err!=nil{
+	dbv, err := v.Dbv.GetFrist()
+	if err != nil {
 		return nil, err
 	}
-	return dbv.(*HDBV),nil
+	return dbv.(*HDBV), nil
 }
-
 
 func (fv *FileHDBV) readFromFile(start, topn int) ([]*HDBV, error) {
 	fv.SaveLock.Lock()

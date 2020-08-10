@@ -35,13 +35,13 @@ func GetRealPos(pos uint64) uint64 {
 	return (pos & 0xFFFFFFFF)
 }
 
-func Moth2Expire(nowExpire int64, month int64)  int64 {
+func Moth2Expire(nowExpire int64, month int64) int64 {
 
-	if month == 0{
+	if month == 0 {
 		return nowExpire
 	}
 
-	if nowExpire == 0{
+	if nowExpire == 0 {
 		nowtm := time.Now().AddDate(0, int(month), 0)
 		return nowtm.UnixNano() / 1e6
 	}
@@ -111,10 +111,10 @@ func GetIPPort(addr string) (ip string, port int, err error) {
 	return ip, port, nil
 }
 
-func SafeRead(reader io.Reader,buf []byte) (n int, err error)  {
+func SafeRead(reader io.Reader, buf []byte) (n int, err error) {
 
 	total := 0
-	buflen:=len(buf)
+	buflen := len(buf)
 
 	for {
 		n, err := reader.Read(buf[total:])
@@ -137,6 +137,6 @@ func SafeRead(reader io.Reader,buf []byte) (n int, err error)  {
 		}
 	}
 
-	return total,nil
+	return total, nil
 
 }

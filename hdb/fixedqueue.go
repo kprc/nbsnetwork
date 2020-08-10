@@ -14,7 +14,7 @@ type FixedQueueIntf interface {
 	QSize() int
 	CurSize() int
 	GetTopN(begin, topn int) []interface{}
-	GetFrist() (interface{},error)
+	GetFrist() (interface{}, error)
 }
 
 type FixedQueue struct {
@@ -49,7 +49,7 @@ func (fq *FixedQueue) EnQueue(v interface{}) {
 	}
 }
 
-func (fq *FixedQueue)GetFrist() (interface{},error) {
+func (fq *FixedQueue) GetFrist() (interface{}, error) {
 	return fq.qV.GetFirst()
 }
 
