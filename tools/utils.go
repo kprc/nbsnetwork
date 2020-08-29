@@ -119,19 +119,11 @@ func SafeRead(reader io.Reader, buf []byte) (n int, err error) {
 	for {
 		n, err := reader.Read(buf[total:])
 		if err != nil {
-			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
-				total += n
-				continue
-			} else if err != io.EOF {
-				return total, err
-			}
-			total += n
+			return total,err
 		} else {
 			total += n
 		}
-		if n == 0 && err == io.EOF {
-			return total, io.EOF
-		}
+
 		if total >= buflen {
 			break
 		}
