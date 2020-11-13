@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -131,4 +132,64 @@ func SafeRead(reader io.Reader, buf []byte) (n int, err error) {
 
 	return total, nil
 
+}
+
+type OnlyOneThread struct {
+	l sync.Mutex
+	o bool
+}
+
+func (oot *OnlyOneThread)Do(f func(p interface{}) (r interface{}), p interface{}) (r interface{}) {
+	if oot.o{
+		return errors.New("thread is running")
+	}
+	oot.l.Lock()
+	defer oot.l.Unlock()
+	if oot.o{
+		return errors.New("thread is running")
+	}
+	oot.o = true
+	defer func() {
+		oot.o=false
+	}()
+
+	return f(p)
+}
+
+func (oot *OnlyOneThread)Do2(f func())  {
+	if oot.o{
+		return
+	}
+	oot.l.Lock()
+	defer oot.l.Unlock()
+	if oot.o{
+		return
+	}
+	oot.o = true
+	defer func() {
+		oot.o=false
+	}()
+
+	f()
+}
+
+func (oot *OnlyOneThread)Start() bool  {
+	if oot.o{
+		return false
+	}
+	oot.l.Lock()
+	defer oot.l.Unlock()
+	if oot.o{
+		return false
+	}
+	oot.o = true
+
+	return true
+}
+
+func (oot *OnlyOneThread)Release()  {
+	oot.l.Lock()
+	defer oot.l.Unlock()
+
+	oot.o = false
 }
