@@ -105,7 +105,7 @@ func (hp *HttpPost)ProtectPost(url string, jsonstr string) (jsonret string, code
 				},
 			}
 
-			conn, err := d.Dial("udp", addr)
+			conn, err := d.Dial("tcp", addr)
 			if err != nil {
 				return nil, err
 			}
